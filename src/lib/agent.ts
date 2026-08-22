@@ -115,7 +115,11 @@ function normalizePermit(
   data: Record<string, unknown>,
   opts: { owner: string; input: string },
 ): Omit<AgentPermit, "source"> {
-  const token = tokenFromInput(opts.input) ?? { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 };
+  const token = tokenFromInput(opts.input) ?? {
+    symbol: "USDT",
+    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    decimals: 6,
+  };
   const permit = (data.permit ?? {}) as Record<string, unknown>;
   const value = String(permit.value ?? data.value ?? "0");
   const owner = String(permit.owner ?? opts.owner);
