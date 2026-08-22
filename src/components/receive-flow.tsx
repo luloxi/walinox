@@ -16,7 +16,6 @@ import {
   encodePermit2TransferFrom,
   validatePermit2Signature,
 } from "@/lib/permit2";
-import { sendCall } from "@/lib/chain";
 import { receiptFromPermit } from "@/lib/receipts";
 import { tokenByAddress } from "@/lib/tokens";
 import { payloadToDataUrl } from "@/lib/qr";
@@ -199,6 +198,7 @@ export function ReceiveFlow() {
         <TabsContent value="scan" className="mt-4 space-y-3">
           <p className="text-xs text-muted-foreground">
             Si te mandaron un permiso sin internet, escaneá el QR o pegá el JSON.
+            El submit on-chain paga el gas en USDT (WDK gasless).
           </p>
           {result && envelope ? (
             <div className="space-y-3">
@@ -225,7 +225,9 @@ export function ReceiveFlow() {
                     <Button
                       type="button"
                       className="h-11 w-full"
+                      disabled={!wallet}
                       onClick={() => {
+                        if (!wallet) return;
                         const { to, data } = encodePermit2TransferFrom(
                           buildPermit2({
                             token: envelope.token,
@@ -238,7 +240,8 @@ export function ReceiveFlow() {
                           envelope.signature,
                           envelope.owner,
                         );
-                        void sendCall(to, data)
+                        void wallet
+                          .sendCalldata(to, data)
                           .then(setTx)
                           .catch((err: unknown) =>
                             setError(err instanceof Error ? err.message : "Falló el envío"),
@@ -252,10 +255,13 @@ export function ReceiveFlow() {
                       <Button
                         type="button"
                         className="h-11 w-full"
+                        disabled={!wallet}
                         onClick={() => {
+                          if (!wallet) return;
                           void broadcastPermit(
                             envelope.typedData as unknown as PermitTypedData,
                             envelope.signature,
+                            (to, data) => wallet.sendCalldata(to, data),
                           )
                             .then(setTx)
                             .catch((err: unknown) =>

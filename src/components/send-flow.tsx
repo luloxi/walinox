@@ -15,8 +15,6 @@ import { toBaseUnits } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
 import { receiptFromPermit } from "@/lib/receipts";
-import { encodeApprove } from "@/lib/chain";
-import { sendCall } from "@/lib/chain";
 import { PERMIT2_ADDRESS } from "@/lib/permit2";
 import { USDC, USDT, type TokenInfo } from "@/lib/tokens";
 import { buildPermit } from "@/lib/permit";
@@ -114,7 +112,7 @@ export function SendFlow() {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudo enviar. Hace falta ETH para gas y saldo del token.",
+          : "No se pudo enviar. Hace falta USDT para el gas (paymaster) y saldo del token.",
       );
     } finally {
       setBusy(false);
@@ -177,7 +175,9 @@ export function SendFlow() {
     <div className="space-y-5 pb-4">
       <div>
         <h2 className="text-lg font-semibold">Enviar</h2>
-        <p className="text-xs text-muted-foreground">Online con gas, o sin internet con un QR.</p>
+        <p className="text-xs text-muted-foreground">
+          Online paga el gas en USDT (WDK gasless). Sin internet: firmás y mostrás un QR.
+        </p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -268,11 +268,20 @@ export function SendFlow() {
                   type="button"
                   variant="outline"
                   className="h-11 w-full"
+                  disabled={!wallet || busy}
                   onClick={() => {
-                    const { to: dest, data } = encodeApprove(draft.token.address, PERMIT2_ADDRESS);
-                    void sendCall(dest, data).catch((err: unknown) =>
-                      setError(err instanceof Error ? err.message : "Approve falló"),
-                    );
+                    if (!wallet) return;
+                    setBusy(true);
+                    void wallet
+                      .approve(draft.token.address, PERMIT2_ADDRESS)
+                      .then((tx) => {
+                        setHash(tx);
+                        setError(null);
+                      })
+                      .catch((err: unknown) =>
+                        setError(err instanceof Error ? err.message : "Approve falló"),
+                      )
+                      .finally(() => setBusy(false));
                   }}
                 >
                   Primera vez USDT: aprobar Permit2

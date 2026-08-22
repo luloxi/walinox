@@ -207,8 +207,10 @@ export function encodePermitCall(
 export async function broadcastPermit(
   typed: PermitTypedData,
   signature: string,
+  submit?: (to: string, data: string) => Promise<string>,
 ): Promise<string> {
-  const { sendCall } = await import("@/lib/chain");
   const { to, data } = encodePermitCall(typed, signature);
+  if (submit) return submit(to, data);
+  const { sendCall } = await import("@/lib/chain");
   return sendCall(to, data);
 }

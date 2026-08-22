@@ -20,7 +20,7 @@ export type ChannelStatus = {
 };
 
 const LABELS: Record<Channel, { label: string; description: string }> = {
-  online: { label: "On-chain", description: "Normal ERC-20 transfer with gas." },
+  online: { label: "On-chain", description: "ERC-20 transfer. Gas paid in USDT via WDK 7702 gasless." },
   qr: { label: "QR code", description: "Show or scan a QR. Primary offline path." },
   ble: { label: "Bluetooth", description: "Web Bluetooth GATT write, Chrome/Android only." },
   nfc: { label: "NFC", description: "Web NFC NDEF write, Android Chrome only." },

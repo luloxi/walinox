@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     "@tetherto/wdk",
     "@tetherto/wdk-wallet",
     "@tetherto/wdk-wallet-evm",
+    "@tetherto/wdk-wallet-evm-7702-gasless",
   ],
   turbopack: {
     root: path.join(__dirname),

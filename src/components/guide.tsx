@@ -37,7 +37,7 @@ export function Guide() {
           </li>
           <li>
             <span className="font-medium text-foreground">Enviar online:</span> address + monto.
-            Hace falta ETH para gas.
+            El gas se paga en USDT con WDK gasless (Tether + Candide).
           </li>
           <li>
             <span className="font-medium text-foreground">Enviar sin internet:</span> firmás acá y
