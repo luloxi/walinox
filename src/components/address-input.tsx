@@ -88,7 +88,7 @@ export function AddressInput({
   return (
     <div
       className={cn(
-        "flex h-11 min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-input bg-transparent dark:bg-input/30",
+        "flex h-11 min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30",
         className,
       )}
     >
@@ -115,7 +115,7 @@ export function AddressInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className="h-11 flex-1 rounded-none border-0 bg-transparent font-mono dark:bg-transparent"
+        className="h-11 flex-1 rounded-none border-0 bg-transparent font-mono shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
       />
       {bloAddress ? (
         // eslint-disable-next-line @next/next/no-img-element

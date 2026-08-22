@@ -267,33 +267,36 @@ export function SendFlow() {
                 <UsdtLogo className="size-3.5" />
               </span>
             </div>
-            <div className="relative">
+            <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
               <Input
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 placeholder="0.00"
-                className="h-11 pr-12"
+                className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
               />
-              <UsdtLogo className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2" />
+              <UsdtLogo className="mr-3 size-5 shrink-0" />
               <span className="sr-only">USDT</span>
             </div>
             <div className="flex gap-2">
+              {[25, 50, 75].map((pct) => (
+                <Button
+                  key={pct}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1"
+                  disabled={!hasBalance}
+                  onClick={() => setAmount(takePercent(usdt ?? "0", pct / 100))}
+                >
+                  {pct}%
+                </Button>
+              ))}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-8"
-                disabled={!hasBalance}
-                onClick={() => setAmount(takePercent(usdt ?? "0", 0.75))}
-              >
-                75%
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8"
+                className="h-8 flex-1"
                 disabled={!hasBalance}
                 onClick={() => setAmount(usdt ?? "")}
               >
