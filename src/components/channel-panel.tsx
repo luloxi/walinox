@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { allChannelStatuses, type Channel } from "@/lib/channels";
 import { transmitChannel } from "@/lib/air-io";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
+import { inviteFromSeed, wrapForPears } from "@/lib/pears";
 import { fromBaseUnits } from "@/lib/format";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -19,8 +20,11 @@ type Props = {
 export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const payload = encodeEnvelope(envelope);
   const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
+
+  async function offlinePayload() {
+    return wrapForPears(encodeEnvelope(envelope), envelope.signature);
+  }
 
   async function markSent(channel: Channel, detail: string) {
     receiptFromPermit(
@@ -53,16 +57,17 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     setNote(null);
     try {
       if (channel === "qr") {
-        await markSent("qr", "Mostrale este QR al otro celular.");
+        const invite = await inviteFromSeed(envelope.signature);
+        await markSent("qr", `Mostrale este QR. Sala ${invite}`);
         return;
       }
       if (channel === "copy") {
-        await navigator.clipboard.writeText(payload);
+        await navigator.clipboard.writeText(await offlinePayload());
         await markSent("copy", "Permiso copiado.");
         return;
       }
       if (channel === "file") {
-        const blob = new Blob([payload], { type: "application/json" });
+        const blob = new Blob([await offlinePayload()], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -75,13 +80,13 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
       if (channel === "nfc") {
         const NDEF = (window as Window & { NDEFReader?: new () => { write: (data: unknown) => Promise<void> } }).NDEFReader;
         if (!NDEF) throw new Error("Web NFC no está en este navegador");
-        await new NDEF().write({ records: [{ recordType: "text", data: payload }] });
+        await new NDEF().write({ records: [{ recordType: "text", data: await offlinePayload() }] });
         await markSent("nfc", "Permiso escrito en el tag NFC.");
         return;
       }
       if (channel === "ble" || channel === "ultrasonic" || channel === "optical") {
         setBusy(true);
-        const detail = await transmitChannel(channel, payload);
+        const detail = await transmitChannel(channel, await offlinePayload());
         await markSent(channel, detail);
         return;
       }
@@ -115,9 +120,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
             onClick={() => void send(channel.id)}
           >
             {channel.label}
-            {!channel.available ? (
-              <Badge variant="secondary">n/a</Badge>
-            ) : null}
+            {!channel.available ? <Badge variant="secondary">n/a</Badge> : null}
           </Button>
         ))}
       </div>

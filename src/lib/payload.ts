@@ -1,6 +1,7 @@
 import { buildPermit, type Eip712Domain } from "@/lib/permit";
 import { buildPermit2 } from "@/lib/permit2";
 import type { PermitKind } from "@/lib/tokens";
+import { unwrapPears } from "@/lib/pears";
 
 export const PAYLOAD_VERSION = 1 as const;
 
@@ -40,7 +41,8 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export function decodeEnvelope(raw: string): SignedEnvelope {
-  const parsed = asRecord(JSON.parse(raw.trim()));
+  const { body } = unwrapPears(raw);
+  const parsed = asRecord(JSON.parse(body));
   if (parsed.v !== PAYLOAD_VERSION) {
     throw new Error("Unsupported payload version");
   }
