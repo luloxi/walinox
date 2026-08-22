@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { transmitChannel } from "@/lib/air-io";
 import { allChannelStatuses, type Channel } from "@/lib/channels";
 
 export function OfflineSend({
@@ -17,7 +18,7 @@ export function OfflineSend({
   onSent?: (channel: Channel) => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-  const [optical, setOptical] = useState(false);
+  const [busy, setBusy] = useState(false);
   const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
 
   async function send(channel: Channel) {
@@ -46,16 +47,6 @@ export function OfflineSend({
         onSent?.("file");
         return;
       }
-      if (channel === "ble") {
-        const bluetooth = (navigator as Navigator & {
-          bluetooth?: { requestDevice: (opts: { acceptAllDevices: boolean }) => Promise<unknown> };
-        }).bluetooth;
-        if (!bluetooth) throw new Error("Bluetooth no está en este navegador");
-        await bluetooth.requestDevice({ acceptAllDevices: true });
-        setNote("Se abrió el picker. El peer GATT todavía no cierra el loop.");
-        onSent?.("ble");
-        return;
-      }
       if (channel === "nfc") {
         const NDEF = (window as Window & { NDEFReader?: new () => { write: (data: unknown) => Promise<void> } })
           .NDEFReader;
@@ -65,31 +56,15 @@ export function OfflineSend({
         onSent?.("nfc");
         return;
       }
-      if (channel === "ultrasonic") {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) throw new Error("Audio no está en este navegador");
-        const ctx = new Ctx();
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-        oscillator.frequency.value = 18000;
-        gain.gain.value = 0.04;
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.6);
-        setNote("Sonido enviado. Si no llega, usá QR.");
-        onSent?.("ultrasonic");
-        return;
-      }
-      if (channel === "optical") {
-        setOptical(true);
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        setOptical(false);
-        setNote("Pantalla destelló. Completá con QR si hace falta.");
-        onSent?.("optical");
+      if (channel === "ble" || channel === "ultrasonic" || channel === "optical") {
+        setBusy(true);
+        setNote(await transmitChannel(channel, payload));
+        onSent?.(channel);
       }
     } catch (error) {
       setNote(error instanceof Error ? error.message : "No se pudo enviar");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -112,7 +87,7 @@ export function OfflineSend({
             type="button"
             variant={channel.id === "qr" ? "default" : "outline"}
             className="h-11 justify-between"
-            disabled={!channel.available && channel.id !== "qr"}
+            disabled={busy || (!channel.available && channel.id !== "qr")}
             onClick={() => void send(channel.id)}
           >
             {channel.label}
@@ -121,9 +96,8 @@ export function OfflineSend({
         ))}
       </div>
       {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
-      {optical ? <div className="pointer-events-none fixed inset-0 z-50 animate-pulse bg-white" /> : null}
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        El cliente no necesita internet. QR, copiar y archivo cierran el loop. Bluetooth, NFC, sonido y luz si el teléfono los tiene.
+        El cliente no necesita internet. QR, sonido y luz cierran el loop. Bluetooth comparte el archivo; NFC escribe un tag.
       </p>
     </div>
   );

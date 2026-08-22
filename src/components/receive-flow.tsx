@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { shortAddress } from "@/lib/format";
 import { QrScanner } from "@/components/qr-scanner";
 import { SectionBar } from "@/components/section-bar";
 import { EtherscanTxLink } from "@/components/etherscan-link";
+import { listenSound, readBluetooth } from "@/lib/air-io";
 import type { Channel } from "@/lib/channels";
 
 type Result = {
@@ -84,7 +85,9 @@ export function ReceiveFlow() {
   const [copied, setCopied] = useState(false);
   const [pasted, setPasted] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const listenAbort = useRef<AbortController | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [charge, setCharge] = useState<ChargeRequest | null>(null);
   const [tx, setTx] = useState<string | null>(null);
@@ -93,6 +96,66 @@ export function ReceiveFlow() {
     if (!wallet) return;
     void payloadToDataUrl(wallet.address).then(setAddressQr);
   }, [wallet]);
+
+  useEffect(() => {
+    return () => listenAbort.current?.abort();
+  }, []);
+
+  function takePayload(raw: string, channel: Channel) {
+    try {
+      const nextCharge = decodeCharge(raw);
+      if (nextCharge) {
+        setCharge(nextCharge);
+        setResult(null);
+      } else {
+        setCharge(null);
+        setResult(ingest(raw, channel));
+      }
+      setError(null);
+      setScanning(false);
+      setListening(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payload inválido");
+    }
+  }
+
+  async function onListen() {
+    if (listening) {
+      listenAbort.current?.abort();
+      return;
+    }
+    setListening(true);
+    setScanning(false);
+    setError(null);
+    const ac = new AbortController();
+    listenAbort.current = ac;
+    try {
+      const raw = await listenSound({ signal: ac.signal });
+      takePayload(raw, "ultrasonic");
+    } catch (err) {
+      if (!ac.signal.aborted) {
+        setError(err instanceof Error ? err.message : "No se oyó nada");
+      }
+    } finally {
+      setListening(false);
+      listenAbort.current = null;
+    }
+  }
+
+  async function onBle() {
+    setError(null);
+    setScanning(false);
+    listenAbort.current?.abort();
+    try {
+      takePayload(await readBluetooth(), "ble");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `${err.message} Si te mandaron el .json por Bluetooth, elegilo abajo.`
+          : "Bluetooth falló",
+      );
+    }
+  }
 
   const envelope = result?.envelope;
   const tokenLabel = envelope
@@ -259,30 +322,30 @@ export function ReceiveFlow() {
           <>
           <QrScanner
             active={scanning}
-            onResult={(text) => {
-              try {
-                const nextCharge = decodeCharge(text);
-                if (nextCharge) {
-                  setCharge(nextCharge);
-                  setResult(null);
-                } else {
-                  setCharge(null);
-                  setResult(ingest(text, "qr"));
-                }
-                setScanning(false);
-                setError(null);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "QR inválido");
-              }
-            }}
+            onResult={(text) => takePayload(text, "qr")}
             onError={(message) => {
               setError(message);
               setScanning(false);
             }}
           />
-          <Button type="button" className="h-11 w-full" onClick={() => setScanning((value) => !value)}>
-            {scanning ? "Parar cámara" : "Escanear QR"}
+          <Button
+            type="button"
+            className="h-11 w-full"
+            onClick={() => {
+              listenAbort.current?.abort();
+              setScanning((value) => !value);
+            }}
+          >
+            {scanning ? "Parar cámara" : "Escanear QR o luz"}
           </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
+              {listening ? "Parar oído" : "Escuchar"}
+            </Button>
+            <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
+              Bluetooth
+            </Button>
+          </div>
           <Textarea
             value={pasted}
             onChange={(event) => setPasted(event.target.value)}

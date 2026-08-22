@@ -42,9 +42,10 @@ El objeto que viaja es un JSON firmado (`SignedEnvelope`).
 | --- | --- |
 | QR | Funciona (demo principal). |
 | Copiar / archivo | Funciona. |
+| Sonido | FSK audible: el permiso viaja en audio. El otro celular toca Escuchar. |
+| Luz | Grilla de color a pantalla completa. El otro escanea con la cámara. |
+| Bluetooth | Android/iOS: hoja de compartir (Nearby / AirDrop / Bluetooth). GATT si hay un peer con el servicio Walinox. Un Chrome **no** puede anunciarse como periférico. |
 | NFC | Escribe el JSON en un **tag**. No es tap entre dos iPhones. |
-| Bluetooth | Abre el picker; todavía no hay GATT al otro celular. |
-| Sonido / luz | Placeholder; no transportan el payload. |
 
 Después del primer load (PWA) el QR anda en modo avión.
 
@@ -103,7 +104,7 @@ HTTPS o localhost. Android: Instalar app. iPhone: Agregar a Inicio. Avisos en iO
 
 - QVAC no corre en el browser.
 - Seed WDK local está en `localStorage` (no es producción).
-- BLE / sonido / luz no cierran el loop celular ↔ celular.
+- Bluetooth P2P GATT entre dos Chromes no existe (el browser no es periférico); el loop real es Share / sonido / luz.
 - Push durable en Vercel hace falta un store (hoy memoria / `.data/`).
 - Candide público está rate-limited.
 - Localhost: saldo y catálogo de prueba.

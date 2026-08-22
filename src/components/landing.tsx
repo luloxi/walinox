@@ -19,7 +19,7 @@ const USES = [
   },
   {
     title: "Mandar como te quede cómodo",
-    body: "Online si hay conexión. Si no, QR, copiar, archivo, y si el teléfono lo tiene: Bluetooth, NFC o sonido.",
+    body: "Online si hay conexión. Si no, QR, sonido, luz, copiar, archivo, Bluetooth o NFC.",
   },
   {
     title: "Tu tienda y tu caja",
@@ -125,8 +125,8 @@ export function Landing() {
           puede pagar en USDT.
         </p>
         <p>
-          QR es el camino que cierra el loop. Bluetooth, NFC y sonido están por si el teléfono los tiene; no reemplazan
-          a que alguien, al final, suba la transacción a la red.
+          QR, sonido y luz cierran el loop entre dos celulares. Bluetooth manda el archivo (Nearby / AirDrop) o escribe
+          GATT. Nada de eso reemplaza que alguien, al final, suba la transacción a la red.
         </p>
         <p>
           La actividad suma on-chain y lo que firmaste en persona. El peso de cada movimiento usa el blue de ese día, no

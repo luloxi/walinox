@@ -1,3 +1,4 @@
+import { extractEnsName } from "@/lib/ens";
 import { buildPermit, type PermitTypedData } from "@/lib/permit";
 import { buildPermit2, type Permit2TypedData } from "@/lib/permit2";
 import { tokenFromInput, type PermitKind, type TokenInfo } from "@/lib/tokens";
@@ -46,14 +47,14 @@ export type AgentIntent = {
 
 export const INTENT_SYSTEM = `Convertí el pedido a JSON. Solo JSON, sin markdown.
 Según task:
-send: {"task":"send","to":"0x… o nombre.eth","amount":"10"}
-contact: {"task":"contact","name":"María","to":"0x…"}
+send: {"task":"send","to":"0x… o nombre.eth o nombre.base.eth","amount":"10"}
+contact: {"task":"contact","name":"María","to":"0x… o nombre.eth"}
 product: {"task":"product","title":"Café","price":"3","place":"San Martín 100"}
 Reglas: USDT; amount y price en unidades humanas (10, no 10000000). Si falta un campo, omitilo.`;
 
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 
-function extractAmount(input: string): string {
+function extractAmount(input: string): string | undefined {
   const spend = input.match(/spend\s+(\d+(?:\.\d+)?)/i);
   if (spend) return spend[1];
   const token = input.match(/(\d+(?:\.\d+)?)\s*USDT\b/i);
@@ -62,11 +63,15 @@ function extractAmount(input: string): string {
     /(?:mandale|mandá|manda|enviale|enviá|envia|enviar|transferí|transferir)\s+(\d+(?:\.\d+)?)/i,
   );
   if (es) return es[1];
-  return "100";
+  return undefined;
 }
 
 function extractAddress(input: string): string | undefined {
   return input.match(ADDRESS_RE)?.[0];
+}
+
+function extractRecipient(input: string): string | undefined {
+  return extractAddress(input) ?? extractEnsName(input);
 }
 
 function humanAmount(value?: string): string | undefined {
@@ -184,12 +189,16 @@ export function normalizePermit(
 }
 
 export function heuristicComplete(input: string, owner: string): string {
-  const spender = input.match(ADDRESS_RE)?.[0];
+  const spender = extractAddress(input);
   if (!spender) {
-    throw new Error("Name a spender address (0x…) in the request");
+    throw new Error(
+      extractEnsName(input)
+        ? "El gasto firmado necesita un address 0x…; el ENS se resuelve en Enviar"
+        : "Poné un address 0x…, un ENS o un Basename",
+    );
   }
   const token = tokenFromInput(input);
-  const amount = extractAmount(input);
+  const amount = extractAmount(input) ?? "100";
   const value = toBaseUnits(amount, token.decimals);
   const deadline = String(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60);
   return JSON.stringify({
@@ -236,16 +245,18 @@ export function parseAgentIntent(raw: unknown, fallback: AgentTask): Omit<AgentI
   return { task, to, amount, name, title, price, place };
 }
 
-export function heuristicIntent(input: string, task: AgentTask, owner = ""): AgentIntent {
+export function heuristicIntent(input: string, task: AgentTask): AgentIntent {
   if (task === "send") {
-    const parsed = parseAgentOutput(heuristicComplete(input, owner || "0x0000000000000000000000000000000000000001"));
-    return { ...parseAgentIntent(parsed, "send"), source: "heuristic" };
+    const to = extractRecipient(input);
+    if (!to) throw new Error("Poné un address 0x…, un ENS o un Basename");
+    return { task: "send", to, amount: extractAmount(input), source: "heuristic" };
   }
   if (task === "contact") {
-    const to = extractAddress(input);
-    if (!to) throw new Error("Poné una address 0x…");
+    const to = extractRecipient(input);
+    if (!to) throw new Error("Poné un address 0x…, un ENS o un Basename");
     const name = input
       .replace(ADDRESS_RE, " ")
+      .replace(to, " ")
       .replace(/guard[aá]r?/gi, " ")
       .replace(/agend[aá]r?/gi, " ")
       .replace(/\b(contacto|contact|nombre|llamada|llamado)\b/gi, " ")

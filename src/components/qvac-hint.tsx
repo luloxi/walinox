@@ -49,7 +49,7 @@ export function QvacHint({
       } catch {
         /* QVAC may be down; the heuristic still fills the form. */
       }
-      if (!intent) intent = heuristicIntent(prompt, task, owner);
+      if (!intent) intent = heuristicIntent(prompt, task);
       onFill(intent);
       setText("");
       setOpen(false);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { allChannelStatuses, type Channel } from "@/lib/channels";
+import { transmitChannel } from "@/lib/air-io";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
 import { fromBaseUnits } from "@/lib/format";
 import { notifyPeer } from "@/lib/notify";
@@ -17,7 +18,7 @@ type Props = {
 
 export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
   const [note, setNote] = useState<string | null>(null);
-  const [optical, setOptical] = useState(false);
+  const [busy, setBusy] = useState(false);
   const payload = encodeEnvelope(envelope);
   const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
 
@@ -52,12 +53,12 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     setNote(null);
     try {
       if (channel === "qr") {
-        await markSent("qr", "Show this QR to the receiving device.");
+        await markSent("qr", "Mostrale este QR al otro celular.");
         return;
       }
       if (channel === "copy") {
         await navigator.clipboard.writeText(payload);
-        await markSent("copy", "Signed payload copied.");
+        await markSent("copy", "Permiso copiado.");
         return;
       }
       if (channel === "file") {
@@ -68,48 +69,26 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
         a.download = envelopeFilename(envelope);
         a.click();
         URL.revokeObjectURL(url);
-        await markSent("file", "Permit file downloaded.");
-        return;
-      }
-      if (channel === "ble") {
-        const bluetooth = (navigator as Navigator & {
-          bluetooth?: { requestDevice: (opts: { acceptAllDevices: boolean }) => Promise<unknown> };
-        }).bluetooth;
-        if (!bluetooth) throw new Error("Web Bluetooth unavailable");
-        await bluetooth.requestDevice({ acceptAllDevices: true });
-        await markSent("ble", "Bluetooth picker opened. No Walinox GATT peer in this MVP.");
+        await markSent("file", "Archivo descargado.");
         return;
       }
       if (channel === "nfc") {
         const NDEF = (window as Window & { NDEFReader?: new () => { write: (data: unknown) => Promise<void> } }).NDEFReader;
-        if (!NDEF) throw new Error("Web NFC unavailable");
+        if (!NDEF) throw new Error("Web NFC no está en este navegador");
         await new NDEF().write({ records: [{ recordType: "text", data: payload }] });
-        await markSent("nfc", "Wrote the permit to an NFC tag.");
+        await markSent("nfc", "Permiso escrito en el tag NFC.");
         return;
       }
-      if (channel === "ultrasonic") {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) throw new Error("Web Audio unavailable");
-        const ctx = new Ctx();
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-        oscillator.frequency.value = 18000;
-        gain.gain.value = 0.04;
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.6);
-        await markSent("ultrasonic", "Played a short ultrasonic burst. Use QR if the peer cannot hear it.");
+      if (channel === "ble" || channel === "ultrasonic" || channel === "optical") {
+        setBusy(true);
+        const detail = await transmitChannel(channel, payload);
+        await markSent(channel, detail);
         return;
-      }
-      if (channel === "optical") {
-        setOptical(true);
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        setOptical(false);
-        await markSent("optical", "Flashed the screen. Pair with QR for a reliable demo.");
       }
     } catch (error) {
-      setNote(error instanceof Error ? error.message : "Channel failed");
+      setNote(error instanceof Error ? error.message : "El canal falló");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -132,7 +111,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
             type="button"
             variant={channel.id === "qr" ? "default" : "outline"}
             className="h-11 justify-between"
-            disabled={!channel.available && channel.id !== "qr"}
+            disabled={busy || (!channel.available && channel.id !== "qr")}
             onClick={() => void send(channel.id)}
           >
             {channel.label}
@@ -143,12 +122,9 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
         ))}
       </div>
       {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
-      {optical ? (
-        <div className="pointer-events-none fixed inset-0 z-50 animate-pulse bg-white" />
-      ) : null}
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        QR, copy, and file are the reliable demo paths. Bluetooth, NFC, sound, and light
-        are offered when the browser allows them.
+        QR, sonido y luz cierran el loop entre dos celulares. Bluetooth comparte el archivo (Nearby / AirDrop)
+        o escribe GATT si hay un peer Walinox. NFC escribe un tag.
       </p>
     </div>
   );

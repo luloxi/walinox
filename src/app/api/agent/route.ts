@@ -54,7 +54,7 @@ export async function POST(request: Request) {
           source: "heuristic",
         });
       }
-      const fallback = heuristicIntent(prompt, task, owner);
+      const fallback = heuristicIntent(prompt, task);
       return NextResponse.json({
         ...fallback,
         qvac: false,

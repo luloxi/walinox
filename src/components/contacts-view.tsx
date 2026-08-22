@@ -151,7 +151,7 @@ export function ContactsView() {
                 {error ? <p className="text-xs text-red-400">{error}</p> : null}
                 <QvacHint
                   task="contact"
-                  placeholder="guardá a María 0x…"
+                  placeholder="guardá a María 0x… o lulox.eth"
                   onFill={(intent) => {
                     if (intent.to) setAddress(intent.to);
                     if (intent.name) setName(intent.name);

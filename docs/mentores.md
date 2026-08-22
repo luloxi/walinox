@@ -133,12 +133,12 @@ Hace falta **un poco más de USDT** aparte del monto. Si el bundler falla, caemo
 | **QR** | Sí | Camino demo. El receptor escanea en Depositar. Funciona en avión después del primer load (PWA). |
 | **Copy** | Sí | Portapapeles. |
 | **Archivo** | Sí | `.json` para WhatsApp / AirDrop / pendrive. |
-| **NFC** | Parcial | Escribe el JSON en un **tag NDEF**. No es “dos celulares que se tocan” (Android Beam ya no existe). Sirve como “deje el vale en una etiqueta”. Web NFC ≈ Chrome Android. |
-| **Bluetooth** | No todavía | Abre el picker de Web Bluetooth. **No hay servicio GATT Walinox** ni escritura al otro teléfono. El comentario en código lo dice. |
-| **Sonido** | No todavía | Toca 0,6 s a 18 kHz. **No modula el JSON**. El otro teléfono no puede reconstruir el permiso. |
-| **Luz** | No todavía | Flash de pantalla. No hay decodificación por cámara. |
+| **Sonido** | Sí | FSK 1200/2000 Hz, 400 baud. Compacta el Permit2 a ~210 bytes. El otro toca **Escuchar**. |
+| **Luz** | Sí | Grilla 6×6 de color (esquinas fiduciales). La cámara en Depositar decodifica además del QR. |
+| **Bluetooth** | Parcial | Hoja de compartir (Nearby / AirDrop / Bluetooth clásico) manda el `.json`. GATT escribe al UUID Walinox si hay un periférico. **Dos Chromes no se ven**: el browser no es GATT peripheral. |
+| **NFC** | Parcial | Escribe el JSON en un **tag NDEF**. No es “dos celulares que se tocan” (Android Beam ya no existe). Web NFC ≈ Chrome Android. |
 
-Los caminos **confiables para una demo delante de alguien** son QR, copy y archivo. BLE / NFC P2P / audio / light están **expuestos en la UI** cuando el browser tiene la API, pero no cierran el loop celular ↔ celular.
+QR, sonido y luz cierran el loop celular ↔ celular en la PWA. Bluetooth cierra el loop si el OS comparte el archivo. GATT pide un peer que anuncie el servicio.
 
 **Por qué cuesta tanto en una PWA**
 
@@ -147,14 +147,11 @@ Los caminos **confiables para una demo delante de alguien** son QR, copy y archi
 - **Audio**: hay librerías (ggwave, chirp). Hay que modular el payload, calibrar volumen, lidiar con micrófono y permisos. Un beep no alcanza.
 - **iOS**: PWA + sensors es el peor caso. QR + archivo (Share sheet) es lo que realmente vive en iPhone.
 
-**Qué habría que construir para poder decir “los cuatro andan”**
+**Qué hay que decir en la charla**
 
-1. QR — ya.
-2. NFC — mantener write-to-tag; opcional: el receptor en “escuchar tag”.
-3. Bluetooth — definir UUID de servicio + characteristic, `writeValue` del JSON, del otro lado `startNotifications` / read. Demo realista: Android Chrome ↔ Android Chrome.
-4. Sonido — encoder/decoder (FSK o ggwave) del `SignedEnvelope`, no un tono fijo.
+El objeto de valor es la firma; el canal es intercambiable. Producción: QR. Extra que ahora sí transportan bytes: sonido y luz. Bluetooth de PWA a PWA es el share sheet, no GATT, porque Chrome no se anuncia.
 
-Hasta que eso esté, en la charla conviene: *“el objeto de valor es la firma; el canal es intercambiable. Hoy el canal de producción es QR.”*
+Lo que sigue siendo difícil en web: NFC P2P (solo tag) y BLE peripheral.
 
 ### 3.5 El vale “NFT” no es un ERC-721
 
@@ -171,7 +168,7 @@ Tentación: una tab de chat con historial y pines. Eso duplica Actividad y Conta
 
 Lo que quedó: un destello **¿En una frase?** en enviar / contactos / publicar. Completa campos y se cierra.
 
-Modelo default **Qwen3 0.6B Instruct Q4** (~382 MB): entra en celulares, habla español, el job es JSON corto. Llama 3.2 1B es el default del SDK y va peor en “mandale / guardá”. Si QVAC no está, un parser heurístico alcanza para “10 USDT + 0x…”.
+Modelo default **Qwen3 0.6B Instruct Q4** (~382 MB): entra en celulares, habla español, el job es JSON corto. Llama 3.2 1B es el default del SDK y va peor en “mandale / guardá”. Si QVAC no está, un parser heurístico alcanza para “10 USDT + 0x…” **o un ENS / Basename** (`mandale 10 a lulox.eth`). El campo de envío ya resolvía nombres; el atajo de frase no, y pedía un “spender address”. No es una limitación de Tether: Permit2 quiere un `0x…`, el formulario resuelve el nombre antes de firmar.
 
 QVAC **no corre en el browser** (worker Bare). La PWA llama `/api/agent` o se cae al heurístico offline.
 
@@ -191,7 +188,7 @@ Flujo: conectar → firmar términos (EIP-712, una vez por address) → elegir *
 
 - **RainbowKit + Coinbase / x402**: el conector de Coinbase tiraba el build por `@x402/*`. Lo sacamos y stubbeamos. Menos wallets, app que compile.
 - **USDT vs USDC en la UI**: USDC tiene `permit()`; mostrar los dos confundía. Producto = USDT.
-- **ENS / Basenames**: el campo de envío resuelve `vitalik.eth` y `alice.base.eth`; si no hay avatar, identicon `blo` (Scaffold-ETH).
+- **ENS / Basenames**: el campo de envío resuelve `vitalik.eth` y `alice.base.eth`; si no hay avatar, identicon `blo` (Scaffold-ETH). QVAC / el heurístico rellenan el mismo campo con el nombre; la resolución on-chain es al enviar, no al parsear la frase.
 - **QR de address ajenas**: hay que parsear EIP-681, deep links de MetaMask/Trust, JSON de Rabby/Binance, CAIP-10, `usdt:` / `tether:`. El usuario no pega “un 0x limpio”.
 - **Serwist / service worker**: el SW de Next no convivía bien con Turbopack. SW a mano en `public/sw.js` (cache + push).
 - **sodium-native**: WDK en browser → alias a `sodium-javascript`.
@@ -234,17 +231,15 @@ Flujo: conectar → firmar términos (EIP-712, una vez por address) → elegir *
 
 **No listo (y no venderlo como listo)**
 
-- Bluetooth celular ↔ celular.
-- Sonido que transporte el permiso.
-- Luz / cámara como canal.
+- Bluetooth GATT entre dos PWAs (Chrome no es periférico). El share sheet sí manda el archivo.
 - NFC como tap entre dos teléfonos (sí como tag).
 - Push durable en Vercel.
 - Modo rápido en cualquier EOA.
 
 **Próximo si la tesis aguanta**
 
-1. Cerrar QR + archivo como “offline v1” y documentar el resto como experimental.
-2. Un canal extra **de verdad** (NFC tag o ggwave) para la demo “sin mirar la pantalla”.
+1. Calibrar sonido/luz en feria (volumen, luz de día, dos Androids).
+2. Companion nativo si se quiere BLE P2P de verdad.
 3. Allowance Permit2 acotado al monto.
 4. Sacar la seed de `localStorage`.
 

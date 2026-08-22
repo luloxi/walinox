@@ -22,10 +22,10 @@ export type ChannelStatus = {
 const LABELS: Record<Channel, { label: string; description: string }> = {
   online: { label: "On-chain", description: "Transfer ERC-20. Gas en USDT vía WDK 7702." },
   qr: { label: "QR", description: "Mostrá o escaneá. El camino principal sin internet." },
-  ble: { label: "Bluetooth", description: "Web Bluetooth. Chrome/Android." },
+  ble: { label: "Bluetooth", description: "Archivo por Nearby/AirDrop, o GATT si hay un peer Walinox." },
   nfc: { label: "NFC", description: "Web NFC. Android Chrome." },
-  ultrasonic: { label: "Sonido", description: "Un burst corto con el payload." },
-  optical: { label: "Luz", description: "Destello de pantalla." },
+  ultrasonic: { label: "Sonido", description: "El permiso viaja en audio. El otro celular escucha." },
+  optical: { label: "Luz", description: "La pantalla transmite; la cámara del otro lee." },
   copy: { label: "Copiar", description: "Copiá el JSON al portapapeles." },
   file: { label: "Archivo", description: "Descargá o importá un .json." },
 };

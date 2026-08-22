@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import jsQR from "jsqr";
+import { createOpticalAssembler, unpackAir } from "@/lib/air";
 
 export function QrScanner({
   active,
@@ -16,8 +17,11 @@ export function QrScanner({
   const lastRef = useRef("");
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
-  onResultRef.current = onResult;
-  onErrorRef.current = onError;
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+    onErrorRef.current = onError;
+  }, [onResult, onError]);
 
   useEffect(() => {
     if (!active) {
@@ -27,7 +31,10 @@ export function QrScanner({
     let stream: MediaStream | null = null;
     let frame = 0;
     const canvas = document.createElement("canvas");
+    const opticalCanvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const opticalCtx = opticalCanvas.getContext("2d", { willReadFrequently: true });
+    const optical = createOpticalAssembler();
 
     async function start() {
       try {
@@ -39,7 +46,7 @@ export function QrScanner({
         await videoRef.current.play();
         const tick = () => {
           const video = videoRef.current;
-          if (!video || !ctx || video.readyState < 2) {
+          if (!video || !ctx || !opticalCtx || video.readyState < 2) {
             frame = requestAnimationFrame(tick);
             return;
           }
@@ -51,6 +58,25 @@ export function QrScanner({
           if (code?.data && code.data !== lastRef.current) {
             lastRef.current = code.data;
             onResultRef.current(code.data);
+            frame = requestAnimationFrame(tick);
+            return;
+          }
+          const side = 240;
+          opticalCanvas.width = side;
+          opticalCanvas.height = side;
+          opticalCtx.drawImage(video, 0, 0, side, side);
+          const small = opticalCtx.getImageData(0, 0, side, side);
+          const packet = optical.push(small);
+          if (packet) {
+            try {
+              const text = unpackAir(packet);
+              if (text && text !== lastRef.current) {
+                lastRef.current = text;
+                onResultRef.current(text);
+              }
+            } catch {
+              /* frame CRC can pass before unwrap; keep listening */
+            }
           }
           frame = requestAnimationFrame(tick);
         };
@@ -63,6 +89,7 @@ export function QrScanner({
     void start();
     return () => {
       cancelAnimationFrame(frame);
+      optical.reset();
       stream?.getTracks().forEach((track) => track.stop());
     };
   }, [active]);

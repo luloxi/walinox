@@ -62,10 +62,29 @@ describe("QVAC-shaped agent path", () => {
 
 describe("form-fill intent", () => {
   it("fills a Spanish send from a sentence", () => {
-    const intent = heuristicIntent(`mandale 10 USDT a ${SPENDER}`, "send", OWNER);
+    const intent = heuristicIntent(`mandale 10 USDT a ${SPENDER}`, "send");
     expect(intent.task).toBe("send");
     expect(intent.to?.toLowerCase()).toBe(SPENDER.toLowerCase());
     expect(intent.amount).toBe("10");
+  });
+
+  it("fills a send to an ENS or Basename", () => {
+    const ens = heuristicIntent("mandale 10 USDT a vitalik.eth", "send");
+    expect(ens.to).toBe("vitalik.eth");
+    expect(ens.amount).toBe("10");
+    const base = heuristicIntent("enviale 3.5 a alice.base.eth", "send");
+    expect(base.to).toBe("alice.base.eth");
+    expect(base.amount).toBe("3.5");
+  });
+
+  it("asks for a recipient when the send has no address or ENS", () => {
+    expect(() => heuristicIntent("mandale 10 USDT", "send")).toThrow(/ENS o un Basename/);
+  });
+
+  it("fills an ENS send without inventing an amount", () => {
+    const intent = heuristicIntent("mandale a vitalik.eth", "send");
+    expect(intent.to).toBe("vitalik.eth");
+    expect(intent.amount).toBeUndefined();
   });
 
   it("fills a contact name and address", () => {
@@ -73,6 +92,12 @@ describe("form-fill intent", () => {
     expect(intent.task).toBe("contact");
     expect(intent.to?.toLowerCase()).toBe(SPENDER.toLowerCase());
     expect(intent.name).toBe("María");
+  });
+
+  it("fills a contact from an ENS name", () => {
+    const intent = heuristicIntent("guardá a Nacho lulox.eth", "contact");
+    expect(intent.to).toBe("lulox.eth");
+    expect(intent.name).toBe("Nacho");
   });
 
   it("fills a product listing", () => {

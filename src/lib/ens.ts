@@ -18,6 +18,16 @@ export function isEnsName(value: string): boolean {
   return /^[a-z0-9.-]+$/.test(name);
 }
 
+/** First `.eth` / `.base.eth` token in a sentence (skips amounts like 10.5). */
+export function extractEnsName(text: string): string | undefined {
+  const re =
+    /\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.eth\b/gi;
+  for (const match of text.matchAll(re)) {
+    if (isEnsName(match[0])) return match[0];
+  }
+  return undefined;
+}
+
 export async function resolveEns(value: string): Promise<string | null> {
   const text = value.trim();
   if (!text) return null;
