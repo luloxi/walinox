@@ -14,6 +14,7 @@
     "@tetherto/wdk": "^1.0.0-beta.16",
     "@tetherto/wdk-wallet-evm": "^1.0.0-beta.17",
     "@tetherto/wdk-wallet-evm-7702-gasless": "^1.0.0-beta.4",
+    "blo": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ethers": "^6.17.0",

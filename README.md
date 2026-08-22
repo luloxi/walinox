@@ -68,7 +68,9 @@ Optional QVAC: `qvac serve openai` then `QVAC_BASE_URL=http://127.0.0.1:11434/v1
 
 ## Send
 
-Paste an address or scan a QR. The scanner reads raw `0x…` (Walinox receive QR), EIP-681 (`ethereum:0x…`, ERC-20 `transfer?address=`), MetaMask/Trust deep links, Rabby/Binance JSON, CAIP-10, and `usdt:` / `tether:` / `bnb:` URIs.
+Paste an address or scan a QR, or type an **ENS** (`vitalik.eth`) / **Basename** (`alice.base.eth`). The send field is the Scaffold-ETH AddressInput: ENS avatar when the name has one, otherwise the colorful `blo` identicon for the 0x address.
+
+The scanner also reads raw `0x…` (Walinox receive QR), EIP-681 (`ethereum:0x…`, ERC-20 `transfer?address=`), MetaMask/Trust deep links, Rabby/Binance JSON, CAIP-10, and `usdt:` / `tether:` / `bnb:` URIs.
 
 ## Demo (USDT via Permit2)
 

@@ -6,6 +6,7 @@ import { isAddress } from "ethers";
 import { ClipboardPaste, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressInput } from "@/components/address-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
@@ -25,6 +26,7 @@ import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { rememberContact } from "@/lib/contacts";
+import { isEnsName, resolveEns } from "@/lib/ens";
 import type { AgentPermit } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
 
@@ -76,14 +78,26 @@ export function SendFlow() {
   }, []);
 
   function applyAddress(raw: string) {
-    const addr = parsePaymentAddress(raw);
-    if (!addr) {
-      setError("No hay un address de Ethereum en eso");
-      return false;
+    const text = raw.trim();
+    const addr = parsePaymentAddress(text);
+    if (addr) {
+      setTo(addr);
+      setError(null);
+      return true;
     }
-    setTo(addr);
-    setError(null);
-    return true;
+    if (isEnsName(text)) {
+      setTo(text);
+      setError(null);
+      return true;
+    }
+    setError("No hay un address, ENS o Basename en eso");
+    return false;
+  }
+
+  async function destination(): Promise<string | null> {
+    if (isAddress(to)) return to;
+    if (isEnsName(to)) return resolveEns(to);
+    return parsePaymentAddress(to);
   }
 
   async function pasteAddress() {
@@ -97,8 +111,9 @@ export function SendFlow() {
 
   async function sendOnline() {
     if (!wallet) return;
-    if (!isAddress(to)) {
-      setError("Address de destino inválida");
+    const dest = await destination();
+    if (!dest || !isAddress(dest)) {
+      setError("Address, ENS o Basename inválido");
       return;
     }
     setBusy(true);
@@ -106,14 +121,14 @@ export function SendFlow() {
     setHash(null);
     try {
       const value = toBaseUnits(amount, USDT.decimals);
-      const tx = await wallet.transfer(USDT.address, to, value);
+      const tx = await wallet.transfer(USDT.address, dest, value);
       setHash(tx);
       receiptFromPermit(
-        { owner: wallet.address, spender: to, value, token: USDT.symbol },
+        { owner: wallet.address, spender: dest, value, token: USDT.symbol },
         { action: "sent", channel: "online", signature: tx, valid: true },
       );
-      rememberContact(to);
-      setSavedTo(to);
+      rememberContact(dest);
+      setSavedTo(dest);
     } catch (err) {
       setError(
         err instanceof Error
@@ -127,13 +142,15 @@ export function SendFlow() {
 
   async function prepareOffline() {
     if (!wallet) return;
-    if (!isAddress(to)) {
-      setError("Address de destino inválida");
+    const dest = await destination();
+    if (!dest || !isAddress(dest)) {
+      setError("Address, ENS o Basename inválido");
       return;
     }
+    setTo(dest);
     setError(null);
     setEnvelope(null);
-    setDraft(draftFromForm(wallet.address, to, amount));
+    setDraft(draftFromForm(wallet.address, dest, amount));
   }
 
   async function signOffline() {
@@ -203,12 +220,7 @@ export function SendFlow() {
             <span className="text-sm text-muted-foreground">Para</span>
             <ContactPicker selected={to} onPick={(contact) => setTo(contact.address)} />
             <div className="flex gap-2">
-              <Input
-                value={to}
-                onChange={(event) => setTo(event.target.value)}
-                placeholder="0x…"
-                className="h-11 flex-1 font-mono"
-              />
+              <AddressInput value={to} onChange={setTo} />
               <Button
                 type="button"
                 variant="secondary"
