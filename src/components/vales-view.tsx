@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
-import { holdVale, listHeld } from "@/lib/catalog";
+import { holdVale, isRedeemed, listHeld, redeemVale } from "@/lib/catalog";
 import { payloadToDataUrl } from "@/lib/qr";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
-import { fromBaseUnits, shortAddress } from "@/lib/format";
-import { Hint } from "@/components/hint";
+import { fromBaseUnits } from "@/lib/format";
 
-export function ValesView() {
+export function ValesView({ embedded = false }: { embedded?: boolean }) {
   const [held, setHeld] = useState<ValeEnvelope[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
@@ -26,18 +26,25 @@ export function ValesView() {
     setQr(await payloadToDataUrl(JSON.stringify(envelope)));
   }
 
+  function used(envelope: ValeEnvelope) {
+    try {
+      redeemVale(envelope, "Retirado");
+      setHeld(listHeld());
+      setOpen(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo marcar");
+    }
+  }
+
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <div className="flex justify-end">
-        <Hint text="La posesión del vale autoriza el canje del bien físico. Mostrá el QR en el local." />
-      </div>
+    <div className={embedded ? "" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
       <Button
         type="button"
         variant="secondary"
-        className="mt-4 h-11 w-full"
+        className="h-11 w-full"
         onClick={() => setScanning((value) => !value)}
       >
-        {scanning ? "Parar cámara" : "Recibir vale (QR)"}
+        {scanning ? "Cerrar cámara" : "Cargar vale (QR)"}
       </Button>
       <div className="mt-3">
         <QrScanner
@@ -64,29 +71,55 @@ export function ValesView() {
       {error ? <p className="mt-2 text-xs text-red-400">{error}</p> : null}
       <ul className="mt-4 space-y-2 pb-4">
         {held.length === 0 ? (
-          <li className="text-sm text-muted-foreground">No tenés vales todavía.</li>
+          <li className="space-y-2 text-sm text-muted-foreground">
+            <p>Todavía no tenés vales.</p>
+            <Button asChild className="h-11 w-full">
+              <Link href="/tienda">Comprar</Link>
+            </Button>
+          </li>
         ) : (
-          held.map((vale) => (
-            <li key={vale.tokenId} className="rounded-2xl border border-white/10 p-3">
-              <p className="text-sm font-medium">{vale.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {vale.issuerName} · {vale.redemptionPlace}
-              </p>
-              <p className="mt-1 inline-flex items-center gap-1 text-xs">
-                {fromBaseUnits(vale.price)} <UsdtLogo className="size-3.5" />
-                <span className="text-muted-foreground">· {shortAddress(vale.holder)}</span>
-              </p>
-              <Button type="button" variant="outline" className="mt-2 h-9 w-full" onClick={() => void show(vale)}>
-                Mostrar QR para canjear
-              </Button>
-              {open === vale.tokenId && qr ? (
-                <div className="mt-2 overflow-hidden rounded-xl bg-white p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qr} alt="QR del vale" className="mx-auto h-40 w-40" />
-                </div>
-              ) : null}
-            </li>
-          ))
+          held.map((vale) => {
+            const done = isRedeemed(vale.tokenId, vale.issuer);
+            return (
+              <li key={vale.tokenId} className="rounded-2xl border border-white/10 p-4">
+                <p className="text-sm font-medium">{vale.title}</p>
+                <p className="text-xs text-muted-foreground">{vale.issuerName}</p>
+                <p className="mt-1 inline-flex items-center gap-1 text-xs">
+                  {fromBaseUnits(vale.price)} <UsdtLogo className="size-3.5" />
+                  <span className="text-muted-foreground">· {vale.redemptionPlace}</span>
+                </p>
+                {done ? (
+                  <p className="mt-2 text-xs text-teal-300">Ya lo usaste.</p>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      className="mt-3 h-11 w-full"
+                      onClick={() => void show(vale)}
+                    >
+                      Mostrar en el local
+                    </Button>
+                    {vale.demo ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-1 h-9 w-full"
+                        onClick={() => used(vale)}
+                      >
+                        Ya lo retiré
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+                {open === vale.tokenId && qr ? (
+                  <div className="mt-3 overflow-hidden rounded-xl bg-white p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qr} alt="Tu vale" className="mx-auto h-52 w-52" />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })
         )}
       </ul>
     </div>

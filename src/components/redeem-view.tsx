@@ -8,21 +8,20 @@ import { useWallet } from "@/components/wallet-provider";
 import { isRedeemed, redeemVale } from "@/lib/catalog";
 import { receiptFromPermit } from "@/lib/receipts";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
-import { fromBaseUnits, shortAddress } from "@/lib/format";
-import { Hint } from "@/components/hint";
+import { fromBaseUnits } from "@/lib/format";
 
-export function RedeemView() {
+export function RedeemView({ embedded = false }: { embedded?: boolean }) {
   const { wallet } = useWallet();
   const [scanning, setScanning] = useState(false);
   const [envelope, setEnvelope] = useState<ValeEnvelope | null>(null);
-  const [ack, setAck] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   const check = envelope ? validateVale(envelope) : null;
-  const isIssuer =
+  const isSeller =
     wallet && envelope ? wallet.address.toLowerCase() === envelope.issuer.toLowerCase() : false;
   const already = envelope ? isRedeemed(envelope.tokenId, envelope.issuer) : false;
+  const canRedeem = Boolean(envelope && check?.ok && !already && !done && (isSeller || envelope.demo));
 
   function ingest(text: string) {
     try {
@@ -32,19 +31,17 @@ export function RedeemView() {
       setEnvelope(next);
       setScanning(false);
       setError(null);
-      setDone(null);
-      setAck(false);
+      setDone(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "QR inválido");
     }
   }
 
   function redeem() {
-    if (!envelope || !wallet) return;
+    if (!envelope) return;
     try {
-      if (!isIssuer) throw new Error("Solo el emisor puede canjear este vale");
-      if (!ack) throw new Error("Confirmá la entrega del bien físico");
-      const record = redeemVale(envelope, "Bien físico entregado");
+      if (!canRedeem) throw new Error("Este vale no se puede canjear acá");
+      redeemVale(envelope, "Entregado");
       receiptFromPermit(
         {
           owner: envelope.issuer,
@@ -54,76 +51,45 @@ export function RedeemView() {
         },
         { action: "redeemed", channel: "qr", signature: envelope.signature, valid: true },
       );
-      setDone(record.at);
+      setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo canjear");
     }
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <div className="flex justify-end">
-        <Hint text="Solo el emisor puede canjear. Escaneá el vale, confirmá la entrega y queda registrado." />
-      </div>
-      <Button
-        type="button"
-        className="mt-4 h-11 w-full"
-        onClick={() => setScanning((value) => !value)}
-      >
-        {scanning ? "Parar cámara" : "Escanear vale"}
+    <div className={embedded ? "space-y-3" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
+      {embedded ? <p className="text-sm">Canjear</p> : null}
+      <Button type="button" className="h-11 w-full" onClick={() => setScanning((value) => !value)}>
+        {scanning ? "Cerrar cámara" : "Escanear vale del cliente"}
       </Button>
-      <div className="mt-3">
-        <QrScanner
-          active={scanning}
-          onResult={ingest}
-          onError={(message) => {
-            setError(message);
-            setScanning(false);
-          }}
-        />
-      </div>
+      <QrScanner
+        active={scanning}
+        onResult={ingest}
+        onError={(message) => {
+          setError(message);
+          setScanning(false);
+        }}
+      />
 
       {envelope ? (
-        <div className="mt-4 space-y-2 rounded-2xl border border-white/10 p-3">
+        <div className="space-y-2 rounded-2xl border border-white/10 p-4">
           <p className="text-sm font-medium">{envelope.title}</p>
           <p className="text-xs text-muted-foreground">
-            {envelope.issuerName} · {fromBaseUnits(envelope.price)} USDT
+            {fromBaseUnits(envelope.price)} · {envelope.redemptionPlace}
           </p>
-          <p className="font-mono text-[11px] text-muted-foreground">
-            Holder {shortAddress(envelope.holder)}
-          </p>
-          <p className="text-xs leading-relaxed text-muted-foreground">{envelope.terms}</p>
-          <p className="text-xs text-muted-foreground">Canje: {envelope.redemptionPlace}</p>
-          {check && !check.ok ? <p className="text-xs text-red-400">{check.reason}</p> : null}
-          {already ? <p className="text-xs text-teal-300">Ya estaba canjeado.</p> : null}
-          <label className="flex cursor-pointer items-start gap-2 text-xs">
-            <input
-              type="checkbox"
-              checked={ack}
-              onChange={(event) => setAck(event.target.checked)}
-              className="mt-0.5 size-4 cursor-pointer accent-teal-400"
-            />
-            Entregué el bien físico y registré el canje (compliance).
-          </label>
-          <Button
-            type="button"
-            className="h-11 w-full"
-            disabled={!isIssuer || already || Boolean(done) || (check !== null && !check.ok)}
-            onClick={redeem}
-          >
-            Confirmar canje
-          </Button>
-          {!isIssuer ? (
-            <p className="text-xs text-muted-foreground">
-              Este vale lo canjea el emisor ({shortAddress(envelope.issuer)}).
-            </p>
-          ) : null}
+          {already || done ? (
+            <p className="text-sm text-teal-300">Entregado.</p>
+          ) : (
+            <Button type="button" className="h-12 w-full" disabled={!canRedeem} onClick={redeem}>
+              Entregar producto
+            </Button>
+          )}
         </div>
       ) : null}
 
-      {done ? <p className="mt-3 text-sm text-teal-300">Canje registrado {new Date(done).toLocaleString()}</p> : null}
       {error ? (
-        <Alert className="mt-3">
+        <Alert>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

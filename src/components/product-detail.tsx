@@ -1,206 +1,205 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { isAddress } from "ethers";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AddressInput } from "@/components/address-input";
 import { ContactPicker } from "@/components/contact-picker";
+import { Hint } from "@/components/hint";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
-import { bumpSold, encodeProduct, getProduct, issueVale } from "@/lib/catalog";
+import { bumpSold, getProduct, holdVale, issueVale } from "@/lib/catalog";
 import { rememberContact } from "@/lib/contacts";
+import { isLocalHost } from "@/lib/dev";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { payloadToDataUrl } from "@/lib/qr";
 import { receiptFromPermit } from "@/lib/receipts";
 import { USDT } from "@/lib/tokens";
-import { buildVale, encodeVale, type Product, type ValeEnvelope } from "@/lib/vale";
+import {
+  createSignedVale,
+  isDemoProduct,
+  type Product,
+  type ValeEnvelope,
+} from "@/lib/vale";
 
 export function ProductDetail() {
   const params = useParams<{ id: string }>();
-  const { wallet } = useWallet();
+  const router = useRouter();
+  const { wallet, connected } = useWallet();
   const id = decodeURIComponent(params.id ?? "");
   const [product, setProduct] = useState<Product | undefined>();
-  const [shareQr, setShareQr] = useState<string | null>(null);
   const [holder, setHolder] = useState("");
   const [valeQr, setValeQr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hash, setHash] = useState<string | null>(null);
+  const [bought, setBought] = useState(false);
+  const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    const found = getProduct(id);
-    setProduct(found);
-    if (found) void payloadToDataUrl(encodeProduct(found)).then(setShareQr);
+    setProduct(getProduct(id));
   }, [id]);
 
   if (!product) {
-    return <p className="text-sm text-muted-foreground">Producto no encontrado en este dispositivo.</p>;
+    return <p className="text-sm text-muted-foreground">No está este producto.</p>;
   }
 
   const listing = product;
-  const isIssuer = wallet?.address.toLowerCase() === listing.issuer.toLowerCase();
+  const isSeller = wallet?.address.toLowerCase() === listing.issuer.toLowerCase();
   const remaining = listing.supply - listing.sold;
+  const demo = isDemoProduct(listing) || isLocalHost();
 
-  async function pay() {
+  async function mint(holderAddress: string, paymentTx?: string, asDemo = false) {
+    if (!wallet) throw new Error("Conectá una wallet");
+    const envelope = await createSignedVale({
+      sign: (typed) => wallet.signTypedData(typed),
+      product: listing,
+      issuer: asDemo ? wallet.address : listing.issuer,
+      holder: holderAddress,
+      paymentTx,
+      demo: asDemo,
+    });
+    bumpSold(listing.id);
+    issueVale(envelope);
+    if (holderAddress.toLowerCase() === wallet.address.toLowerCase()) {
+      holdVale(envelope);
+    }
+    setValeQr(await payloadToDataUrl(JSON.stringify(envelope)));
+    return envelope;
+  }
+
+  async function buy() {
     if (!wallet) return;
     setBusy(true);
     setError(null);
     try {
-      const value = toBaseUnits(listing.price, USDT.decimals);
-      const tx = await wallet.transfer(USDT.address, listing.issuer, value);
-      setHash(tx);
+      let tx: string | undefined;
+      if (!demo) {
+        const value = toBaseUnits(listing.price, USDT.decimals);
+        tx = await wallet.transfer(USDT.address, listing.issuer, value);
+        setHash(tx);
+        receiptFromPermit(
+          { owner: wallet.address, spender: listing.issuer, value, token: USDT.symbol },
+          { action: "sent", channel: "online", signature: tx, valid: true },
+        );
+      }
       rememberContact(listing.issuer, { name: listing.issuerName });
-      receiptFromPermit(
-        { owner: wallet.address, spender: listing.issuer, value, token: USDT.symbol },
-        { action: "sent", channel: "online", signature: tx, valid: true },
-      );
+      if (demo) {
+        await mint(wallet.address, tx, true);
+        setBought(true);
+      } else {
+        setPaid(true);
+      }
+      setProduct(getProduct(listing.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo pagar");
+      setError(err instanceof Error ? err.message : "No se pudo comprar");
     } finally {
       setBusy(false);
     }
   }
 
-  async function issue() {
+  async function give() {
     if (!wallet) return;
     const to = parsePaymentAddress(holder) ?? (isAddress(holder) ? holder : null);
     if (!to) {
-      setError("Holder inválido");
+      setError("Poné a quién se lo das");
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      if (listing.sold >= listing.supply) throw new Error("Sin stock");
-      const typed = buildVale({
-        tokenId: String(Date.now()),
-        productId: listing.id,
-        title: listing.title,
-        issuer: wallet.address,
-        holder: to,
-        price: toBaseUnits(listing.price, USDT.decimals),
-        expires: listing.expiresAt ?? "0",
-        terms: listing.terms,
-      });
-      const signature = await wallet.signTypedData({
-        domain: typed.domain,
-        types: typed.types,
-        message: typed.message,
-      });
-      const envelope: ValeEnvelope = {
-        v: 1,
-        kind: "vale",
-        tokenId: typed.message.tokenId,
-        productId: typed.message.productId,
-        issuer: typed.message.issuer,
-        holder: typed.message.holder,
-        title: typed.message.title,
-        price: typed.message.price,
-        expires: typed.message.expires,
-        terms: listing.terms,
-        termsHash: typed.message.termsHash,
-        issuerName: listing.issuerName,
-        redemptionPlace: listing.redemptionPlace,
-        image: listing.image,
-        paymentTx: hash ?? undefined,
-        typedData: typed,
-        signature,
-      };
-      const next = bumpSold(listing.id);
-      issueVale(envelope);
+      const envelope = await mint(to, hash ?? undefined, false);
       rememberContact(to);
       receiptFromPermit(
-        {
-          owner: wallet.address,
-          spender: to,
-          value: typed.message.price,
-          token: "VALE",
-        },
-        { action: "issued", channel: "qr", signature, valid: true },
+        { owner: wallet.address, spender: to, value: envelope.price, token: "VALE" },
+        { action: "issued", channel: "qr", signature: envelope.signature, valid: true },
       );
-      setProduct(next);
-      setValeQr(await payloadToDataUrl(encodeVale(envelope)));
+      setProduct(getProduct(listing.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo emitir");
+      setError(err instanceof Error ? err.message : "No se pudo armar el vale");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <h2 className="text-lg font-semibold">{product.title}</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {product.issuerName} · canje en {product.redemptionPlace}
-      </p>
+    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto pb-4">
+      <p className="text-xs text-muted-foreground">{product.issuerName}</p>
+      <h2 className="text-xl font-semibold">{product.title}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">Retiro: {product.redemptionPlace}</p>
       {product.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={product.image} alt="" className="mt-4 h-40 w-full rounded-2xl object-cover" />
       ) : null}
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{product.description}</p>
-      <p className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold">
+      <p className="mt-4 inline-flex items-center gap-2 text-3xl font-semibold">
         {product.price}
-        <UsdtLogo className="size-6" />
+        <UsdtLogo className="size-7" />
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {remaining} de {product.supply} disponibles
-      </p>
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{product.terms}</p>
 
-      {shareQr ? (
-        <div className="mt-4 overflow-hidden rounded-2xl bg-white p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={shareQr} alt="QR del producto" className="mx-auto h-44 w-44" />
-        </div>
+      {paid && !bought ? (
+        <p className="mt-6 text-sm text-teal-300">Pagaste. En el local te dan el vale.</p>
       ) : null}
-
-      {!isIssuer ? (
-        <div className="mt-4 space-y-2">
-          <Button type="button" className="h-11 w-full" disabled={!wallet || busy} onClick={() => void pay()}>
-            {busy ? "Pagando…" : "Pagar en USDT"}
+      {bought ? (
+        <div className="mt-6 space-y-3">
+          <p className="text-sm text-teal-300">Listo. Ese vale es tuyo.</p>
+          {valeQr ? (
+            <div className="overflow-hidden rounded-2xl bg-white p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={valeQr} alt="Tu vale" className="mx-auto h-52 w-52" />
+            </div>
+          ) : null}
+          <Button type="button" className="h-12 w-full" onClick={() => router.push("/tienda?tab=vales")}>
+            Ver mis vales
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Después del pago, el comercio emite el NFT vale a tu address.
-          </p>
         </div>
-      ) : (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium">Emitir vale NFT</p>
+      ) : isSeller ? (
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center">
+            <span className="text-sm">Darle el vale a</span>
+            <Hint text="El cliente ya pagó. Poné su address y se arma el vale." />
+          </div>
           <ContactPicker selected={holder} onPick={(contact) => setHolder(contact.address)} />
-          <Input
-            value={holder}
-            onChange={(event) => setHolder(event.target.value)}
-            placeholder="Address del comprador"
-            className="h-10 font-mono"
-          />
+          <AddressInput value={holder} onChange={setHolder} placeholder="Address del cliente" />
           <Button
             type="button"
-            className="h-11 w-full"
+            className="h-12 w-full"
             disabled={!wallet || busy || remaining <= 0}
-            onClick={() => void issue()}
+            onClick={() => void give()}
           >
-            {busy ? "Firmando…" : "Emitir NFT"}
+            {busy ? "Armando…" : "Dar vale"}
+          </Button>
+          {valeQr ? (
+            <div className="overflow-hidden rounded-2xl bg-white p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={valeQr} alt="Vale" className="mx-auto h-44 w-44" />
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-6 space-y-3">
+          {!connected ? (
+            <div className="[&_button]:cursor-pointer">
+              <ConnectButton label="Conectar para comprar" />
+            </div>
+          ) : null}
+          <Button
+            type="button"
+            className="h-12 w-full text-base"
+            disabled={!wallet || busy || remaining <= 0}
+            onClick={() => void buy()}
+          >
+            {busy ? "Comprando…" : "Comprar"}
           </Button>
         </div>
       )}
 
-      {valeQr ? (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium">Mostrale este QR al comprador</p>
-          <div className="overflow-hidden rounded-2xl bg-white p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={valeQr} alt="QR del vale" className="mx-auto h-44 w-44" />
-          </div>
-        </div>
-      ) : null}
-
       {hash ? (
-        <div className="mt-3 space-y-1">
-          <p className="break-all font-mono text-[11px] text-muted-foreground">Tx {hash}</p>
+        <div className="mt-3">
           <EtherscanTxLink hash={hash} className="text-xs" />
         </div>
       ) : null}

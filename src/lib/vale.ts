@@ -26,6 +26,9 @@ export const VALE_TYPES = {
   ],
 };
 
+export const DEFAULT_TERMS =
+  "Vale de un producto físico. Se retira en el local. No es una inversión.";
+
 export const COMPLIANCE_LINES = [
   "Este NFT es un vale de compra de un bien o servicio físico, no un instrumento financiero ni una inversión.",
   "El emisor se obliga a entregar el bien al portador del vale vigente y no canjeado.",
@@ -87,6 +90,7 @@ export type ValeEnvelope = {
   paymentTx?: string;
   typedData: ValeTypedData;
   signature: string;
+  demo?: boolean;
 };
 
 export type RedeemRecord = {
@@ -177,6 +181,59 @@ export function validateVale(
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : "Vale inválido" };
   }
+}
+
+export function isDemoProduct(product: { id: string }): boolean {
+  return product.id.startsWith("mock:");
+}
+
+export async function createSignedVale(input: {
+  sign: (typed: {
+    domain: Eip712Domain;
+    types: Record<string, { name: string; type: string }[]>;
+    message: Record<string, unknown>;
+  }) => Promise<string>;
+  product: Product;
+  issuer: string;
+  holder: string;
+  paymentTx?: string;
+  demo?: boolean;
+}): Promise<ValeEnvelope> {
+  const typed = buildVale({
+    tokenId: String(Date.now()),
+    productId: input.product.id,
+    title: input.product.title,
+    issuer: input.issuer,
+    holder: input.holder,
+    price: priceToBase(input.product.price),
+    expires: input.product.expiresAt ?? "0",
+    terms: input.product.terms,
+  });
+  const signature = await input.sign({
+    domain: typed.domain,
+    types: typed.types,
+    message: typed.message,
+  });
+  return {
+    v: 1,
+    kind: "vale",
+    tokenId: typed.message.tokenId,
+    productId: typed.message.productId,
+    issuer: typed.message.issuer,
+    holder: typed.message.holder,
+    title: typed.message.title,
+    price: typed.message.price,
+    expires: typed.message.expires,
+    terms: input.product.terms,
+    termsHash: typed.message.termsHash,
+    issuerName: input.product.issuerName,
+    redemptionPlace: input.product.redemptionPlace,
+    image: input.product.image,
+    paymentTx: input.paymentTx,
+    typedData: typed,
+    signature,
+    demo: input.demo,
+  };
 }
 
 export function priceToBase(price: string): string {

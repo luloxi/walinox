@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Hint } from "@/components/hint";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { productsByStore } from "@/lib/catalog";
 import { storeById } from "@/lib/stores";
@@ -23,11 +22,8 @@ export function StoreView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <div className="flex items-center gap-1 text-sm font-medium">
-        {name}
-        <Hint text="Elegí un vale, pagá en USDT y pedile al local que emita el NFT a tu address." />
-      </div>
-      {store ? <p className="mt-1 text-xs text-muted-foreground">{store.place}</p> : null}
+      <p className="text-sm font-medium">{name}</p>
+      {store ? <p className="text-xs text-muted-foreground">{store.place}</p> : null}
       <ul className="mt-4 space-y-2 pb-4">
         {products.map((product) => (
           <li key={product.id}>

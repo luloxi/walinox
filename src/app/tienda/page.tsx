@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { TiendaView } from "@/components/tienda-view";
 
 export default function TiendaPage() {
-  return <TiendaView />;
+  return (
+    <Suspense>
+      <TiendaView />
+    </Suspense>
+  );
 }
