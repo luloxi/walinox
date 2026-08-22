@@ -10,7 +10,7 @@ export function fromBaseUnits(value: string, decimals = 6): string {
   return frac ? `${whole}.${frac}` : whole;
 }
 
-export function formatTokenAmount(value: string, decimals = 6, symbol = "USDC"): string {
+export function formatTokenAmount(value: string, decimals = 6, symbol = "USDT"): string {
   const padded = value.padStart(decimals + 1, "0");
   const whole = padded.slice(0, -decimals) || "0";
   const frac = padded.slice(-decimals).replace(/0+$/, "");

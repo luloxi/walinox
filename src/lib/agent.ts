@@ -21,15 +21,14 @@ export type AgentPermit = {
 export const AGENT_SYSTEM = `You convert natural language into a signed-spend intent.
 Reply with JSON only:
 {
-  "token": "USDT" | "USDC",
+  "token": "USDT",
   "permit": { "owner": string, "spender": string, "value": string, "nonce": string, "deadline": string },
   "explanation": string,
   "complianceNote": string
 }
 Rules:
+- Always USDT on Ethereum. The app signs Uniswap Permit2 (USDT has no ERC-2612).
 - value/nonce/deadline are decimal integer strings (6 decimals; 100 tokens = "100000000").
-- USDT on Ethereum has no ERC-2612. Use token "USDT" so the app signs Uniswap Permit2.
-- USDC uses ERC-2612 permit().
 - explanation: one short paragraph.`;
 
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
@@ -37,7 +36,7 @@ const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 function extractAmount(input: string): string {
   const spend = input.match(/spend\s+(\d+(?:\.\d+)?)/i);
   if (spend) return spend[1];
-  const token = input.match(/(\d+(?:\.\d+)?)\s*(USDT|USDC|DAI)\b/i);
+  const token = input.match(/(\d+(?:\.\d+)?)\s*USDT\b/i);
   if (token) return token[1];
   return "100";
 }

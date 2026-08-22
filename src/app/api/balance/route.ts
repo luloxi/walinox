@@ -13,6 +13,6 @@ export async function GET(request: Request) {
     const balances = await readBalances(address);
     return NextResponse.json(balances);
   } catch {
-    return NextResponse.json({ usdt: null, usdc: null, offline: true });
+    return NextResponse.json({ usdt: null, offline: true });
   }
 }

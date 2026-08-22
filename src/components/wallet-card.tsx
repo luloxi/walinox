@@ -1,33 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Check, Copy } from "lucide-react";
 import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
-
-type Balances = { usdt: string | null; usdc: string | null; offline?: boolean };
+import { useUsdtBalance } from "@/components/use-usdt-balance";
+import { UsdtLogo } from "@/components/usdt-logo";
 
 export function WalletCard({ actions = false }: { actions?: boolean }) {
   const { wallet } = useWallet();
   const [copied, setCopied] = useState(false);
-  const [balances, setBalances] = useState<Balances | null>(null);
-
-  useEffect(() => {
-    if (!wallet) return;
-    let live = true;
-    fetch(`/api/balance?address=${wallet.address}`)
-      .then((res) => res.json())
-      .then((data: Balances) => {
-        if (live) setBalances(data);
-      })
-      .catch(() => {
-        if (live) setBalances({ usdt: null, usdc: null, offline: true });
-      });
-    return () => {
-      live = false;
-    };
-  }, [wallet]);
+  const { usdt, offline } = useUsdtBalance(wallet?.address);
 
   const address = wallet?.address;
   if (!address) {
@@ -44,23 +28,18 @@ export function WalletCard({ actions = false }: { actions?: boolean }) {
     setTimeout(() => setCopied(false), 1200);
   }
 
-  const usdt = balances?.usdt;
-  const usdc = balances?.usdc;
-
   return (
     <div className="flex h-full flex-col justify-between rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-8">
       <div>
         <p className="text-[11px] font-medium tracking-[0.18em] text-teal-200/80 uppercase">
           Saldo disponible
         </p>
-        <p className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+        <p className="mt-3 flex items-center gap-3 text-4xl font-semibold tracking-tight md:text-5xl">
           {usdt == null ? "—" : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          <span className="ml-2 text-lg font-medium text-teal-200/80">USDT</span>
+          <UsdtLogo className="size-8 shrink-0 md:size-10" />
+          <span className="sr-only">USDT</span>
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {usdc == null ? "—" : Number(usdc).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
-        </p>
-        {balances?.offline ? (
+        {offline ? (
           <p className="mt-3 text-[11px] text-muted-foreground">
             Sin red: no se puede ver el saldo. Igual podés firmar offline.
           </p>

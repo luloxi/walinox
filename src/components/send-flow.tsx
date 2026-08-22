@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { isAddress } from "ethers";
+import { ClipboardPaste, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,73 +11,53 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
 import { AgentHelp } from "@/components/agent-help";
+import { QrScanner } from "@/components/qr-scanner";
+import { UsdtLogo } from "@/components/usdt-logo";
+import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
 import { receiptFromPermit } from "@/lib/receipts";
-import { PERMIT2_ADDRESS } from "@/lib/permit2";
-import { USDC, USDT, type TokenInfo } from "@/lib/tokens";
-import { buildPermit } from "@/lib/permit";
-import { buildPermit2 } from "@/lib/permit2";
+import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
+import { USDT } from "@/lib/tokens";
+import { parsePaymentAddress } from "@/lib/payment-address";
 import type { AgentPermit } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
 
-function draftFromForm(
-  owner: string,
-  to: string,
-  amount: string,
-  token: TokenInfo,
-): AgentPermit {
-  const value = toBaseUnits(amount, token.decimals);
-  if (token.permit === "permit2") {
-    const typed = buildPermit2({
-      token: token.address,
-      spender: to,
-      amount: value,
-    });
-    return {
-      kind: "permit2",
-      token,
-      owner,
-      spender: typed.message.spender,
-      value: typed.message.permitted.amount,
-      typed,
-      explanation: `Permit2: ${to} puede tomar ${amount} ${token.symbol}.`,
-      complianceNote: "USDT no tiene permit(). Se usa Permit2.",
-      source: "heuristic",
-    };
-  }
-  const typed = buildPermit({
-    domain: {
-      name: token.name,
-      version: token.version,
-      chainId: token.chainId,
-      verifyingContract: token.address,
-    },
-    owner,
+function draftFromForm(owner: string, to: string, amount: string): AgentPermit {
+  const value = toBaseUnits(amount, USDT.decimals);
+  const typed = buildPermit2({
+    token: USDT.address,
     spender: to,
-    value,
+    amount: value,
   });
   return {
-    kind: "erc2612",
-    token,
-    owner: typed.message.owner,
+    kind: "permit2",
+    token: USDT,
+    owner,
     spender: typed.message.spender,
-    value: typed.message.value,
+    value: typed.message.permitted.amount,
     typed,
-    explanation: `Permit ERC-2612 de ${amount} ${token.symbol}.`,
-    complianceNote: "permit() deja el allowance. transferFrom mueve la plata.",
+    explanation: `Permit2: ${to} puede tomar ${amount} USDT.`,
+    complianceNote: "USDT no tiene permit(). Se usa Permit2.",
     source: "heuristic",
   };
 }
 
+function takePercent(balance: string, ratio: number): string {
+  const value = Number(balance);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  return (value * ratio).toFixed(6).replace(/\.?0+$/, "");
+}
+
 export function SendFlow() {
   const { wallet, error: walletError } = useWallet();
+  const { usdt } = useUsdtBalance(wallet?.address);
   const [tab, setTab] = useState("online");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
-  const [token, setToken] = useState<TokenInfo>(USDT);
+  const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hash, setHash] = useState<string | null>(null);
@@ -85,10 +66,24 @@ export function SendFlow() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [sent, setSent] = useState<Channel | null>(null);
 
-  function fillForm(next: { to: string; amount: string; token: TokenInfo }) {
-    setTo(next.to);
-    setAmount(next.amount);
-    setToken(next.token);
+  function applyAddress(raw: string) {
+    const addr = parsePaymentAddress(raw);
+    if (!addr) {
+      setError("No hay un address de Ethereum en eso");
+      return false;
+    }
+    setTo(addr);
+    setError(null);
+    return true;
+  }
+
+  async function pasteAddress() {
+    try {
+      const text = await navigator.clipboard.readText();
+      applyAddress(text);
+    } catch {
+      setError("No se pudo leer el portapapeles");
+    }
   }
 
   async function sendOnline() {
@@ -101,11 +96,11 @@ export function SendFlow() {
     setError(null);
     setHash(null);
     try {
-      const value = toBaseUnits(amount, token.decimals);
-      const tx = await wallet.transfer(token.address, to, value);
+      const value = toBaseUnits(amount, USDT.decimals);
+      const tx = await wallet.transfer(USDT.address, to, value);
       setHash(tx);
       receiptFromPermit(
-        { owner: wallet.address, spender: to, value, token: token.symbol },
+        { owner: wallet.address, spender: to, value, token: USDT.symbol },
         { action: "sent", channel: "online", signature: tx, valid: true },
       );
     } catch (err) {
@@ -127,7 +122,7 @@ export function SendFlow() {
     }
     setError(null);
     setEnvelope(null);
-    setDraft(draftFromForm(wallet.address, to, amount, token));
+    setDraft(draftFromForm(wallet.address, to, amount));
   }
 
   async function signOffline() {
@@ -170,6 +165,8 @@ export function SendFlow() {
     }
   }
 
+  const hasBalance = Boolean(usdt && Number(usdt) > 0);
+
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
     <div className="space-y-5 pb-4">
@@ -191,39 +188,103 @@ export function SendFlow() {
         </TabsList>
 
         <div className="mt-4 space-y-3">
-          <label className="block space-y-1 text-sm">
-            <span className="text-muted-foreground">Para</span>
-            <Input
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              placeholder="0x…"
-              className="font-mono"
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span className="text-muted-foreground">Monto</span>
-            <Input
-              inputMode="decimal"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="0.00"
-            />
-          </label>
-          <div className="flex gap-2">
-            {[USDT, USDC].map((item) => (
+          <div className="space-y-1.5">
+            <span className="text-sm text-muted-foreground">Para</span>
+            <div className="flex gap-2">
+              <Input
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+                placeholder="0x…"
+                className="h-11 flex-1 font-mono"
+              />
               <Button
-                key={item.symbol}
                 type="button"
-                size="sm"
-                variant={token.symbol === item.symbol ? "default" : "outline"}
-                className="h-8"
-                onClick={() => setToken(item)}
+                variant="secondary"
+                className="h-11 shrink-0 gap-1.5 px-3"
+                onClick={() => void pasteAddress()}
               >
-                {item.symbol}
+                <ClipboardPaste className="size-4" />
+                Pegar
               </Button>
-            ))}
+              <Button
+                type="button"
+                variant={scanning ? "default" : "secondary"}
+                className="h-11 shrink-0 gap-1.5 px-3"
+                onClick={() => {
+                  setScanning((value) => !value);
+                  setError(null);
+                }}
+              >
+                <ScanLine className="size-4" />
+                QR
+              </Button>
+            </div>
+            <QrScanner
+              active={scanning}
+              onResult={(text) => {
+                if (applyAddress(text)) setScanning(false);
+              }}
+              onError={(message) => {
+                setError(message);
+                setScanning(false);
+              }}
+            />
           </div>
-          {wallet ? <AgentHelp owner={wallet.address} onFill={fillForm} /> : null}
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Monto</span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                Saldo{" "}
+                {usdt == null
+                  ? "—"
+                  : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                <UsdtLogo className="size-3.5" />
+              </span>
+            </div>
+            <div className="relative">
+              <Input
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="0.00"
+                className="h-11 pr-12"
+              />
+              <UsdtLogo className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2" />
+              <span className="sr-only">USDT</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={!hasBalance}
+                onClick={() => setAmount(takePercent(usdt ?? "0", 0.75))}
+              >
+                75%
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={!hasBalance}
+                onClick={() => setAmount(usdt ?? "")}
+              >
+                MAX
+              </Button>
+            </div>
+          </div>
+          {wallet ? (
+            <AgentHelp
+              owner={wallet.address}
+              onFill={(next) => {
+                setTo(next.to);
+                setAmount(next.amount);
+              }}
+            />
+          ) : null}
         </div>
 
         <TabsContent value="online" className="mt-4 space-y-3">
@@ -233,7 +294,14 @@ export function SendFlow() {
             disabled={!wallet || busy || !to || !amount}
             onClick={() => void sendOnline()}
           >
-            {busy ? "Enviando…" : `Enviar ${token.symbol}`}
+            {busy ? (
+              "Enviando…"
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                Enviar
+                <UsdtLogo className="size-4" />
+              </span>
+            )}
           </Button>
           {hash ? (
             <p className="break-all font-mono text-[11px] text-teal-300">Tx {hash}</p>
@@ -263,30 +331,28 @@ export function SendFlow() {
                 explanation={draft.explanation}
                 complianceNote={draft.complianceNote}
               />
-              {draft.kind === "permit2" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full"
-                  disabled={!wallet || busy}
-                  onClick={() => {
-                    if (!wallet) return;
-                    setBusy(true);
-                    void wallet
-                      .approve(draft.token.address, PERMIT2_ADDRESS)
-                      .then((tx) => {
-                        setHash(tx);
-                        setError(null);
-                      })
-                      .catch((err: unknown) =>
-                        setError(err instanceof Error ? err.message : "Approve falló"),
-                      )
-                      .finally(() => setBusy(false));
-                  }}
-                >
-                  Primera vez USDT: aprobar Permit2
-                </Button>
-              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full"
+                disabled={!wallet || busy}
+                onClick={() => {
+                  if (!wallet) return;
+                  setBusy(true);
+                  void wallet
+                    .approve(draft.token.address, PERMIT2_ADDRESS)
+                    .then((tx) => {
+                      setHash(tx);
+                      setError(null);
+                    })
+                    .catch((err: unknown) =>
+                      setError(err instanceof Error ? err.message : "Approve falló"),
+                    )
+                    .finally(() => setBusy(false));
+                }}
+              >
+                Primera vez: aprobar Permit2
+              </Button>
               {!envelope ? (
                 <Button type="button" className="h-11 w-full" disabled={busy} onClick={() => void signOffline()}>
                   {busy ? "Firmando…" : "Firmar y generar QR"}

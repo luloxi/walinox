@@ -12,7 +12,7 @@ const OWNER = "0x2222222222222222222222222222222222222222";
 const SPENDER = "0x3333333333333333333333333333333333333333";
 
 describe("QVAC-shaped agent path", () => {
-  it("parses an injected completion into an ERC-2612 USDC permit", async () => {
+  it("maps a USDC-shaped model reply onto USDT Permit2", async () => {
     const result = await naturalLanguageToPermit(`allow ${SPENDER} to spend 100 USDC`, {
       owner: OWNER,
       complete: async () =>
@@ -30,12 +30,12 @@ describe("QVAC-shaped agent path", () => {
         }),
     });
 
-    expect(result.kind).toBe("erc2612");
-    expect(result.typed.primaryType).toBe("Permit");
+    expect(result.kind).toBe("permit2");
+    expect(result.token.address).toBe(USDT.address);
+    expect(result.typed.primaryType).toBe("PermitTransferFrom");
     expect(result.owner).toBe(OWNER);
     expect(result.spender).toBe(SPENDER);
     expect(result.value).toBe("100000000");
-    expect(result.explanation).toMatch(/100 USDC/);
     expect(result.source).toBe("model");
   });
 

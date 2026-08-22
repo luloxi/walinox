@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { heuristicComplete, naturalLanguageToPermit } from "@/lib/agent";
 import { fromBaseUnits } from "@/lib/format";
-import type { TokenInfo } from "@/lib/tokens";
 
 export function AgentHelp({
   owner,
   onFill,
 }: {
   owner: string;
-  onFill: (next: { to: string; amount: string; token: TokenInfo }) => void;
+  onFill: (next: { to: string; amount: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -31,7 +30,6 @@ export function AgentHelp({
       onFill({
         to: result.spender,
         amount: fromBaseUnits(result.value, result.token.decimals),
-        token: result.token,
       });
       setOpen(false);
     } catch (err) {

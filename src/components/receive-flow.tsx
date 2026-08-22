@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import jsQR from "jsqr";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,7 @@ import { receiptFromPermit } from "@/lib/receipts";
 import { tokenByAddress } from "@/lib/tokens";
 import { payloadToDataUrl } from "@/lib/qr";
 import { shortAddress } from "@/lib/format";
+import { QrScanner } from "@/components/qr-scanner";
 import type { Channel } from "@/lib/channels";
 
 type Result = {
@@ -74,7 +74,6 @@ function ingest(raw: string, channel: Channel): Result {
 
 export function ReceiveFlow() {
   const { wallet } = useWallet();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [addressQr, setAddressQr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pasted, setPasted] = useState("");
@@ -87,58 +86,6 @@ export function ReceiveFlow() {
     if (!wallet) return;
     void payloadToDataUrl(wallet.address).then(setAddressQr);
   }, [wallet]);
-
-  useEffect(() => {
-    if (!scanning) return;
-    let stream: MediaStream | null = null;
-    let frame = 0;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-    async function start() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        const tick = () => {
-          const video = videoRef.current;
-          if (!video || !ctx || video.readyState < 2) {
-            frame = requestAnimationFrame(tick);
-            return;
-          }
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0);
-          const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(image.data, image.width, image.height);
-          if (code?.data) {
-            try {
-              setResult(ingest(code.data, "qr"));
-              setScanning(false);
-              setError(null);
-              return;
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "QR inválido");
-            }
-          }
-          frame = requestAnimationFrame(tick);
-        };
-        frame = requestAnimationFrame(tick);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "No hay cámara");
-        setScanning(false);
-      }
-    }
-
-    void start();
-    return () => {
-      cancelAnimationFrame(frame);
-      stream?.getTracks().forEach((track) => track.stop());
-    };
-  }, [scanning]);
 
   const envelope = result?.envelope;
   const tokenLabel = envelope
@@ -296,11 +243,21 @@ export function ReceiveFlow() {
             </div>
           ) : null}
 
-          <video
-            ref={videoRef}
-            className="aspect-square w-full rounded-2xl bg-black object-cover"
-            muted
-            playsInline
+          <QrScanner
+            active={scanning}
+            onResult={(text) => {
+              try {
+                setResult(ingest(text, "qr"));
+                setScanning(false);
+                setError(null);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "QR inválido");
+              }
+            }}
+            onError={(message) => {
+              setError(message);
+              setScanning(false);
+            }}
           />
           <Button type="button" className="h-11 w-full" onClick={() => setScanning((value) => !value)}>
             {scanning ? "Parar cámara" : "Escanear QR"}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowDownLeft, ArrowUpRight, History, Wallet } from "lucide-react";
+import { Brand } from "@/components/brand";
 
 const NAV = [
   { href: "/", label: "Inicio", icon: Wallet },
@@ -17,8 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-dvh flex-col md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-white/10 px-4 py-6 md:flex">
-        <p className="px-2 text-sm font-semibold tracking-tight">Walinox</p>
-        <p className="mt-1 px-2 text-[11px] text-muted-foreground">USDT · Ethereum</p>
+        <Brand className="px-2" />
         <nav className="mt-8 flex flex-col gap-1">
           {NAV.map((item) => {
             const active = pathname === item.href;
@@ -40,9 +40,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between px-4 pt-4 md:hidden">
-          <p className="text-sm font-semibold tracking-tight">Walinox</p>
-          <p className="text-[11px] text-muted-foreground">USDT · Ethereum</p>
+        <header className="flex shrink-0 items-center px-4 pt-4 md:hidden">
+          <Brand />
         </header>
         <main className="min-h-0 flex-1 overflow-hidden px-4 pb-24 pt-4 md:px-10 md:pb-8 md:pt-8">
           <div className="h-full min-h-0">{children}</div>

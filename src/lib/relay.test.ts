@@ -32,7 +32,7 @@ const envelope: SignedEnvelope = {
     message: typed.message,
   },
   signature: `0x${"ab".repeat(65)}`,
-  explanation: "Allow 100 USDC.",
+  explanation: "Allow 100 USDT.",
   complianceNote: "Off-chain signature.",
 };
 
