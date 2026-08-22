@@ -20,6 +20,7 @@ import { tokenByAddress } from "@/lib/tokens";
 import { payloadToDataUrl } from "@/lib/qr";
 import { shortAddress } from "@/lib/format";
 import { QrScanner } from "@/components/qr-scanner";
+import { EtherscanTxLink } from "@/components/etherscan-link";
 import type { Channel } from "@/lib/channels";
 
 type Result = {
@@ -236,7 +237,10 @@ export function ReceiveFlow() {
                     </>
                   )}
                   {tx ? (
-                    <p className="break-all font-mono text-[11px] text-muted-foreground">{tx}</p>
+                    <div className="space-y-1">
+                      <p className="break-all font-mono text-[11px] text-muted-foreground">{tx}</p>
+                      <EtherscanTxLink hash={tx} className="text-xs" />
+                    </div>
                   ) : null}
                 </div>
               ) : null}

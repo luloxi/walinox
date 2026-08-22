@@ -16,6 +16,7 @@ import { ContactPicker } from "@/components/contact-picker";
 import { SaveContact } from "@/components/save-contact";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
@@ -328,7 +329,10 @@ export function SendFlow() {
             )}
           </Button>
           {hash ? (
-            <p className="break-all font-mono text-[11px] text-teal-300">Tx {hash}</p>
+            <div className="space-y-1">
+              <p className="break-all font-mono text-[11px] text-muted-foreground">Tx {hash}</p>
+              <EtherscanTxLink hash={hash} className="text-xs" />
+            </div>
           ) : null}
           {savedTo ? <SaveContact address={savedTo} /> : null}
         </TabsContent>
@@ -378,6 +382,7 @@ export function SendFlow() {
               >
                 Primera vez: aprobar Permit2
               </Button>
+              {hash ? <EtherscanTxLink hash={hash} className="text-xs" /> : null}
               {!envelope ? (
                 <Button type="button" className="h-11 w-full" disabled={busy} onClick={() => void signOffline()}>
                   {busy ? "Firmando…" : "Firmar y generar QR"}

@@ -1,7 +1,9 @@
 "use client";
 
 import { ACTION_LABEL, type Receipt } from "@/lib/receipts";
-import { formatTokenAmount, shortAddress } from "@/lib/format";
+import { formatTokenAmount } from "@/lib/format";
+import { isTxHash } from "@/lib/etherscan";
+import { EtherscanAddressLink, EtherscanTxLink } from "@/components/etherscan-link";
 
 export function ActivityList({ receipts, empty }: { receipts: Receipt[]; empty: string }) {
   if (receipts.length === 0) {
@@ -25,10 +27,16 @@ export function ActivityList({ receipts, empty }: { receipts: Receipt[]; empty: 
               {new Date(receipt.at).toLocaleString()}
             </time>
           </div>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">
-            {shortAddress(receipt.owner)} → {shortAddress(receipt.spender)} ·{" "}
+          <p className="mt-1 text-xs text-muted-foreground">
+            <EtherscanAddressLink address={receipt.owner} />
+            {" → "}
+            <EtherscanAddressLink address={receipt.spender} />
+            {" · "}
             {formatTokenAmount(receipt.value, 6, receipt.token.includes("0x") ? "token" : receipt.token)}
           </p>
+          {isTxHash(receipt.signature) ? (
+            <EtherscanTxLink hash={receipt.signature} className="mt-2 text-xs" />
+          ) : null}
         </li>
       ))}
     </ul>

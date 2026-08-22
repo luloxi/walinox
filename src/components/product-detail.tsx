@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ContactPicker } from "@/components/contact-picker";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { bumpSold, encodeProduct, getProduct, issueVale } from "@/lib/catalog";
@@ -197,7 +198,12 @@ export function ProductDetail() {
         </div>
       ) : null}
 
-      {hash ? <p className="mt-3 break-all font-mono text-[11px] text-teal-300">Tx {hash}</p> : null}
+      {hash ? (
+        <div className="mt-3 space-y-1">
+          <p className="break-all font-mono text-[11px] text-muted-foreground">Tx {hash}</p>
+          <EtherscanTxLink hash={hash} className="text-xs" />
+        </div>
+      ) : null}
       {error ? (
         <Alert className="mt-3">
           <AlertDescription>{error}</AlertDescription>
