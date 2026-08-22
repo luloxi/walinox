@@ -28,25 +28,11 @@ export function Guide() {
         className="w-full max-w-sm rounded-3xl bg-zinc-950 p-6 ring-1 ring-white/15"
       >
         <p id="guide-title" className="text-lg font-semibold">
-          Tu plata, dos formas de moverla
+          Conectá una wallet para firmar
         </p>
         <ol className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
-          <li>
-            <span className="font-medium text-foreground">Recibir:</span> copiá tu address (como un
-            CBU) o mostrá el QR.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">Enviar online:</span> address + monto.
-            El gas se paga en USDT con WDK gasless (Tether + Candide).
-          </li>
-          <li>
-            <span className="font-medium text-foreground">Enviar sin internet:</span> firmás acá y
-            le mostrás el QR al otro.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">Negocio:</span> contactos con historial y
-            vales NFT de producto físico, pagados en USDT.
-          </li>
+          <li>Enviar / recibir USDT, online o por QR.</li>
+          <li>Los ? explican cada flujo.</li>
         </ol>
         <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm">
           <input

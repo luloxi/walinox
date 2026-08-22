@@ -7,6 +7,8 @@ import { ClipboardPaste, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddressInput } from "@/components/address-input";
+import { Hint } from "@/components/hint";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
@@ -58,7 +60,7 @@ function takePercent(balance: string, ratio: number): string {
 }
 
 export function SendFlow() {
-  const { wallet, error: walletError } = useWallet();
+  const { wallet, error: walletError, connected } = useWallet();
   const { usdt } = useUsdtBalance(wallet?.address);
   const [tab, setTab] = useState("online");
   const [to, setTo] = useState("");
@@ -199,22 +201,18 @@ export function SendFlow() {
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
     <div className="space-y-5 pb-4">
-      <div>
-        <h2 className="text-lg font-semibold">Enviar</h2>
-        <p className="text-xs text-muted-foreground">
-          Online paga el gas en USDT (WDK gasless). Sin internet: firmás y mostrás un QR.
-        </p>
-      </div>
-
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="online" className="flex-1 cursor-pointer">
-            Online
-          </TabsTrigger>
-          <TabsTrigger value="offline" className="flex-1 cursor-pointer">
-            Sin internet
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-2">
+          <TabsList className="w-full">
+            <TabsTrigger value="online" className="flex-1 cursor-pointer">
+              Online
+            </TabsTrigger>
+            <TabsTrigger value="offline" className="flex-1 cursor-pointer">
+              Sin internet
+            </TabsTrigger>
+          </TabsList>
+          <Hint text="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR." />
+        </div>
 
         <div className="mt-4 space-y-3">
           <div className="space-y-1.5">
@@ -316,6 +314,11 @@ export function SendFlow() {
         </div>
 
         <TabsContent value="online" className="mt-4 space-y-3">
+          {!connected ? (
+            <div className="[&_button]:cursor-pointer">
+              <ConnectButton label="Conectar wallet" />
+            </div>
+          ) : null}
           <Button
             type="button"
             className="h-11 w-full"

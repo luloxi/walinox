@@ -20,6 +20,7 @@ import { tokenByAddress } from "@/lib/tokens";
 import { payloadToDataUrl } from "@/lib/qr";
 import { shortAddress } from "@/lib/format";
 import { QrScanner } from "@/components/qr-scanner";
+import { Hint } from "@/components/hint";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import type { Channel } from "@/lib/channels";
 
@@ -96,22 +97,18 @@ export function ReceiveFlow() {
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
     <div className="space-y-5 pb-4">
-      <div>
-        <h2 className="text-lg font-semibold">Recibir</h2>
-        <p className="text-xs text-muted-foreground">
-          Mostrá tu address o escaneá un permiso offline.
-        </p>
-      </div>
-
       <Tabs defaultValue="me">
+        <div className="flex items-center gap-2">
         <TabsList className="w-full">
           <TabsTrigger value="me" className="flex-1 cursor-pointer">
             Mi address
           </TabsTrigger>
           <TabsTrigger value="scan" className="flex-1 cursor-pointer">
-            Escanear permiso
+            Escanear
           </TabsTrigger>
         </TabsList>
+        <Hint text="Mostrá tu address o escaneá un permiso firmado offline para cobrarlo on-chain." />
+        </div>
 
         <TabsContent value="me" className="mt-4 space-y-3">
           {addressQr ? (
@@ -144,10 +141,7 @@ export function ReceiveFlow() {
         </TabsContent>
 
         <TabsContent value="scan" className="mt-4 space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Si te mandaron un permiso sin internet, escaneá el QR o pegá el JSON.
-            El submit on-chain paga el gas en USDT (WDK gasless).
-          </p>
+
           {result && envelope ? (
             <div className="space-y-3">
               <p className={result.valid ? "text-sm text-teal-300" : "text-sm text-red-400"}>

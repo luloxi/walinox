@@ -7,17 +7,19 @@ import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { Hint } from "@/components/hint";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export function WalletCard({ actions = false }: { actions?: boolean }) {
-  const { wallet } = useWallet();
+  const { wallet, connected } = useWallet();
   const [copied, setCopied] = useState(false);
-  const { usdt, offline } = useUsdtBalance(wallet?.address);
+  const { usdt } = useUsdtBalance(wallet?.address);
 
   const address = wallet?.address;
   if (!address) {
     return (
       <div className="flex h-full min-h-48 items-center rounded-3xl bg-gradient-to-br from-teal-500/20 to-zinc-900 p-5 ring-1 ring-white/10">
-        <p className="text-sm text-muted-foreground">Abriendo tu billetera…</p>
+        <ConnectButton />
       </div>
     );
   }
@@ -32,17 +34,18 @@ export function WalletCard({ actions = false }: { actions?: boolean }) {
     <div className="flex h-full flex-col justify-between rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-8">
       <div>
         <p className="text-[11px] font-medium tracking-[0.18em] text-teal-200/80 uppercase">
-          Saldo disponible
+          Saldo
+          <Hint text="En localhost el saldo es de prueba. Conectá una wallet para firmar envíos reales en Ethereum." />
         </p>
         <p className="mt-3 flex items-center gap-3 text-4xl font-semibold tracking-tight md:text-5xl">
           {usdt == null ? "—" : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 2 })}
           <UsdtLogo className="size-8 shrink-0 md:size-10" />
           <span className="sr-only">USDT</span>
         </p>
-        {offline ? (
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Sin red: no se puede ver el saldo. Igual podés firmar offline.
-          </p>
+        {!connected ? (
+          <div className="mt-3 [&_button]:cursor-pointer">
+            <ConnectButton />
+          </div>
         ) : null}
         <button
           type="button"

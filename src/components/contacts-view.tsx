@@ -13,6 +13,7 @@ import {
 } from "@/lib/contacts";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { shortAddress } from "@/lib/format";
+import { Hint } from "@/components/hint";
 
 export function ContactsView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -30,13 +31,11 @@ export function ContactsView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <h2 className="text-lg font-semibold">Contactos</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Para particulares y comercios: cada address con nombre e historial.
-      </p>
-
+      <div className="flex justify-end">
+        <Hint text="Guardá una address con nombre. El historial se arma con los movimientos entre ustedes." />
+      </div>
       <form
-        className="mt-4 space-y-2 rounded-2xl border border-white/10 p-3"
+        className="mt-3 space-y-2 rounded-2xl border border-white/10 p-3"
         onSubmit={(event) => {
           event.preventDefault();
           const parsed = parsePaymentAddress(address) ?? (isAddress(address) ? address : null);

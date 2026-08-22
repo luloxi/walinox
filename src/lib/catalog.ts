@@ -1,4 +1,6 @@
 import { getAddress, isAddress } from "ethers";
+import { isLocalHost } from "@/lib/dev";
+import { MOCK_PRODUCTS, MOCK_STORES, type Store } from "@/lib/stores";
 import type { Product, RedeemRecord, ValeEnvelope } from "@/lib/vale";
 
 type CatalogStore = {
@@ -12,21 +14,32 @@ const STORAGE_KEY = "walinox.catalog";
 
 const EMPTY: CatalogStore = { products: [], held: [], issued: [], redeemed: [] };
 
+const MOCK_FLAG = "walinox.mock.v1";
+
 function load(): CatalogStore {
-  if (typeof localStorage === "undefined") return { ...EMPTY, products: [], held: [], issued: [], redeemed: [] };
+  if (typeof localStorage === "undefined") return { products: [], held: [], issued: [], redeemed: [] };
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { products: [], held: [], issued: [], redeemed: [] };
-  try {
-    const parsed = JSON.parse(raw) as Partial<CatalogStore>;
-    return {
-      products: parsed.products ?? [],
-      held: parsed.held ?? [],
-      issued: parsed.issued ?? [],
-      redeemed: parsed.redeemed ?? [],
-    };
-  } catch {
-    return { products: [], held: [], issued: [], redeemed: [] };
+  let store: CatalogStore = { products: [], held: [], issued: [], redeemed: [] };
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as Partial<CatalogStore>;
+      store = {
+        products: parsed.products ?? [],
+        held: parsed.held ?? [],
+        issued: parsed.issued ?? [],
+        redeemed: parsed.redeemed ?? [],
+      };
+    } catch {
+      store = { products: [], held: [], issued: [], redeemed: [] };
+    }
   }
+  if (isLocalHost() && localStorage.getItem(MOCK_FLAG) !== "1") {
+    const known = new Set(store.products.map((item) => item.id));
+    store.products = [...MOCK_PRODUCTS.filter((item) => !known.has(item.id)), ...store.products];
+    localStorage.setItem(MOCK_FLAG, "1");
+    save(store);
+  }
+  return store;
 }
 
 function save(next: CatalogStore): void {
@@ -36,6 +49,28 @@ function save(next: CatalogStore): void {
 
 export function listProducts(): Product[] {
   return load().products.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function listStores(): Store[] {
+  const products = listProducts();
+  const extra: Store[] = [];
+  for (const product of products) {
+    const id = product.storeId ?? product.issuer.toLowerCase();
+    if (MOCK_STORES.some((store) => store.id === id) || extra.some((store) => store.id === id)) {
+      continue;
+    }
+    extra.push({
+      id,
+      name: product.issuerName,
+      place: product.redemptionPlace,
+      issuer: product.issuer,
+    });
+  }
+  return [...MOCK_STORES, ...extra];
+}
+
+export function productsByStore(storeId: string): Product[] {
+  return listProducts().filter((product) => (product.storeId ?? product.issuer.toLowerCase()) === storeId);
 }
 
 export function getProduct(id: string): Product | undefined {

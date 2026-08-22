@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWallet } from "@/components/wallet-provider";
 import { saveProduct } from "@/lib/catalog";
 import { COMPLIANCE_LINES, productIdFor, type Product } from "@/lib/vale";
+import { Hint } from "@/components/hint";
 
 export function ProductForm() {
   const { wallet } = useWallet();
@@ -74,11 +75,10 @@ export function ProductForm() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <h2 className="text-lg font-semibold">Publicar producto</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Cada unidad vendida es un NFT vale: se paga en USDT y se canjea por el bien físico.
-      </p>
-      <div className="mt-4 space-y-2 pb-4">
+      <div className="flex justify-end">
+        <Hint text="Publicás un vale NFT de un bien físico. El comprador paga USDT; vos emitís el vale y lo canjeás en el local." />
+      </div>
+      <div className="mt-3 space-y-2 pb-4">
         <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Nombre del producto" className="h-10" />
         <Textarea
           value={description}

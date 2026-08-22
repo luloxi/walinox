@@ -30,11 +30,11 @@ export function HomeScreen() {
           Contactos
         </Link>
         <Link
-          href="/products"
+          href="/tienda"
           className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-sm hover:bg-white/10"
         >
           <Package className="size-4 text-teal-300" />
-          Productos
+          Tienda
         </Link>
       </div>
       </div>

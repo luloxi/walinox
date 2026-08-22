@@ -1,5 +1,5 @@
-import { MoreView } from "@/components/more-view";
+import { redirect } from "next/navigation";
 
-export default function MorePage() {
-  return <MoreView />;
+export default function MoreRedirect() {
+  redirect("/tienda");
 }

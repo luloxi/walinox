@@ -9,6 +9,7 @@ import { isRedeemed, redeemVale } from "@/lib/catalog";
 import { receiptFromPermit } from "@/lib/receipts";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
 import { fromBaseUnits, shortAddress } from "@/lib/format";
+import { Hint } from "@/components/hint";
 
 export function RedeemView() {
   const { wallet } = useWallet();
@@ -61,10 +62,9 @@ export function RedeemView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <h2 className="text-lg font-semibold">Canjear vale</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        El comercio escanea el NFT, verifica la firma y registra la entrega del producto.
-      </p>
+      <div className="flex justify-end">
+        <Hint text="Solo el emisor puede canjear. Escaneá el vale, confirmá la entrega y queda registrado." />
+      </div>
       <Button
         type="button"
         className="mt-4 h-11 w-full"

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { RegisterServiceWorker } from "@/components/register-sw";
 import { WalletProvider } from "@/components/wallet-provider";
+import { Web3Provider } from "@/components/web3-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -52,9 +53,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="h-dvh overflow-hidden bg-background text-foreground">
         <RegisterServiceWorker />
-        <WalletProvider>
-          <AppShell>{children}</AppShell>
-        </WalletProvider>
+        <Web3Provider>
+          <WalletProvider>
+            <AppShell>{children}</AppShell>
+          </WalletProvider>
+        </Web3Provider>
       </body>
     </html>
   );

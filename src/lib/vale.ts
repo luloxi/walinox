@@ -54,6 +54,7 @@ export type ValeTypedData = {
 
 export type Product = {
   id: string;
+  storeId?: string;
   title: string;
   description: string;
   image?: string;

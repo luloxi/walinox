@@ -37,7 +37,6 @@ export function SummaryView() {
           <CardTitle>{summary.label}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm leading-relaxed text-muted-foreground">{summary.prose}</p>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             {stats.map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-white/5 px-3 py-2">
@@ -49,11 +48,7 @@ export function SummaryView() {
         </CardContent>
       </Card>
       <section className="space-y-2">
-        <h2 className="text-sm font-medium">Movimientos</h2>
-        <ActivityList
-          receipts={summary.receipts}
-          empty="Sin movimientos este mes. Enviá o recibí desde Inicio."
-        />
+        <ActivityList receipts={summary.receipts} empty="Nada este mes." />
       </section>
     </div>
     </div>

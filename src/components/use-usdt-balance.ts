@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isLocalHost, MOCK_USDT_BALANCE } from "@/lib/dev";
 
 export function useUsdtBalance(address?: string) {
   const [usdt, setUsdt] = useState<string | null>(null);
@@ -8,6 +9,11 @@ export function useUsdtBalance(address?: string) {
 
   useEffect(() => {
     if (!address) return;
+    if (isLocalHost()) {
+      setUsdt(MOCK_USDT_BALANCE);
+      setOffline(false);
+      return;
+    }
     let live = true;
     fetch(`/api/balance?address=${address}`)
       .then((res) => res.json())

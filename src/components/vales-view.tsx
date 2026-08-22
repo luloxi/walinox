@@ -8,6 +8,7 @@ import { holdVale, listHeld } from "@/lib/catalog";
 import { payloadToDataUrl } from "@/lib/qr";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
 import { fromBaseUnits, shortAddress } from "@/lib/format";
+import { Hint } from "@/components/hint";
 
 export function ValesView() {
   const [held, setHeld] = useState<ValeEnvelope[]>([]);
@@ -27,10 +28,9 @@ export function ValesView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <h2 className="text-lg font-semibold">Mis vales</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        La posesión del NFT autoriza el canje del producto físico.
-      </p>
+      <div className="flex justify-end">
+        <Hint text="La posesión del vale autoriza el canje del bien físico. Mostrá el QR en el local." />
+      </div>
       <Button
         type="button"
         variant="secondary"
