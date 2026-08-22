@@ -88,6 +88,53 @@ export function listContacts(): Contact[] {
     .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
 }
 
+export function namedContacts(): Contact[] {
+  return listContacts().filter((contact) => contact.name.trim());
+}
+
+export type SuggestedContact = {
+  address: string;
+  lastAt: string;
+  count: number;
+};
+
+export function receiptCounterpart(receipt: Receipt, me?: string): string | null {
+  if (!me || !isAddress(me)) return null;
+  const mine = me.toLowerCase();
+  const owner = receipt.owner.toLowerCase();
+  const spender = receipt.spender.toLowerCase();
+  if (!isAddress(receipt.owner) || !isAddress(receipt.spender)) return null;
+  if (owner === spender) return null;
+  if (receipt.action !== "sent" && receipt.action !== "received" && receipt.action !== "signed") {
+    return null;
+  }
+  if (owner === mine) return getAddress(receipt.spender);
+  if (spender === mine) return getAddress(receipt.owner);
+  return null;
+}
+
+export function suggestedContacts(me?: string, limit = 8): SuggestedContact[] {
+  const known = new Set(namedContacts().map((contact) => contact.address.toLowerCase()));
+  if (me && isAddress(me)) known.add(me.toLowerCase());
+  const seen = new Map<string, SuggestedContact>();
+  for (const receipt of listReceipts()) {
+    const peer = receiptCounterpart(receipt, me);
+    if (!peer) continue;
+    const key = peer.toLowerCase();
+    if (known.has(key)) continue;
+    const prev = seen.get(key);
+    if (prev) {
+      prev.count += 1;
+      if (receipt.at > prev.lastAt) prev.lastAt = receipt.at;
+    } else {
+      seen.set(key, { address: peer, lastAt: receipt.at, count: 1 });
+    }
+  }
+  return [...seen.values()]
+    .sort((a, b) => b.lastAt.localeCompare(a.lastAt) || b.count - a.count)
+    .slice(0, limit);
+}
+
 export function getContact(address: string): Contact | undefined {
   const key = normalizeAddress(address).toLowerCase();
   return currentStore()

@@ -19,6 +19,13 @@ import { listReceipts } from "@/lib/receipts";
 import { seedLivedIn } from "@/lib/seed";
 import { Price } from "@/components/price";
 import { useFx } from "@/components/use-fx";
+import {
+  markMonthlyReportPromptSeen,
+  maybeDeliverMonthlyReport,
+  monthlyReportOn,
+  monthlyReportPromptSeen,
+  setMonthlyReportOn,
+} from "@/lib/monthly-report";
 
 const PERIODS: { id: PeriodKind; label: string }[] = [
   { id: "month", label: "Mes" },
@@ -33,12 +40,19 @@ export function SummaryView() {
   const [anchor, setAnchor] = useState(() => new Date());
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [storeIssuers, setStoreIssuers] = useState<string[]>([]);
+  const [prompt, setPrompt] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       seedLivedIn(wallet?.address);
       setReceipts(listReceipts());
       setStoreIssuers(listStores().map((store) => store.issuer));
+      if (monthlyReportOn()) {
+        markMonthlyReportPromptSeen();
+        setPrompt(false);
+      } else {
+        setPrompt(!monthlyReportPromptSeen());
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, [wallet?.address]);
@@ -65,8 +79,50 @@ export function SummaryView() {
   const address = wallet?.address;
   const canShift = kind !== "all";
 
+  function skipPrompt() {
+    markMonthlyReportPromptSeen();
+    setPrompt(false);
+  }
+
+  function enableMonthly() {
+    setMonthlyReportOn(true);
+    markMonthlyReportPromptSeen();
+    if (address) maybeDeliverMonthlyReport(address);
+    setPrompt(false);
+  }
+
   return (
     <div className="flex w-full flex-col pb-6">
+      {prompt ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4"
+          onClick={skipPrompt}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="monthly-report-title"
+            className="w-full max-w-sm rounded-3xl bg-popover p-6 ring-1 ring-border"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p id="monthly-report-title" className="text-lg font-semibold">
+              ¿Querés un reporte mensual?
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Cada mes te dejamos en avisos un resumen de ingresos, gastos y neto. Lo podés apagar en
+              Ajustes.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <Button type="button" className="h-11 w-full" onClick={enableMonthly}>
+                Activar reporte
+              </Button>
+              <Button type="button" variant="outline" className="h-11 w-full" onClick={skipPrompt}>
+                Ahora no
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <Tabs
         value={kind}
         onValueChange={(value) => {

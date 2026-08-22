@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   contactLabel,
-  listContacts,
+  namedContacts,
   rememberContact,
   searchContacts,
   seedDefaultContacts,
+  suggestedContacts,
   type Contact,
+  type SuggestedContact,
 } from "@/lib/contacts";
+import { SaveContact } from "@/components/save-contact";
 import { useWallet } from "@/components/wallet-provider";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { seedLivedIn } from "@/lib/seed";
@@ -24,6 +27,7 @@ import { QvacHint } from "@/components/qvac-hint";
 export function ContactsView() {
   const { wallet } = useWallet();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestedContact[]>([]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -36,7 +40,8 @@ export function ContactsView() {
   function refresh() {
     seedLivedIn(wallet?.address);
     seedDefaultContacts();
-    setContacts(listContacts());
+    setContacts(namedContacts());
+    setSuggestions(suggestedContacts(wallet?.address));
   }
 
   useEffect(() => {
@@ -96,13 +101,37 @@ export function ContactsView() {
         </Button>
       </div>
 
-      <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {contacts.length === 0 ? (
-          <li className="text-sm text-muted-foreground">Todavía no hay contactos.</li>
-        ) : visible.length === 0 ? (
-          <li className="text-sm text-muted-foreground">No hay contactos con eso.</li>
-        ) : (
-          visible.map((contact) => (
+      {suggestions.length > 0 && !query.trim() ? (
+        <section className="mt-5 space-y-2">
+          <div>
+            <p className="text-sm font-medium">Sugeridos</p>
+            <p className="text-xs text-muted-foreground">De tus movimientos recientes</p>
+          </div>
+          <ul className="space-y-2">
+            {suggestions.map((item) => (
+              <li key={item.address}>
+                <SaveContact
+                  address={item.address}
+                  hint={`${item.count} ${item.count === 1 ? "movimiento" : "movimientos"}`}
+                  onSaved={refresh}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {contacts.length > 0 && suggestions.length > 0 && !query.trim() ? (
+        <p className="mt-6 text-sm font-medium">Agenda</p>
+      ) : null}
+
+      {visible.length > 0 ? (
+        <ul
+          className={`grid gap-2 sm:grid-cols-2 xl:grid-cols-3 ${
+            contacts.length > 0 && suggestions.length > 0 && !query.trim() ? "mt-2" : "mt-5"
+          }`}
+        >
+          {visible.map((contact) => (
             <li key={contact.address}>
               <Link
                 href={`/contacts/${contact.address}`}
@@ -117,9 +146,13 @@ export function ContactsView() {
                 <span className="ml-3 shrink-0 text-[11px] text-primary">Historial</span>
               </Link>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      ) : contacts.length === 0 && suggestions.length === 0 ? (
+        <p className="mt-5 text-sm text-muted-foreground">Todavía no hay contactos.</p>
+      ) : query.trim() ? (
+        <p className="mt-5 text-sm text-muted-foreground">No hay contactos con eso.</p>
+      ) : null}
 
       {open
         ? createPortal(

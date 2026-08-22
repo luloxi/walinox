@@ -29,23 +29,23 @@ export function WalletCard({ children }: { children?: ReactNode }) {
 
   return (
     <div className="flex flex-col rounded-2xl bg-gradient-to-br from-primary/15 to-card p-4 ring-1 ring-border md:p-5">
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-around">
+        <div>
+          {usdt == null ? (
+            <p className="text-3xl font-semibold">—</p>
+          ) : (
+            <Price usdt={usdt} size="lg" />
+          )}
+        </div>
         <button
           type="button"
-          className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-muted-foreground hover:bg-muted/80"
+          className="inline-flex w-fit shrink-0 cursor-pointer items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-muted-foreground hover:bg-muted/80"
           onClick={() => void copy(address)}
           aria-label={copied ? "Address copiada" : "Copiar address"}
         >
           <span className="font-mono text-sm">{shortAddress(address)}</span>
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </button>
-      </div>
-      <div className="mt-2">
-        {usdt == null ? (
-          <p className="text-3xl font-semibold">—</p>
-        ) : (
-          <Price usdt={usdt} size="lg" />
-        )}
       </div>
       {children}
     </div>

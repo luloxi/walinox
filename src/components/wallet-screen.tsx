@@ -8,7 +8,6 @@ import { SendFlow } from "@/components/send-flow";
 import { ReceiveFlow } from "@/components/receive-flow";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
-import { SectionBar } from "@/components/section-bar";
 import { listReceipts, type Receipt } from "@/lib/receipts";
 
 const ACTIONS = [
@@ -60,59 +59,58 @@ export function WalletScreen() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-6 md:grid md:grid-cols-[minmax(20rem,32rem)_minmax(0,1fr)] md:items-start md:gap-10">
-      <div className="shrink-0">
-        <WalletCard>
-          <div className="mt-4 flex justify-center gap-3">
-            {ACTIONS.map((item) => {
-              const Icon = item.icon;
-              const on = tab === item.id;
-              const box = `flex size-12 cursor-pointer items-center justify-center rounded-2xl ${
-                on ? "bg-primary text-primary-foreground" : "bg-muted ring-1 ring-border"
-              }`;
-              const body = (
-                <>
-                  <span className={box}>
-                    <Icon className="size-6" />
-                  </span>
-                  <span className="text-[11px] font-medium">{item.label}</span>
-                </>
-              );
-              const className = `flex w-16 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground ${
-                on ? "text-primary" : "text-muted-foreground"
-              }`;
-              if (item.href) {
-                return (
-                  <Link key={item.id} href={item.href} className={className}>
-                    {body}
-                  </Link>
-                );
-              }
+    <div className="flex min-h-full flex-col gap-6">
+      <WalletCard>
+        <div className="mt-5 flex justify-center gap-3 md:mt-6">
+          {ACTIONS.map((item) => {
+            const Icon = item.icon;
+            const on = tab === item.id;
+            const box = `flex size-12 cursor-pointer items-center justify-center rounded-2xl ${
+              on ? "bg-primary text-primary-foreground" : "bg-muted ring-1 ring-border"
+            }`;
+            const body = (
+              <>
+                <span className={box}>
+                  <Icon className="size-6" />
+                </span>
+                <span className="text-[11px] font-medium">{item.label}</span>
+              </>
+            );
+            const className = `flex w-16 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground ${
+              on ? "text-primary" : "text-muted-foreground"
+            }`;
+            if (item.href) {
               return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={className}
-                  onClick={() => go(tab === item.id ? "" : item.id)}
-                >
+                <Link key={item.id} href={item.href} className={className}>
                   {body}
-                </button>
+                </Link>
               );
-            })}
-          </div>
-        </WalletCard>
-      </div>
+            }
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={className}
+                onClick={() => go(tab === item.id ? "" : item.id)}
+              >
+                {body}
+              </button>
+            );
+          })}
+        </div>
+      </WalletCard>
 
-        <section className="flex flex-col">
-          <SectionBar>
-            <Link href="/summary" className="cursor-pointer text-xs text-primary">
-              Ver todos
-            </Link>
-          </SectionBar>
-          <div className="mt-3">
-            <ActivityList receipts={recent} empty="Todavía no hay movimientos." />
-          </div>
-        </section>
+      <section className="flex flex-col">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium">Recientes</p>
+          <Link href="/summary" className="cursor-pointer text-xs text-primary">
+            Ver todos
+          </Link>
+        </div>
+        <div className="mt-3">
+          <ActivityList receipts={recent} empty="Todavía no hay movimientos." />
+        </div>
+      </section>
     </div>
   );
 }

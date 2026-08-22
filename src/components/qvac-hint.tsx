@@ -11,11 +11,13 @@ export function QvacHint({
   task,
   owner,
   placeholder,
+  label = "Completar con una frase",
   onFill,
 }: {
   task: AgentTask;
   owner?: string;
   placeholder: string;
+  label?: string;
   onFill: (intent: AgentIntent) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -107,17 +109,22 @@ export function QvacHint({
     return (
       <button
         type="button"
-        className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-primary"
+        className="flex cursor-pointer items-center gap-1.5 text-sm font-medium hover:text-primary"
         onClick={() => setOpen(true)}
       >
-        <Sparkles className="size-3.5 text-primary/80" />
-        ¿En una frase?
+        <Sparkles className="size-4 text-primary/80" />
+        {label}
       </button>
     );
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border p-3">
+    <div className="space-y-2">
+      <p className="flex items-center gap-1.5 text-sm font-medium">
+        <Sparkles className="size-4 text-primary/80" />
+        {label}
+      </p>
+      <div className="space-y-2 rounded-2xl border border-border p-3">
       <Textarea
         value={text}
         onChange={(event) => setText(event.target.value)}
@@ -162,6 +169,7 @@ export function QvacHint({
         >
           Cerrar
         </Button>
+      </div>
       </div>
     </div>
   );

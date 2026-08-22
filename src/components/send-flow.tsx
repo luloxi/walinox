@@ -18,7 +18,7 @@ import { SaveContact } from "@/components/save-contact";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { Price } from "@/components/price";
-import { fiatToUsdt, formatUsdt, usdtToFiat } from "@/lib/fx";
+import { fiatToUsdt, formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
 import { fiatMeta, fiatPrefix } from "@/lib/display";
@@ -34,7 +34,7 @@ import { receiptFromPermit } from "@/lib/receipts";
 import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
 import { parsePaymentAddress } from "@/lib/payment-address";
-import { rememberContact } from "@/lib/contacts";
+
 import { isEnsName, resolveEns } from "@/lib/ens";
 import type { AgentPermit } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
@@ -76,7 +76,8 @@ export function SendFlow() {
   const search = useSearchParams();
   const [mode, setMode] = useState<PayMode>("online");
   const [to, setTo] = useState(() => search.get("to") ?? "");
-  const [arsAmount, setArsAmount] = useState("");
+  const [unit, setUnit] = useState<"fiat" | "usdt">(prefs.primary);
+  const [amountInput, setAmountInput] = useState("");
   const [exactUsdt, setExactUsdt] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -173,7 +174,6 @@ export function SendFlow() {
         { action: "sent", channel: "online", signature: tx, valid: true },
       );
       void notifyPeer({ kind: "usdt", from: wallet.address, to: dest, amount, token: "USDT" });
-      rememberContact(dest);
       setSavedTo(dest);
     } catch (err) {
       setError(
@@ -245,6 +245,7 @@ export function SendFlow() {
       };
       setEnvelope(next);
       setQrUrl(await payloadToDataUrl(encodeEnvelope(next)));
+      setSavedTo(draft.spender);
       receiptFromPermit(
         { owner: draft.owner, spender: draft.spender, value: draft.value, token: draft.token.symbol },
         { action: "signed", channel: "qr", signature, valid: true },
@@ -256,7 +257,13 @@ export function SendFlow() {
     }
   }
 
-  const amount = exactUsdt ?? (arsAmount.trim() ? fiatToUsdt(arsAmount, fx.perUsdt) : "");
+  const amount =
+    exactUsdt ??
+    (amountInput.trim()
+      ? unit === "usdt"
+        ? amountInput.trim()
+        : fiatToUsdt(amountInput, fx.perUsdt)
+      : "");
   const hasBalance = Boolean(usdt && Number(usdt) > 0);
   const canPay = Boolean(wallet && !busy && to && amount && Number(amount) > 0 && !(mode === "offline" && envelope));
   const payLabel =
@@ -277,22 +284,39 @@ export function SendFlow() {
 
   function setFromUsdt(value: string) {
     setExactUsdt(value);
-    setArsAmount(String(Math.round(usdtToFiat(value, fx.perUsdt))));
+    if (unit === "usdt") setAmountInput(value);
+    else setAmountInput(value ? String(Math.round(usdtToFiat(value, fx.perUsdt))) : "");
+  }
+
+  function switchUnit(next: "fiat" | "usdt") {
+    if (next === unit) return;
+    const current = amount;
+    setUnit(next);
+    if (!current || Number(current) <= 0) {
+      setAmountInput("");
+      setExactUsdt(null);
+      return;
+    }
+    setExactUsdt(current);
+    if (next === "usdt") setAmountInput(current);
+    else setAmountInput(String(Math.round(usdtToFiat(current, fx.perUsdt))));
   }
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
     <div className="space-y-3 pb-2 md:space-y-4">
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <span className="text-sm text-muted-foreground">Para</span>
-            <ContactPicker selected={to} onPick={(contact) => setTo(contact.address)} />
+        <div className="space-y-6">
+          <section className="space-y-2">
+            <p className="text-sm font-medium">Destinatario</p>
+            <AddressInput value={to} onChange={setTo} className="flex-none w-full" />
+          </section>
+
+          <section className="space-y-2">
             <div className="flex gap-2">
-              <AddressInput value={to} onChange={setTo} />
               <Button
                 type="button"
                 variant="secondary"
-                className="h-11 shrink-0 gap-1.5 px-3"
+                className="h-11 min-w-0 flex-1 gap-1.5 px-3"
                 onClick={() => void pasteAddress()}
               >
                 <ClipboardPaste className="size-4" />
@@ -301,7 +325,7 @@ export function SendFlow() {
               <Button
                 type="button"
                 variant={scanning ? "default" : "secondary"}
-                className="h-11 shrink-0 gap-1.5 px-3"
+                className="h-11 min-w-0 flex-1 gap-1.5 px-3"
                 onClick={() => {
                   setScanning((value) => !value);
                   setError(null);
@@ -310,6 +334,11 @@ export function SendFlow() {
                 <ScanLine className="size-4" />
                 QR
               </Button>
+              <ContactPicker
+                selected={to}
+                className="h-11 min-w-0 flex-1"
+                onPick={(contact) => setTo(contact.address)}
+              />
             </div>
             <QrScanner
               active={scanning}
@@ -321,11 +350,11 @@ export function SendFlow() {
                 setScanning(false);
               }}
             />
-          </div>
+          </section>
 
-          <div className="space-y-1.5">
+          <section className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Monto</span>
+              <p className="font-medium">Monto</p>
               <span className="text-xs text-muted-foreground">
                 {usdt == null ? (
                   "Saldo —"
@@ -338,25 +367,40 @@ export function SendFlow() {
             </div>
             <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
               <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
-                {fiatPrefix(prefs.fiat)}
+                {unit === "fiat" ? fiatPrefix(prefs.fiat) : null}
+                {unit === "usdt" ? <UsdtLogo className="size-4" /> : null}
               </span>
               <Input
                 inputMode="decimal"
-                value={arsAmount}
+                value={amountInput}
                 onChange={(event) => {
                   setExactUsdt(null);
-                  setArsAmount(event.target.value);
+                  setAmountInput(event.target.value);
                 }}
                 placeholder="0"
                 className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
-                aria-label={`Monto en ${fiatMeta(prefs.fiat).name}`}
+                aria-label={unit === "usdt" ? "Monto en USDT" : `Monto en ${fiatMeta(prefs.fiat).name}`}
               />
-              <span className="pr-3 text-xs text-muted-foreground">{prefs.fiat}</span>
+              <select
+                className="h-11 w-[5.4rem] shrink-0 cursor-pointer border-0 bg-transparent pr-2 text-sm text-muted-foreground disabled:cursor-not-allowed"
+                value={unit}
+                aria-label="USDT o pesos"
+                onChange={(event) => switchUnit(event.target.value === "usdt" ? "usdt" : "fiat")}
+              >
+                <option value="fiat">{prefs.fiat}</option>
+                <option value="usdt">USDT</option>
+              </select>
             </div>
             {amount && Number(amount) > 0 ? (
               <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                {formatUsdt(amount, 6)}
-                <UsdtLogo className="size-3" />
+                {unit === "fiat" ? (
+                  <>
+                    {formatUsdt(amount, 6)}
+                    <UsdtLogo className="size-3" />
+                  </>
+                ) : (
+                  formatFiat(usdtToFiat(amount, fx.perUsdt), prefs.fiat)
+                )}
               </p>
             ) : null}
             <div className="flex gap-2">
@@ -384,17 +428,21 @@ export function SendFlow() {
                 MAX
               </Button>
             </div>
-          </div>
+          </section>
+
           {wallet ? (
-            <QvacHint
-              task="send"
-              owner={wallet.address}
-              placeholder="mandale 10 USDT a 0x… o lulox.eth"
-              onFill={(intent) => {
-                if (intent.to) setTo(intent.to);
-                if (intent.amount) setFromUsdt(intent.amount);
-              }}
-            />
+            <section>
+              <QvacHint
+                task="send"
+                owner={wallet.address}
+                label="Completar el envío en una frase"
+                placeholder="mandale 10 USDT a lulox.eth"
+                onFill={(intent) => {
+                  if (intent.to) setTo(intent.to);
+                  if (intent.amount) setFromUsdt(intent.amount);
+                }}
+              />
+            </section>
           ) : null}
         </div>
 
@@ -431,7 +479,6 @@ export function SendFlow() {
               <EtherscanTxLink hash={hash} className="text-xs" />
             </div>
           ) : null}
-          {savedTo ? <SaveContact address={savedTo} /> : null}
           {mode === "offline" && draft ? (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
               <PermitCard
@@ -476,6 +523,12 @@ export function SendFlow() {
               <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
               {sent ? <p className="text-xs text-primary">Guardado en actividad.</p> : null}
             </div>
+          ) : null}
+          {savedTo ? (
+            <SaveContact
+              address={savedTo}
+              hint={mode === "online" ? "Le acabás de enviar" : "Le armaste este permiso"}
+            />
           ) : null}
         </div>
 

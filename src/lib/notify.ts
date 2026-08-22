@@ -1,7 +1,7 @@
 import { getAddress, isAddress } from "ethers";
 import { shortAddress } from "@/lib/format";
 
-export type NotifyKind = "usdt" | "vale" | "redeemed" | "ping" | "permit" | "incoming";
+export type NotifyKind = "usdt" | "vale" | "redeemed" | "ping" | "permit" | "incoming" | "report";
 
 export type InboxItem = {
   id: string;
@@ -81,6 +81,7 @@ export function notifyKindUrl(kind: NotifyKind, from?: string): string {
   if (kind === "vale") return "/vales";
   if (kind === "redeemed") return "/tienda";
   if (kind === "permit") return "/?tab=recibir";
+  if (kind === "report") return "/summary";
   if (kind === "ping" && from) return `/contacts/${from}`;
   return "/";
 }
@@ -125,6 +126,11 @@ export function buildNotify(
       title: "Entró USDT",
       body: amount ? `Tu saldo subió a ${amount} USDT` : "Entró USDT a tu billetera",
       url: "/",
+    },
+    report: {
+      title: "Resumen mensual",
+      body: note || "Tu reporte de la billetera",
+      url: "/summary",
     },
   };
 

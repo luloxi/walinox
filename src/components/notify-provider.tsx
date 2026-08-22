@@ -15,6 +15,7 @@ import {
   showLocalNotification,
   subscribePush,
 } from "@/lib/notify";
+import { maybeDeliverMonthlyReport } from "@/lib/monthly-report";
 
 const LAST_USDT_KEY = "walinox.lastUsdt.";
 
@@ -50,6 +51,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       }
       const added = await pullRemoteInbox(address);
       if (added > 0) window.dispatchEvent(new Event(INBOX_EVENT));
+      maybeDeliverMonthlyReport(address);
     }
 
     void sync();

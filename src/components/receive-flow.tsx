@@ -26,6 +26,7 @@ import { QrScanner } from "@/components/qr-scanner";
 import { SectionBar } from "@/components/section-bar";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { listenSound, readBluetooth } from "@/lib/air-io";
+import { SaveContact } from "@/components/save-contact";
 import type { Channel } from "@/lib/channels";
 
 type Result = {
@@ -314,6 +315,11 @@ export function ReceiveFlow() {
                     </div>
                   ) : null}
                 </div>
+              ) : null}
+              {result.valid &&
+              envelope.owner &&
+              wallet?.address.toLowerCase() !== envelope.owner.toLowerCase() ? (
+                <SaveContact address={envelope.owner} hint="Te mandó este permiso" />
               ) : null}
             </div>
           ) : null}
