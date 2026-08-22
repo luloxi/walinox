@@ -4,8 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Walinox",
     short_name: "Walinox",
-    description:
-      "Sovereign Relay Agent — create, sign, and relay ERC-2612 permits offline.",
+    description: "Let someone spend your USDT — sign offline, send by QR.",
     start_url: "/",
     display: "standalone",
     background_color: "#0c1110",

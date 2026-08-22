@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActivityList } from "@/components/activity-list";
+import { WalletCard } from "@/components/wallet-card";
 import {
   generateMonthlySummary,
   listReceipts,
   type MonthlySummary,
 } from "@/lib/receipts";
-import { formatTokenAmount, shortAddress } from "@/lib/format";
 
 export function SummaryView() {
   const [summary, setSummary] = useState<MonthlySummary>(() =>
@@ -19,7 +20,7 @@ export function SummaryView() {
   }, []);
 
   const stats = [
-    ["Actions", String(summary.count)],
+    ["This month", String(summary.count)],
     ["Signed", String(summary.signed)],
     ["Sent", String(summary.sent)],
     ["Received", String(summary.received)],
@@ -27,15 +28,16 @@ export function SummaryView() {
 
   return (
     <div className="space-y-5">
+      <WalletCard />
       <Card>
         <CardHeader>
           <CardTitle>{summary.label}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm leading-relaxed">{summary.prose}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">{summary.prose}</p>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             {stats.map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-white/5 px-3 py-2">
+              <div key={label} className="rounded-2xl bg-white/5 px-3 py-2">
                 <dt className="text-xs text-muted-foreground">{label}</dt>
                 <dd className="text-lg font-medium">{value}</dd>
               </div>
@@ -43,36 +45,12 @@ export function SummaryView() {
           </dl>
         </CardContent>
       </Card>
-
       <section className="space-y-2">
-        <h2 className="text-sm font-medium">Receipts</h2>
-        {summary.receipts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Create or receive a permit this month to fill the log.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {summary.receipts.map((receipt) => (
-              <li
-                key={receipt.id}
-                className="rounded-xl border border-white/10 px-3 py-3 text-xs"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium capitalize">
-                    {receipt.action} · {receipt.channel}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {new Date(receipt.at).toLocaleString()}
-                  </span>
-                </div>
-                <p className="mt-1 font-mono text-muted-foreground">
-                  {shortAddress(receipt.owner)} → {shortAddress(receipt.spender)} ·{" "}
-                  {formatTokenAmount(receipt.value)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h2 className="text-sm font-medium">All activity</h2>
+        <ActivityList
+          receipts={summary.receipts}
+          empty="No activity this month. Send a permission from the first tab."
+        />
       </section>
     </div>
   );

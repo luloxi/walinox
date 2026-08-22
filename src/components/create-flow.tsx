@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
+import { WalletCard } from "@/components/wallet-card";
+import { Guide } from "@/components/guide";
+import { ActivityList } from "@/components/activity-list";
 import { useWallet } from "@/components/wallet-provider";
 import {
   heuristicComplete,
@@ -15,12 +19,13 @@ import {
 } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
-import { receiptFromPermit } from "@/lib/receipts";
+import { listReceipts, receiptFromPermit } from "@/lib/receipts";
 import { encodeApprove, sendCall } from "@/lib/chain";
 import { PERMIT2_ADDRESS } from "@/lib/permit2";
 import type { Channel } from "@/lib/channels";
+import type { Receipt } from "@/lib/receipts";
 
-const SAMPLE = "allow 0x1111111111111111111111111111111111111111 to spend 100 USDT";
+const SAMPLE = "allow 0x1111111111111111111111111111111111111111 to spend 10 USDT";
 
 function toEnvelope(draft: AgentPermit, signature: string): SignedEnvelope {
   return {
@@ -42,6 +47,8 @@ function toEnvelope(draft: AgentPermit, signature: string): SignedEnvelope {
   };
 }
 
+const STEPS = ["Write", "Sign", "Show QR"] as const;
+
 export function CreateFlow() {
   const { wallet, error: walletError } = useWallet();
   const [prompt, setPrompt] = useState(SAMPLE);
@@ -51,6 +58,13 @@ export function CreateFlow() {
   const [envelope, setEnvelope] = useState<SignedEnvelope | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [sent, setSent] = useState<Channel | null>(null);
+  const [recent, setRecent] = useState<Receipt[]>([]);
+
+  useEffect(() => {
+    setRecent(listReceipts().slice(0, 3));
+  }, [sent, envelope]);
+
+  const step = envelope ? 2 : draft ? 1 : 0;
 
   async function compose() {
     if (!wallet) return;
@@ -82,7 +96,7 @@ export function CreateFlow() {
         { action: "created", channel: "copy", signature: "0x" },
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Compose failed");
+      setError(err instanceof Error ? err.message : "Couldn’t understand that. Include an 0x address and an amount.");
     } finally {
       setBusy(null);
     }
@@ -114,16 +128,39 @@ export function CreateFlow() {
 
   return (
     <div className="space-y-5">
+      <WalletCard />
+      <Guide />
+
+      <ol className="grid grid-cols-3 gap-2 text-center text-[11px]">
+        {STEPS.map((label, index) => (
+          <li
+            key={label}
+            className={`rounded-full px-2 py-1.5 ${
+              index === step
+                ? "bg-teal-400 text-zinc-950 font-medium"
+                : index < step
+                  ? "bg-teal-400/20 text-teal-200"
+                  : "bg-white/5 text-muted-foreground"
+            }`}
+          >
+            {index + 1}. {label}
+          </li>
+        ))}
+      </ol>
+
       <section className="space-y-2">
         <label htmlFor="permit-prompt" className="text-sm font-medium">
-          What should this permit allow?
+          Who can spend, and how much?
         </label>
+        <p className="text-xs text-muted-foreground">
+          Example: allow 0xTheirAddress to spend 10 USDT
+        </p>
         <Textarea
           id="permit-prompt"
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          rows={4}
-          className="min-h-24 text-base"
+          rows={3}
+          className="min-h-20 text-base"
         />
         <Button
           type="button"
@@ -131,7 +168,7 @@ export function CreateFlow() {
           onClick={() => void compose()}
           disabled={!wallet || busy !== null}
         >
-          {busy === "compose" ? "Composing…" : "Compose permit"}
+          {busy === "compose" ? "Reading that…" : "1 · Next — review permission"}
         </Button>
       </section>
 
@@ -148,12 +185,13 @@ export function CreateFlow() {
 
       {draft ? (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          <p className="text-sm font-medium">Check this before you sign</p>
           <PermitCard
             kind={draft.kind}
             owner={draft.owner}
             spender={draft.spender}
             value={draft.value}
-            tokenLabel={`${draft.token.symbol} · ${draft.kind}`}
+            tokenLabel={`${draft.token.symbol} · ${draft.kind === "permit2" ? "USDT via Permit2" : "ERC-2612"}`}
             nonce={draft.typed.message.nonce}
             deadline={draft.typed.message.deadline}
             chainId={draft.typed.domain.chainId}
@@ -172,7 +210,7 @@ export function CreateFlow() {
                 );
               }}
             >
-              Approve Permit2 once
+              First time with USDT? Approve Permit2 (needs gas)
             </Button>
           ) : null}
           {!envelope ? (
@@ -182,7 +220,7 @@ export function CreateFlow() {
               onClick={() => void sign()}
               disabled={busy !== null}
             >
-              {busy === "sign" ? "Signing with WDK…" : "Sign with WDK"}
+              {busy === "sign" ? "Signing…" : "2 · Sign on this phone"}
             </Button>
           ) : null}
         </motion.div>
@@ -190,13 +228,23 @@ export function CreateFlow() {
 
       {envelope ? (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-          <h2 className="text-sm font-medium">Transmit offline</h2>
+          <p className="text-sm font-medium">3 · Show this QR to the other phone</p>
           <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
           {sent ? (
-            <p className="text-xs text-teal-300">Receipt stored for {sent}.</p>
+            <p className="text-xs text-teal-300">Saved to History ({sent}).</p>
           ) : null}
         </motion.div>
       ) : null}
+
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium">Recent activity</h2>
+          <Link href="/summary" className="cursor-pointer text-xs text-teal-300">
+            See all
+          </Link>
+        </div>
+        <ActivityList receipts={recent} empty="Nothing yet. Sign a permission and it shows up here." />
+      </section>
     </div>
   );
 }

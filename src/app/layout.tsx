@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s · Walinox",
   },
   description:
-    "Sovereign Relay Agent — create, sign, and relay ERC-2612 permits offline.",
+    "Let someone spend your USDT — sign offline, send by QR.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

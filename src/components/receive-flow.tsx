@@ -155,6 +155,12 @@ export function ReceiveFlow() {
 
   return (
     <div className="space-y-5">
+      <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+        <p className="text-sm font-medium">You’re the other phone</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Point the camera at their QR. If that fails, ask them to tap Copy and paste it here.
+        </p>
+      </div>
       {result && envelope ? (
         <div className="space-y-3">
           <p className={result.valid ? "text-sm text-teal-300" : "text-sm text-red-400"}>
