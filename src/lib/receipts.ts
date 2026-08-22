@@ -1,12 +1,14 @@
 import type { Channel } from "@/lib/channels";
 
-export type ReceiptAction = "created" | "signed" | "sent" | "received";
+export type ReceiptAction = "created" | "signed" | "sent" | "received" | "issued" | "redeemed";
 
 export const ACTION_LABEL: Record<ReceiptAction, string> = {
   created: "Borrador",
   signed: "Firmaste",
   sent: "Enviaste",
   received: "Recibiste",
+  issued: "Emitiste vale",
+  redeemed: "Canjeaste vale",
 };
 
 export type Receipt = {

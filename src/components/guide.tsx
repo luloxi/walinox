@@ -43,6 +43,10 @@ export function Guide() {
             <span className="font-medium text-foreground">Enviar sin internet:</span> firmás acá y
             le mostrás el QR al otro.
           </li>
+          <li>
+            <span className="font-medium text-foreground">Negocio:</span> contactos con historial y
+            vales NFT de producto físico, pagados en USDT.
+          </li>
         </ol>
         <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm">
           <input

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { isAddress } from "ethers";
 import { ClipboardPaste, ScanLine } from "lucide-react";
@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
 import { AgentHelp } from "@/components/agent-help";
+import { ContactPicker } from "@/components/contact-picker";
+import { SaveContact } from "@/components/save-contact";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
@@ -22,6 +24,7 @@ import { receiptFromPermit } from "@/lib/receipts";
 import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
 import { parsePaymentAddress } from "@/lib/payment-address";
+import { rememberContact } from "@/lib/contacts";
 import type { AgentPermit } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
 
@@ -65,6 +68,12 @@ export function SendFlow() {
   const [envelope, setEnvelope] = useState<SignedEnvelope | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [sent, setSent] = useState<Channel | null>(null);
+  const [savedTo, setSavedTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const preset = new URLSearchParams(window.location.search).get("to");
+    if (preset) setTo(preset);
+  }, []);
 
   function applyAddress(raw: string) {
     const addr = parsePaymentAddress(raw);
@@ -103,6 +112,8 @@ export function SendFlow() {
         { owner: wallet.address, spender: to, value, token: USDT.symbol },
         { action: "sent", channel: "online", signature: tx, valid: true },
       );
+      rememberContact(to);
+      setSavedTo(to);
     } catch (err) {
       setError(
         err instanceof Error
@@ -190,6 +201,7 @@ export function SendFlow() {
         <div className="mt-4 space-y-3">
           <div className="space-y-1.5">
             <span className="text-sm text-muted-foreground">Para</span>
+            <ContactPicker selected={to} onPick={(contact) => setTo(contact.address)} />
             <div className="flex gap-2">
               <Input
                 value={to}
@@ -306,6 +318,7 @@ export function SendFlow() {
           {hash ? (
             <p className="break-all font-mono text-[11px] text-teal-300">Tx {hash}</p>
           ) : null}
+          {savedTo ? <SaveContact address={savedTo} /> : null}
         </TabsContent>
 
         <TabsContent value="offline" className="mt-4 space-y-3">

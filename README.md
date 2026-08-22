@@ -4,6 +4,16 @@ Local-first PWA: turn a sentence into a signed spend authorization, sign it on-d
 
 Walinox is **USDT on Ethereum**. EIP-712 only signs. Tokens move when something on-chain consumes that signature via Uniswap **Permit2** `permitTransferFrom` (approve Permit2 once, then signatures work). Mainnet USDT has no `permit()`.
 
+## Contactos y vales NFT
+
+Pensado para particulares y comercios.
+
+- **Contactos:** se recuerdan al enviar (nombre opcional). Cada contacto tiene historial de movimientos con esa address.
+- **Productos NFT:** un comercio publica un bien físico como vale. El comprador paga en USDT; el emisor firma un **EIP-712 Vale** (tokenId único). La posesión del JSON firmado es el título para canjear el objeto en el local.
+- **Compliance:** al publicar hay que aceptar que el NFT es un vale de un bien físico (no un instrumento financiero), que el emisor entrega el bien, que hay lugar/plazo/términos, y que emisión y canje quedan registrados. El canje lo confirma el emisor al escanear el QR.
+
+El vale vive off-chain (firma WDK) para no depender de un contrato ERC-721 desplegado. El pago sí es on-chain en USDT.
+
 ## Tether tech
 
 - **QVAC** (`@qvac/sdk`): NL → structured intent. Falls back to a heuristic parser if no model is loaded.

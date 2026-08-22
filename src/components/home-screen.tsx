@@ -6,6 +6,7 @@ import { WalletCard } from "@/components/wallet-card";
 import { Guide } from "@/components/guide";
 import { ActivityList } from "@/components/activity-list";
 import { listReceipts, type Receipt } from "@/lib/receipts";
+import { Package, Users } from "lucide-react";
 
 export function HomeScreen() {
   const [recent, setRecent] = useState<Receipt[]>([]);
@@ -18,7 +19,25 @@ export function HomeScreen() {
     <div className="relative h-full min-h-0">
       <Guide />
       <div className="flex h-full min-h-0 flex-col gap-4 md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-8">
+      <div className="flex min-h-0 flex-col gap-3">
       <WalletCard actions />
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href="/contacts"
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-sm hover:bg-white/10"
+        >
+          <Users className="size-4 text-teal-300" />
+          Contactos
+        </Link>
+        <Link
+          href="/products"
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-sm hover:bg-white/10"
+        >
+          <Package className="size-4 text-teal-300" />
+          Productos
+        </Link>
+      </div>
+      </div>
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="mb-2 flex shrink-0 items-center justify-between">
           <h2 className="text-sm font-medium">Actividad</h2>
