@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { QrScanner } from "@/components/qr-scanner";
-import { UsdtLogo } from "@/components/usdt-logo";
+import { Price } from "@/components/price";
 import { decodeProduct, listProducts, saveProduct } from "@/lib/catalog";
 import type { Product } from "@/lib/vale";
 
@@ -21,7 +21,7 @@ export function ProductsView() {
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
       <h2 className="text-lg font-semibold">Productos</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Publicá un bien físico como NFT. Se vende en USDT y se canjea en el local.
+        Publicá un bien físico. El precio se ve en pesos (USDT al blue) y se canjea en el local.
       </p>
       <div className="mt-4 flex gap-2">
         <Button asChild className="h-11 flex-1">
@@ -65,7 +65,7 @@ export function ProductsView() {
             <li key={product.id}>
               <Link
                 href={`/products/${product.id}`}
-                className="flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 hover:bg-white/[0.06]"
+                className="flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
               >
                 <span>
                   <span className="block text-sm font-medium">{product.title}</span>
@@ -73,10 +73,7 @@ export function ProductsView() {
                     {product.sold}/{product.supply} emitidos · {product.issuerName}
                   </span>
                 </span>
-                <span className="inline-flex items-center gap-1 text-sm">
-                  {product.price}
-                  <UsdtLogo className="size-4" />
-                </span>
+                <Price usdt={product.price} size="sm" className="items-end" />
               </Link>
             </li>
           ))

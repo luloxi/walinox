@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { UsdtLogo } from "@/components/usdt-logo";
 import { SectionBar } from "@/components/section-bar";
 import { Button } from "@/components/ui/button";
+import { ProductBrowser } from "@/components/product-browser";
 import { productsByStore } from "@/lib/catalog";
 import { storeById } from "@/lib/stores";
 import type { Product } from "@/lib/vale";
@@ -17,34 +17,23 @@ export function StoreView() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    setProducts(productsByStore(id));
+    const timer = window.setTimeout(() => setProducts(productsByStore(id)), 0);
+    return () => window.clearTimeout(timer);
   }, [id]);
 
   const name = store?.name ?? products[0]?.issuerName ?? id;
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <SectionBar title={name} hint={store?.place}>
+    <div className="flex w-full flex-col pb-6">
+      <SectionBar hint={store?.place}>
         <Button asChild variant="ghost" className="h-8 px-2">
           <Link href="/tienda">Volver</Link>
         </Button>
       </SectionBar>
-      <ul className="mt-4 space-y-2 pb-4">
-        {products.map((product) => (
-          <li key={product.id}>
-            <Link
-              href={`/products/${encodeURIComponent(product.id)}`}
-              className="flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 hover:bg-white/[0.06]"
-            >
-              <span className="text-sm font-medium">{product.title}</span>
-              <span className="inline-flex items-center gap-1 text-sm">
-                {product.price}
-                <UsdtLogo className="size-4" />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <p className="mt-3 text-lg font-semibold">{name}</p>
+      <div className="mt-4">
+        <ProductBrowser products={products} empty="Esta tienda no tiene productos con eso." />
+      </div>
     </div>
   );
 }

@@ -96,12 +96,9 @@ export function ReceiveFlow() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-    <div className="space-y-5 pb-4">
+    <div className="space-y-3 pb-2 md:space-y-4">
       <Tabs defaultValue="me">
-        <SectionBar
-          title="Depósito"
-          hint="Mostrá tu address o escaneá un permiso firmado offline."
-        >
+        <SectionBar hint="Mostrá tu address o escaneá un permiso firmado offline.">
           <TabsList>
             <TabsTrigger value="me" className="cursor-pointer">
               Address
@@ -114,12 +111,12 @@ export function ReceiveFlow() {
 
         <TabsContent value="me" className="mt-4 space-y-3">
           {addressQr ? (
-            <div className="overflow-hidden rounded-3xl bg-white p-4">
+            <div className="overflow-hidden rounded-3xl bg-white p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={addressQr} alt="Tu address" className="mx-auto h-56 w-56" />
+              <img src={addressQr} alt="Tu address" className="mx-auto h-40 w-40 md:h-44 md:w-44" />
             </div>
           ) : (
-            <div className="flex h-56 items-center justify-center rounded-3xl bg-white/5 text-sm text-muted-foreground">
+            <div className="flex h-40 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-44">
               Generando QR…
             </div>
           )}
@@ -146,7 +143,7 @@ export function ReceiveFlow() {
 
           {result && envelope ? (
             <div className="space-y-3">
-              <p className={result.valid ? "text-sm text-teal-300" : "text-sm text-red-400"}>
+              <p className={result.valid ? "text-sm text-primary" : "text-sm text-red-400"}>
                 {result.valid
                   ? `Firma válida · ${shortAddress(envelope.owner)}`
                   : `Firma inválida${result.reason ? `: ${result.reason}` : ""}`}

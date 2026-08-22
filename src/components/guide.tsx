@@ -25,7 +25,7 @@ export function Guide() {
       <div
         role="dialog"
         aria-labelledby="guide-title"
-        className="w-full max-w-sm rounded-3xl bg-zinc-950 p-6 ring-1 ring-white/15"
+        className="w-full max-w-sm rounded-3xl bg-popover p-6 ring-1 ring-border"
       >
         <p id="guide-title" className="text-lg font-semibold">
           Conectá una wallet para firmar
@@ -33,13 +33,14 @@ export function Guide() {
         <ol className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
           <li>Enviar / recibir USDT, online o por QR.</li>
           <li>Los ? explican cada flujo.</li>
+          <li>Si ves un destello, podés completar el formulario en una frase.</li>
         </ol>
         <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={dontShow}
             onChange={(event) => setDontShow(event.target.checked)}
-            className="size-4 cursor-pointer accent-teal-400"
+            className="size-4 cursor-pointer accent-primary"
           />
           No volver a mostrar
         </label>

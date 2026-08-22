@@ -93,21 +93,21 @@ export function AddressInput({
       )}
     >
       {ensName ? (
-        <div className="flex shrink-0 items-center bg-white/5">
+        <div className="flex shrink-0 items-center bg-muted">
           {loading && !avatar ? (
-            <div className="size-9 shrink-0 animate-pulse bg-white/10" />
+            <div className="size-9 shrink-0 animate-pulse bg-muted" />
           ) : avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatar} alt="" className="size-9 object-cover" />
           ) : null}
-          <span className="max-w-[7.5rem] truncate px-2 text-xs text-teal-300">
+          <span className="max-w-[7.5rem] truncate px-2 text-xs text-primary">
             {enteredName ?? ensName}
           </span>
         </div>
       ) : loading ? (
-        <div className="flex items-center gap-2 bg-white/5 px-2">
-          <div className="size-9 shrink-0 animate-pulse bg-white/10" />
-          <div className="h-3 w-16 animate-pulse rounded bg-white/10" />
+        <div className="flex items-center gap-2 bg-muted px-2">
+          <div className="size-9 shrink-0 animate-pulse bg-muted" />
+          <div className="h-3 w-16 animate-pulse rounded bg-muted" />
         </div>
       ) : null}
       <Input

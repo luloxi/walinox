@@ -1,24 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
-import { UsdtLogo } from "@/components/usdt-logo";
 import { Hint } from "@/components/hint";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Price } from "@/components/price";
 
-export function WalletCard() {
-  const { wallet, connected } = useWallet();
+export function WalletCard({ children }: { children?: ReactNode }) {
+  const { wallet } = useWallet();
   const [copied, setCopied] = useState(false);
   const { usdt } = useUsdtBalance(wallet?.address);
 
   const address = wallet?.address;
   if (!address) {
     return (
-      <div className="flex h-full min-h-48 items-center rounded-3xl bg-gradient-to-br from-teal-500/20 to-zinc-900 p-5 ring-1 ring-white/10">
-        <ConnectButton />
+      <div className="flex min-h-24 items-center rounded-2xl bg-card p-4 ring-1 ring-border">
+        <p className="text-sm text-muted-foreground">Conectá una wallet para ver el saldo.</p>
       </div>
     );
   }
@@ -30,27 +29,12 @@ export function WalletCard() {
   }
 
   return (
-    <div className="flex flex-col rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-6">
-      <div>
-        <p className="text-[11px] font-medium tracking-[0.18em] text-teal-200/80 uppercase">
-          Saldo disponible
-          <Hint text="En localhost el saldo es de prueba. Conectá una wallet para firmar envíos reales en Ethereum." />
-        </p>
-        <p className="mt-3 flex items-baseline gap-2 text-4xl font-semibold tracking-tight md:text-5xl">
-          {usdt == null ? "—" : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          <span className="inline-flex items-center gap-1 text-lg font-medium text-teal-200/80">
-            <UsdtLogo className="size-5" />
-            USDT
-          </span>
-        </p>
-        {!connected ? (
-          <div className="mt-3 [&_button]:cursor-pointer">
-            <ConnectButton />
-          </div>
-        ) : null}
+    <div className="flex flex-col rounded-2xl bg-gradient-to-br from-primary/15 to-card p-4 ring-1 ring-border md:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <Hint text="El saldo se muestra en pesos al dólar blue. En localhost es de prueba. El asiento on-chain es USDT." />
         <button
           type="button"
-          className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-muted-foreground hover:bg-white/10"
+          className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-muted-foreground hover:bg-muted/80"
           onClick={() => void copy(address)}
           aria-label={copied ? "Address copiada" : "Copiar address"}
         >
@@ -58,6 +42,14 @@ export function WalletCard() {
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </button>
       </div>
+      <div className="mt-2">
+        {usdt == null ? (
+          <p className="text-3xl font-semibold">—</p>
+        ) : (
+          <Price usdt={usdt} size="lg" />
+        )}
+      </div>
+      {children}
     </div>
   );
 }

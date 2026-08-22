@@ -5,16 +5,30 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionBar } from "@/components/section-bar";
+import { QvacHint } from "@/components/qvac-hint";
 import { useWallet } from "@/components/wallet-provider";
+import { useFx } from "@/components/use-fx";
+import { formatArs, formatUsdt, parsePriceField, usdtToArs } from "@/lib/fx";
+import { UsdtLogo } from "@/components/usdt-logo";
+import { CATEGORY_LABEL, PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/categories";
 import { saveProduct } from "@/lib/catalog";
 import { DEFAULT_TERMS, productIdFor, type Product } from "@/lib/vale";
 
-export function ProductForm({ embedded = false }: { embedded?: boolean }) {
+export function ProductForm({
+  embedded = false,
+  onPublished,
+}: {
+  embedded?: boolean;
+  onPublished?: () => void;
+}) {
   const { wallet } = useWallet();
+  const fx = useFx();
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<ProductCategory>("almacen");
   const [price, setPrice] = useState("");
   const [place, setPlace] = useState("");
+  const [image, setImage] = useState<string | undefined>();
   const [ok, setOk] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +42,11 @@ export function ProductForm({ embedded = false }: { embedded?: boolean }) {
       setError("Confirmá que lo vas a entregar");
       return;
     }
+    const usdt = parsePriceField(price, fx.arsPerUsdt);
+    if (!usdt) {
+      setError("Precio inválido");
+      return;
+    }
     const createdAt = new Date().toISOString();
     const name = "Mi local";
     const product: Product = {
@@ -35,7 +54,8 @@ export function ProductForm({ embedded = false }: { embedded?: boolean }) {
       storeId: wallet.address.toLowerCase(),
       title: title.trim(),
       description: "",
-      price,
+      image,
+      price: usdt,
       supply: 99,
       sold: 0,
       terms: DEFAULT_TERMS,
@@ -43,39 +63,109 @@ export function ProductForm({ embedded = false }: { embedded?: boolean }) {
       redemptionPlace: place.trim(),
       issuer: wallet.address,
       createdAt,
+      category,
     };
     saveProduct(product);
     setTitle("");
+    setCategory("almacen");
     setPrice("");
     setPlace("");
+    setImage(undefined);
     setOk(false);
     setError(null);
-    router.push(`/products/${product.id}`);
+    onPublished?.();
+    if (!onPublished) router.push(`/products/${product.id}`);
   }
+
+  const parsedUsdt = price ? parsePriceField(price, fx.arsPerUsdt) : "";
 
   return (
     <div className={embedded ? "space-y-2" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
-      <SectionBar title="Nuevo" hint="Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás." />
+      <SectionBar hint="Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás." />
+      <label className="flex cursor-pointer flex-col gap-1">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt="" className="h-28 w-full rounded-xl object-cover" />
+        ) : (
+          <span className="flex h-28 cursor-pointer items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground ring-1 ring-border">
+            Foto del producto
+          </span>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => setImage(String(reader.result ?? ""));
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
       <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Qué vendés" className="h-11" />
+      <select
+        value={category}
+        onChange={(event) => setCategory(event.target.value as ProductCategory)}
+        className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
+        aria-label="Categoría"
+      >
+        {PRODUCT_CATEGORIES.map((id) => (
+          <option key={id} value={id}>
+            {CATEGORY_LABEL[id]}
+          </option>
+        ))}
+      </select>
       <Input
         value={price}
         onChange={(event) => setPrice(event.target.value)}
-        placeholder="Precio"
+        placeholder="Precio en pesos"
         inputMode="decimal"
         className="h-11"
       />
+      {parsedUsdt ? (
+        <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          {formatUsdt(parsedUsdt, 6)}
+          <UsdtLogo className="size-3" />
+          <span>al blue ({formatArs(fx.arsPerUsdt)})</span>
+        </p>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          Precio en pesos. Se cobra en USDT al blue ({formatArs(fx.arsPerUsdt)}).
+        </p>
+      )}
       <Input
         value={place}
         onChange={(event) => setPlace(event.target.value)}
         placeholder="Dónde se retira"
         className="h-11"
       />
+      {wallet ? (
+        <QvacHint
+          task="product"
+          owner={wallet.address}
+          placeholder="vendo café a 14000 pesos, retiro en San Martín 100"
+          onFill={(intent) => {
+            if (intent.title) setTitle(intent.title);
+            if (intent.price) {
+              const n = Number(intent.price);
+              setPrice(
+                Number.isFinite(n) && n > 0 && n < 100
+                  ? String(Math.round(usdtToArs(n, fx.arsPerUsdt)))
+                  : intent.price,
+              );
+            }
+            if (intent.place) setPlace(intent.place);
+          }}
+        />
+      ) : null}
       <label className="flex cursor-pointer items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={ok}
           onChange={(event) => setOk(event.target.checked)}
-          className="size-4 cursor-pointer accent-teal-400"
+          className="size-4 cursor-pointer accent-primary"
         />
         Lo voy a entregar
       </label>

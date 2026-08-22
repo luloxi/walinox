@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { isAddress } from "ethers";
 import { Button } from "@/components/ui/button";
@@ -9,70 +10,105 @@ import {
   contactLabel,
   listContacts,
   rememberContact,
+  searchContacts,
+  seedDefaultContacts,
   type Contact,
 } from "@/lib/contacts";
+import { useWallet } from "@/components/wallet-provider";
 import { parsePaymentAddress } from "@/lib/payment-address";
+import { seedLivedIn } from "@/lib/seed";
+import { isEnsName, resolveEns } from "@/lib/ens";
 import { shortAddress } from "@/lib/format";
 import { SectionBar } from "@/components/section-bar";
+import { QvacHint } from "@/components/qvac-hint";
 
 export function ContactsView() {
+  const { wallet } = useWallet();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const titleId = useId();
+  const visible = useMemo(() => searchContacts(contacts, query), [contacts, query]);
 
   function refresh() {
+    seedLivedIn(wallet?.address);
+    seedDefaultContacts();
     setContacts(listContacts());
   }
 
   useEffect(() => {
-    refresh();
-  }, []);
+    const timer = window.setTimeout(refresh, 0);
+    return () => window.clearTimeout(timer);
+  }, [wallet?.address]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const raw = address.trim();
+      let parsed = parsePaymentAddress(raw) ?? (isAddress(raw) ? raw : null);
+      if (!parsed && isEnsName(raw)) parsed = await resolveEns(raw);
+      if (!parsed) {
+        setError("Address o ENS inválido");
+        return;
+      }
+      rememberContact(parsed, { name: name.trim() || (isEnsName(raw) ? raw : "") });
+      setName("");
+      setAddress("");
+      setOpen(false);
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <SectionBar
-        title="Agenda"
-        hint="Guardá una address con nombre. El historial se arma solo."
-      />
-      <form
-        className="mt-3 space-y-2 rounded-2xl border border-white/10 p-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const parsed = parsePaymentAddress(address) ?? (isAddress(address) ? address : null);
-          if (!parsed) {
-            setError("Address inválida");
-            return;
-          }
-          rememberContact(parsed, { name });
-          setName("");
-          setAddress("");
-          setError(null);
-          refresh();
-        }}
-      >
-        <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" className="h-10" />
-        <Input
-          value={address}
-          onChange={(event) => setAddress(event.target.value)}
-          placeholder="0x…"
-          className="h-10 font-mono"
-        />
-        {error ? <p className="text-xs text-red-400">{error}</p> : null}
-        <Button type="submit" className="h-10 w-full">
-          Guardar contacto
+    <div className="mx-auto w-full max-w-lg pb-6">
+      <SectionBar hint="Guardá una address con nombre. El historial se arma solo.">
+        <Button type="button" className="h-9" onClick={() => setOpen(true)}>
+          Nuevo
         </Button>
-      </form>
+      </SectionBar>
 
-      <ul className="mt-4 space-y-2 pb-4">
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Buscar por nombre, ENS o address"
+        className="mt-4 h-11"
+        aria-label="Buscar contactos"
+      />
+
+      <ul className="mt-3 space-y-2 pb-4">
         {contacts.length === 0 ? (
           <li className="text-sm text-muted-foreground">Todavía no hay contactos.</li>
+        ) : visible.length === 0 ? (
+          <li className="text-sm text-muted-foreground">No hay contactos con eso.</li>
         ) : (
-          contacts.map((contact) => (
+          visible.map((contact) => (
             <li key={contact.address}>
               <Link
                 href={`/contacts/${contact.address}`}
-                className="flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 hover:bg-white/[0.06]"
+                className="flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
               >
                 <span>
                   <span className="block text-sm font-medium">{contactLabel(contact)}</span>
@@ -80,12 +116,63 @@ export function ContactsView() {
                     {shortAddress(contact.address)}
                   </span>
                 </span>
-                <span className="text-[11px] text-teal-300">Historial</span>
+                <span className="text-[11px] text-primary">Historial</span>
               </Link>
             </li>
           ))
         )}
       </ul>
+
+      {open
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4"
+              onClick={() => setOpen(false)}
+            >
+              <form
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                className="w-full max-w-md space-y-3 rounded-3xl bg-popover p-6 ring-1 ring-border"
+                onClick={(event) => event.stopPropagation()}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void save();
+                }}
+              >
+                <p id={titleId} className="text-base font-semibold">
+                  Nuevo contacto
+                </p>
+                <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" className="h-10" />
+                <Input
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  placeholder="0x… o lulox.eth"
+                  className="h-10 font-mono"
+                />
+                {error ? <p className="text-xs text-red-400">{error}</p> : null}
+                <QvacHint
+                  task="contact"
+                  placeholder="guardá a María 0x…"
+                  onFill={(intent) => {
+                    if (intent.to) setAddress(intent.to);
+                    if (intent.name) setName(intent.name);
+                    setError(null);
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="h-10 flex-1" onClick={() => setOpen(false)}>
+                    Cerrar
+                  </Button>
+                  <Button type="submit" className="h-10 flex-1" disabled={busy}>
+                    {busy ? "Guardando…" : "Guardar"}
+                  </Button>
+                </div>
+              </form>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

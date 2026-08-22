@@ -2,7 +2,7 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@qvac/sdk"],
+  serverExternalPackages: ["@qvac/sdk", "web-push"],
   transpilePackages: [
     "@tetherto/wdk",
     "@tetherto/wdk-wallet",

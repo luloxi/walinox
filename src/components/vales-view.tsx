@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { QrScanner } from "@/components/qr-scanner";
-import { UsdtLogo } from "@/components/usdt-logo";
+import { Price } from "@/components/price";
+import { useWallet } from "@/components/wallet-provider";
 import { holdVale, isRedeemed, listHeld, redeemVale } from "@/lib/catalog";
+import { seedLivedIn } from "@/lib/seed";
 import { payloadToDataUrl } from "@/lib/qr";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
 import { fromBaseUnits } from "@/lib/format";
 
 export function ValesView({ embedded = false }: { embedded?: boolean }) {
+  const { wallet } = useWallet();
   const [held, setHeld] = useState<ValeEnvelope[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
@@ -18,8 +21,12 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setHeld(listHeld());
-  }, []);
+    const timer = window.setTimeout(() => {
+      seedLivedIn(wallet?.address);
+      setHeld(listHeld(wallet?.address));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [wallet?.address]);
 
   async function show(envelope: ValeEnvelope) {
     setOpen(envelope.tokenId);
@@ -29,7 +36,7 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
   function used(envelope: ValeEnvelope) {
     try {
       redeemVale(envelope, "Retirado");
-      setHeld(listHeld());
+      setHeld(listHeld(wallet?.address));
       setOpen(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo marcar");
@@ -55,7 +62,7 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
               const check = validateVale(envelope);
               if (!check.ok) throw new Error(check.reason);
               holdVale(envelope);
-              setHeld(listHeld());
+              setHeld(listHeld(wallet?.address));
               setScanning(false);
               setError(null);
             } catch (err) {
@@ -81,15 +88,15 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
           held.map((vale) => {
             const done = isRedeemed(vale.tokenId, vale.issuer);
             return (
-              <li key={vale.tokenId} className="rounded-2xl border border-white/10 p-4">
+              <li key={vale.tokenId} className="rounded-2xl border border-border p-4">
                 <p className="text-sm font-medium">{vale.title}</p>
                 <p className="text-xs text-muted-foreground">{vale.issuerName}</p>
-                <p className="mt-1 inline-flex items-center gap-1 text-xs">
-                  {fromBaseUnits(vale.price)} <UsdtLogo className="size-3.5" />
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                  <Price usdt={fromBaseUnits(vale.price)} size="sm" />
                   <span className="text-muted-foreground">· {vale.redemptionPlace}</span>
                 </p>
                 {done ? (
-                  <p className="mt-2 text-xs text-teal-300">Ya lo usaste.</p>
+                  <p className="mt-2 text-xs text-primary">Ya lo usaste.</p>
                 ) : (
                   <>
                     <Button

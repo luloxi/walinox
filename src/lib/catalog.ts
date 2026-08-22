@@ -14,7 +14,7 @@ const STORAGE_KEY = "walinox.catalog";
 
 const EMPTY: CatalogStore = { products: [], held: [], issued: [], redeemed: [] };
 
-const MOCK_FLAG = "walinox.mock.v1";
+const MOCK_FLAG = "walinox.mock.v2";
 
 function load(): CatalogStore {
   if (typeof localStorage === "undefined") return { products: [], held: [], issued: [], redeemed: [] };
@@ -33,12 +33,33 @@ function load(): CatalogStore {
       store = { products: [], held: [], issued: [], redeemed: [] };
     }
   }
-  if (isLocalHost() && localStorage.getItem(MOCK_FLAG) !== "1") {
+  let patched = false;
+  if (isLocalHost()) {
     const known = new Set(store.products.map((item) => item.id));
-    store.products = [...MOCK_PRODUCTS.filter((item) => !known.has(item.id)), ...store.products];
+    const missing = MOCK_PRODUCTS.filter((item) => !known.has(item.id));
+    if (missing.length > 0) {
+      store.products = [...missing, ...store.products];
+      patched = true;
+    }
     localStorage.setItem(MOCK_FLAG, "1");
-    save(store);
   }
+  for (const mock of MOCK_PRODUCTS) {
+    const found = store.products.find((item) => item.id === mock.id);
+    if (!found) continue;
+    if (!found.image && mock.image) {
+      found.image = mock.image;
+      patched = true;
+    }
+    if (mock.price && found.price !== mock.price) {
+      found.price = mock.price;
+      patched = true;
+    }
+    if (mock.category && found.category !== mock.category) {
+      found.category = mock.category;
+      patched = true;
+    }
+  }
+  if (patched) save(store);
   return store;
 }
 
@@ -73,6 +94,21 @@ export function productsByStore(storeId: string): Product[] {
   return listProducts().filter((product) => (product.storeId ?? product.issuer.toLowerCase()) === storeId);
 }
 
+export function productsByIssuer(issuer: string): Product[] {
+  const key = issuer.toLowerCase();
+  return listProducts().filter((product) => product.issuer.toLowerCase() === key);
+}
+
+export function removeProduct(id: string, issuer?: string): void {
+  const current = load();
+  current.products = current.products.filter((item) => {
+    if (item.id !== id) return true;
+    if (issuer && item.issuer.toLowerCase() !== issuer.toLowerCase()) return true;
+    return false;
+  });
+  save(current);
+}
+
 export function getProduct(id: string): Product | undefined {
   return load().products.find((item) => item.id === id);
 }
@@ -95,12 +131,18 @@ export function bumpSold(id: string): Product {
   return next;
 }
 
-export function listHeld(): ValeEnvelope[] {
-  return load().held;
+export function listHeld(holder?: string): ValeEnvelope[] {
+  const all = load().held;
+  if (!holder) return all;
+  const key = holder.toLowerCase();
+  return all.filter((item) => item.holder.toLowerCase() === key);
 }
 
-export function listIssued(): ValeEnvelope[] {
-  return load().issued;
+export function listIssued(issuer?: string): ValeEnvelope[] {
+  const all = load().issued;
+  if (!issuer) return all;
+  const key = issuer.toLowerCase();
+  return all.filter((item) => item.issuer.toLowerCase() === key);
 }
 
 export function listRedeemed(): RedeemRecord[] {
@@ -123,7 +165,8 @@ export function holdVale(envelope: ValeEnvelope): void {
 
 export function issueVale(envelope: ValeEnvelope): void {
   const current = load();
-  current.issued.unshift(envelope);
+  const exists = current.issued.some((item) => item.tokenId === envelope.tokenId);
+  if (!exists) current.issued.unshift(envelope);
   save(current);
 }
 

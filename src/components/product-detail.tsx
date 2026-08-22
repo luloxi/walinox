@@ -9,9 +9,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddressInput } from "@/components/address-input";
 import { ContactPicker } from "@/components/contact-picker";
 import { Hint } from "@/components/hint";
+import { QvacHint } from "@/components/qvac-hint";
 import { SectionBar } from "@/components/section-bar";
 import Link from "next/link";
-import { UsdtLogo } from "@/components/usdt-logo";
+import { Price } from "@/components/price";
+import { categoryLabel } from "@/lib/categories";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
@@ -20,6 +22,7 @@ import { rememberContact } from "@/lib/contacts";
 import { isLocalHost } from "@/lib/dev";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { payloadToDataUrl } from "@/lib/qr";
+import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
 import { USDT } from "@/lib/tokens";
 import {
@@ -89,6 +92,13 @@ export function ProductDetail() {
           { owner: wallet.address, spender: listing.issuer, value, token: USDT.symbol },
           { action: "sent", channel: "online", signature: tx, valid: true },
         );
+        void notifyPeer({
+          kind: "usdt",
+          from: wallet.address,
+          to: listing.issuer,
+          amount: listing.price,
+          token: "USDT",
+        });
       }
       rememberContact(listing.issuer, { name: listing.issuerName });
       if (demo) {
@@ -121,6 +131,14 @@ export function ProductDetail() {
         { owner: wallet.address, spender: to, value: envelope.price, token: "VALE" },
         { action: "issued", channel: "qr", signature: envelope.signature, valid: true },
       );
+      void notifyPeer({
+        kind: "vale",
+        from: wallet.address,
+        to,
+        amount: listing.price,
+        token: "USDT",
+        url: "/vales",
+      });
       setProduct(getProduct(listing.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo armar el vale");
@@ -130,28 +148,30 @@ export function ProductDetail() {
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto pb-4">
-      <SectionBar title={product.title} hint={`Retiro: ${product.redemptionPlace}`}>
-        <Link href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`} className="cursor-pointer text-xs text-teal-300">
+    <div className="mx-auto w-full max-w-lg pb-6">
+      <SectionBar hint={`Retiro: ${product.redemptionPlace}`}>
+        <Link href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`} className="cursor-pointer text-xs text-primary">
           Volver
         </Link>
       </SectionBar>
-      <p className="mt-2 text-xs text-muted-foreground">{product.issuerName}</p>
+      <p className="mt-3 text-lg font-semibold leading-tight">{product.title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {categoryLabel(product.category)} · {product.issuerName}
+      </p>
       {product.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={product.image} alt="" className="mt-4 h-40 w-full rounded-2xl object-cover" />
       ) : null}
-      <p className="mt-4 inline-flex items-center gap-2 text-3xl font-semibold">
-        {product.price}
-        <UsdtLogo className="size-7" />
-      </p>
+      <div className="mt-4">
+        <Price usdt={product.price} size="lg" />
+      </div>
 
       {paid && !bought ? (
-        <p className="mt-6 text-sm text-teal-300">Pagaste. En el local te dan el vale.</p>
+        <p className="mt-6 text-sm text-primary">Pagaste. En el local te dan el vale.</p>
       ) : null}
       {bought ? (
         <div className="mt-6 space-y-3">
-          <p className="text-sm text-teal-300">Listo. Ese vale es tuyo.</p>
+          <p className="text-sm text-primary">Listo. Ese vale es tuyo.</p>
           {valeQr ? (
             <div className="overflow-hidden rounded-2xl bg-white p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -164,12 +184,22 @@ export function ProductDetail() {
         </div>
       ) : isSeller ? (
         <div className="mt-6 space-y-3">
-          <div className="flex items-center">
+          <div className="flex items-center justify-between gap-2">
             <span className="text-sm">Darle el vale a</span>
             <Hint text="El cliente ya pagó. Poné su address y se arma el vale." />
           </div>
           <ContactPicker selected={holder} onPick={(contact) => setHolder(contact.address)} />
           <AddressInput value={holder} onChange={setHolder} placeholder="Address del cliente" />
+          {wallet ? (
+            <QvacHint
+              task="contact"
+              owner={wallet.address}
+              placeholder="el vale es para 0x…"
+              onFill={(intent) => {
+                if (intent.to) setHolder(intent.to);
+              }}
+            />
+          ) : null}
           <Button
             type="button"
             className="h-12 w-full"

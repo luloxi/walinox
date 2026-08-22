@@ -42,3 +42,6 @@ next-env.d.ts
 
 # qvac model cache
 .qvac/
+
+# push subscriptions (local)
+.data/

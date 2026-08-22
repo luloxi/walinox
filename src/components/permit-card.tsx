@@ -1,5 +1,8 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDeadline, formatTokenAmount, shortAddress } from "@/lib/format";
+import { Price } from "@/components/price";
+import { formatDeadline, fromBaseUnits, shortAddress } from "@/lib/format";
 import type { PermitKind } from "@/lib/tokens";
 
 export function PermitCard({
@@ -28,7 +31,6 @@ export function PermitCard({
   const rows = [
     ["Owner", shortAddress(owner)],
     ["Spender", shortAddress(spender)],
-    ["Value", formatTokenAmount(value)],
     ["Nonce", nonce],
     ["Deadline", formatDeadline(deadline)],
     ["Token", tokenLabel],
@@ -42,6 +44,12 @@ export function PermitCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 font-mono text-xs">
+          <div className="contents">
+            <dt className="text-muted-foreground">Value</dt>
+            <dd className="flex justify-end font-sans">
+              <Price usdt={fromBaseUnits(value)} size="sm" className="items-end" />
+            </dd>
+          </div>
           {rows.map(([label, cell]) => (
             <div key={label} className="contents">
               <dt className="text-muted-foreground">{label}</dt>
@@ -53,7 +61,7 @@ export function PermitCard({
           <p className="text-sm leading-relaxed text-muted-foreground">{explanation}</p>
         ) : null}
         {complianceNote ? (
-          <p className="rounded-lg border border-teal-500/20 bg-teal-500/10 px-3 py-2 text-xs leading-relaxed text-teal-100">
+          <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs leading-relaxed text-primary">
             {complianceNote}
           </p>
         ) : null}

@@ -13,17 +13,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
-import { AgentHelp } from "@/components/agent-help";
+import { QvacHint } from "@/components/qvac-hint";
 import { ContactPicker } from "@/components/contact-picker";
 import { SaveContact } from "@/components/save-contact";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { Price } from "@/components/price";
+import { arsToUsdt, formatUsdt, usdtToArs } from "@/lib/fx";
+import { useFx } from "@/components/use-fx";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
+import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
 import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
@@ -62,9 +66,11 @@ function takePercent(balance: string, ratio: number): string {
 export function SendFlow() {
   const { wallet, error: walletError, connected } = useWallet();
   const { usdt } = useUsdtBalance(wallet?.address);
+  const fx = useFx();
   const [tab, setTab] = useState("online");
   const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
+  const [arsAmount, setArsAmount] = useState("");
+  const [exactUsdt, setExactUsdt] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +136,7 @@ export function SendFlow() {
         { owner: wallet.address, spender: dest, value, token: USDT.symbol },
         { action: "sent", channel: "online", signature: tx, valid: true },
       );
+      void notifyPeer({ kind: "usdt", from: wallet.address, to: dest, amount, token: "USDT" });
       rememberContact(dest);
       setSavedTo(dest);
     } catch (err) {
@@ -196,16 +203,19 @@ export function SendFlow() {
     }
   }
 
+  const amount = exactUsdt ?? (arsAmount.trim() ? arsToUsdt(arsAmount, fx.arsPerUsdt) : "");
   const hasBalance = Boolean(usdt && Number(usdt) > 0);
+
+  function setFromUsdt(value: string) {
+    setExactUsdt(value);
+    setArsAmount(String(Math.round(usdtToArs(value, fx.arsPerUsdt))));
+  }
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-    <div className="space-y-5 pb-4">
+    <div className="space-y-3 pb-2 md:space-y-4">
       <Tabs value={tab} onValueChange={setTab}>
-        <SectionBar
-          title="Envío"
-          hint="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR."
-        >
+        <SectionBar hint="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR.">
           <TabsList>
             <TabsTrigger value="online" className="cursor-pointer">
               Online
@@ -259,25 +269,39 @@ export function SendFlow() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Monto</span>
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                Saldo{" "}
-                {usdt == null
-                  ? "—"
-                  : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 6 })}
-                <UsdtLogo className="size-3.5" />
+              <span className="text-xs text-muted-foreground">
+                {usdt == null ? (
+                  "Saldo —"
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    Saldo <Price usdt={usdt} size="sm" />
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
+              <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
+                $
+              </span>
               <Input
                 inputMode="decimal"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                placeholder="0.00"
+                value={arsAmount}
+                onChange={(event) => {
+                  setExactUsdt(null);
+                  setArsAmount(event.target.value);
+                }}
+                placeholder="0"
                 className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
+                aria-label="Monto en pesos"
               />
-              <UsdtLogo className="mr-3 size-5 shrink-0" />
-              <span className="sr-only">USDT</span>
+              <span className="pr-3 text-xs text-muted-foreground">ARS</span>
             </div>
+            {amount && Number(amount) > 0 ? (
+              <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                {formatUsdt(amount, 6)}
+                <UsdtLogo className="size-3" />
+              </p>
+            ) : null}
             <div className="flex gap-2">
               {[25, 50, 75].map((pct) => (
                 <Button
@@ -287,7 +311,7 @@ export function SendFlow() {
                   size="sm"
                   className="h-8 flex-1"
                   disabled={!hasBalance}
-                  onClick={() => setAmount(takePercent(usdt ?? "0", pct / 100))}
+                  onClick={() => setFromUsdt(takePercent(usdt ?? "0", pct / 100))}
                 >
                   {pct}%
                 </Button>
@@ -298,18 +322,20 @@ export function SendFlow() {
                 size="sm"
                 className="h-8 flex-1"
                 disabled={!hasBalance}
-                onClick={() => setAmount(usdt ?? "")}
+                onClick={() => setFromUsdt(usdt ?? "")}
               >
                 MAX
               </Button>
             </div>
           </div>
           {wallet ? (
-            <AgentHelp
+            <QvacHint
+              task="send"
               owner={wallet.address}
-              onFill={(next) => {
-                setTo(next.to);
-                setAmount(next.amount);
+              placeholder="mandale 10 USDT a 0x…"
+              onFill={(intent) => {
+                if (intent.to) setTo(intent.to);
+                if (intent.amount) setFromUsdt(intent.amount);
               }}
             />
           ) : null}
@@ -324,7 +350,7 @@ export function SendFlow() {
           <Button
             type="button"
             className="h-11 w-full"
-            disabled={!wallet || busy || !to || !amount}
+            disabled={!wallet || busy || !to || !amount || Number(amount) <= 0}
             onClick={() => void sendOnline()}
           >
             {busy ? (
@@ -349,7 +375,7 @@ export function SendFlow() {
           <Button
             type="button"
             className="h-11 w-full"
-            disabled={!wallet || !to || !amount}
+            disabled={!wallet || !to || !amount || Number(amount) <= 0}
             onClick={() => prepareOffline()}
           >
             Armar permiso offline
@@ -402,7 +428,7 @@ export function SendFlow() {
             <div className="space-y-2">
               <p className="text-sm font-medium">Mostrale este QR al otro</p>
               <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
-              {sent ? <p className="text-xs text-teal-300">Guardado en actividad.</p> : null}
+              {sent ? <p className="text-xs text-primary">Guardado en actividad.</p> : null}
             </div>
           ) : null}
         </TabsContent>

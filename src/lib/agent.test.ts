@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   heuristicComplete,
+  heuristicIntent,
+  naturalLanguageToIntent,
   naturalLanguageToPermit,
   parseAgentOutput,
   toBaseUnits,
@@ -55,5 +57,45 @@ describe("QVAC-shaped agent path", () => {
     expect(result.token.address).toBe(USDT.address);
     expect(result.typed.domain.verifyingContract).toBe(PERMIT2_ADDRESS);
     expect(result.value).toBe(toBaseUnits("50", 6));
+  });
+});
+
+describe("form-fill intent", () => {
+  it("fills a Spanish send from a sentence", () => {
+    const intent = heuristicIntent(`mandale 10 USDT a ${SPENDER}`, "send", OWNER);
+    expect(intent.task).toBe("send");
+    expect(intent.to?.toLowerCase()).toBe(SPENDER.toLowerCase());
+    expect(intent.amount).toBe("10");
+  });
+
+  it("fills a contact name and address", () => {
+    const intent = heuristicIntent(`guardá a María ${SPENDER}`, "contact");
+    expect(intent.task).toBe("contact");
+    expect(intent.to?.toLowerCase()).toBe(SPENDER.toLowerCase());
+    expect(intent.name).toBe("María");
+  });
+
+  it("fills a product listing", () => {
+    const intent = heuristicIntent("vendo café a 3 USDT, retiro en San Martín 100", "product");
+    expect(intent.task).toBe("product");
+    expect(intent.price).toBe("3");
+    expect(intent.place).toMatch(/San Martín 100/);
+    expect(intent.title?.toLowerCase()).toContain("café");
+  });
+
+  it("maps a model JSON onto send intent", async () => {
+    const result = await naturalLanguageToIntent("whatever", {
+      task: "send",
+      owner: OWNER,
+      complete: async () =>
+        JSON.stringify({
+          task: "send",
+          to: SPENDER,
+          amount: "25",
+        }),
+    });
+    expect(result.source).toBe("model");
+    expect(result.to).toBe(SPENDER);
+    expect(result.amount).toBe("25");
   });
 });

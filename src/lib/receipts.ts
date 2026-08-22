@@ -93,14 +93,18 @@ export function listReceipts(): Receipt[] {
 export function addReceipt(
   input: Omit<Receipt, "id" | "at"> & { id?: string; at?: string },
 ): Receipt {
+  const current = currentStore();
+  const existing = current.load();
+  if (input.id) {
+    const found = existing.find((row) => row.id === input.id);
+    if (found) return found;
+  }
   const receipt: Receipt = {
     ...input,
     id: input.id ?? crypto.randomUUID(),
     at: input.at ?? new Date().toISOString(),
   };
-  const current = currentStore();
-  const next = [receipt, ...current.load()];
-  current.save(next);
+  current.save([receipt, ...existing]);
   return receipt;
 }
 

@@ -9,7 +9,7 @@ export function Brand({ className = "" }: { className?: string }) {
         height={28}
         className="size-7 rounded-lg"
       />
-      <p className="text-sm font-semibold tracking-tight">Walinox</p>
+      <p className="text-sm font-semibold tracking-[0.16em] uppercase">Walinox</p>
     </div>
   );
 }

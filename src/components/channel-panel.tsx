@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { allChannelStatuses, type Channel } from "@/lib/channels";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
+import { fromBaseUnits } from "@/lib/format";
+import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
 
 type Props = {
@@ -36,6 +38,14 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     );
     setNote(detail);
     onSent(channel);
+    void notifyPeer({
+      kind: "permit",
+      from: envelope.owner,
+      to: envelope.spender,
+      amount: fromBaseUnits(envelope.value),
+      token: "USDT",
+      url: "/?tab=recibir",
+    });
   }
 
   async function send(channel: Channel) {
@@ -111,7 +121,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
           <img src={qrUrl} alt="Signed permit QR" className="mx-auto h-64 w-64" />
         </div>
       ) : (
-        <div className="flex h-64 items-center justify-center rounded-2xl bg-white/5 text-sm text-muted-foreground">
+        <div className="flex h-64 items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">
           Encoding QR…
         </div>
       )}

@@ -12,7 +12,7 @@ export function SaveContact({ address }: { address: string }) {
   const [saved, setSaved] = useState(Boolean(existing?.name));
 
   return (
-    <div className="rounded-2xl border border-white/10 p-3">
+    <div className="rounded-2xl border border-border p-3">
       <p className="text-xs text-muted-foreground">
         Recordar {shortAddress(address)} para el próximo envío y ver el historial.
       </p>

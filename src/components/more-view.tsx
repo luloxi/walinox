@@ -25,9 +25,9 @@ export function MoreView() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 hover:bg-white/[0.06]"
+                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
               >
-                <Icon className="size-5 text-teal-300" />
+                <Icon className="size-5 text-primary" />
                 <span>
                   <span className="block text-sm font-medium">{item.label}</span>
                   <span className="text-xs text-muted-foreground">{item.hint}</span>

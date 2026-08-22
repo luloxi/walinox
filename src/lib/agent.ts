@@ -31,6 +31,26 @@ Rules:
 - value/nonce/deadline are decimal integer strings (6 decimals; 100 tokens = "100000000").
 - explanation: one short paragraph.`;
 
+export type AgentTask = "send" | "contact" | "product";
+
+export type AgentIntent = {
+  task: AgentTask;
+  to?: string;
+  amount?: string;
+  name?: string;
+  title?: string;
+  price?: string;
+  place?: string;
+  source: "model" | "heuristic";
+};
+
+export const INTENT_SYSTEM = `Convertí el pedido a JSON. Solo JSON, sin markdown.
+Según task:
+send: {"task":"send","to":"0x… o nombre.eth","amount":"10"}
+contact: {"task":"contact","name":"María","to":"0x…"}
+product: {"task":"product","title":"Café","price":"3","place":"San Martín 100"}
+Reglas: USDT; amount y price en unidades humanas (10, no 10000000). Si falta un campo, omitilo.`;
+
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 
 function extractAmount(input: string): string {
@@ -38,7 +58,26 @@ function extractAmount(input: string): string {
   if (spend) return spend[1];
   const token = input.match(/(\d+(?:\.\d+)?)\s*USDT\b/i);
   if (token) return token[1];
+  const es = input.match(
+    /(?:mandale|mandá|manda|enviale|enviá|envia|enviar|transferí|transferir)\s+(\d+(?:\.\d+)?)/i,
+  );
+  if (es) return es[1];
   return "100";
+}
+
+function extractAddress(input: string): string | undefined {
+  return input.match(ADDRESS_RE)?.[0];
+}
+
+function humanAmount(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^\d+$/.test(trimmed) || trimmed.length <= 6) return trimmed;
+  const padded = trimmed.padStart(7, "0");
+  const whole = padded.slice(0, -6) || "0";
+  const frac = padded.slice(-6).replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : whole;
 }
 
 export function toBaseUnits(amount: string, decimals: number): string {
@@ -176,4 +215,76 @@ export async function naturalLanguageToPermit(
     ...normalizePermit(parseAgentOutput(raw), { owner: opts.owner, input }),
     source: "model",
   };
+}
+
+export function parseAgentIntent(raw: unknown, fallback: AgentTask): Omit<AgentIntent, "source"> {
+  const root = asRecord(raw);
+  const permit = root.permit ? asRecord(root.permit) : undefined;
+  const taskRaw = readString(root, "task");
+  const task: AgentTask =
+    taskRaw === "send" || taskRaw === "contact" || taskRaw === "product" ? taskRaw : fallback;
+  const to =
+    readString(root, "to") ??
+    readString(root, "address") ??
+    readString(root, "holder") ??
+    (permit ? readString(permit, "spender") : undefined);
+  const amount = readString(root, "amount") ?? humanAmount(permit ? readString(permit, "value") : undefined);
+  const name = readString(root, "name");
+  const title = readString(root, "title");
+  const price = readString(root, "price") ?? (task === "product" ? amount : undefined);
+  const place = readString(root, "place") ?? readString(root, "redemptionPlace");
+  return { task, to, amount, name, title, price, place };
+}
+
+export function heuristicIntent(input: string, task: AgentTask, owner = ""): AgentIntent {
+  if (task === "send") {
+    const parsed = parseAgentOutput(heuristicComplete(input, owner || "0x0000000000000000000000000000000000000001"));
+    return { ...parseAgentIntent(parsed, "send"), source: "heuristic" };
+  }
+  if (task === "contact") {
+    const to = extractAddress(input);
+    if (!to) throw new Error("Poné una address 0x…");
+    const name = input
+      .replace(ADDRESS_RE, " ")
+      .replace(/guard[aá]r?/gi, " ")
+      .replace(/agend[aá]r?/gi, " ")
+      .replace(/\b(contacto|contact|nombre|llamada|llamado)\b/gi, " ")
+      .replace(/\bse llama\b/gi, " ")
+      .replace(/(?:^|\s)[aA]\s+/g, " ")
+      .replace(/[.,;:]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return { task: "contact", to, name: name || undefined, source: "heuristic" };
+  }
+  const priceMatch = input.match(/(\d+(?:\.\d+)?)\s*(USDT)?/i);
+  const placeMatch = input.match(/(?:retiro(?:\s+en)?|en)\s+(.+)$/i);
+  let rest = input;
+  if (priceMatch) rest = rest.replace(priceMatch[0], " ");
+  if (placeMatch) rest = rest.replace(placeMatch[0], " ");
+  rest = rest
+    .replace(/\b(vendo|vendemos|producto|vale|public[aá]|un|una|a)\b/gi, " ")
+    .replace(/[.,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return {
+    task: "product",
+    title: rest || undefined,
+    price: priceMatch?.[1],
+    place: placeMatch?.[1]?.replace(/[.,;]+$/, "").trim(),
+    source: "heuristic",
+  };
+}
+
+export async function naturalLanguageToIntent(
+  input: string,
+  opts: { task: AgentTask; owner?: string; complete: CompletionFn },
+): Promise<AgentIntent> {
+  const raw = await opts.complete([
+    { role: "system", content: INTENT_SYSTEM },
+    {
+      role: "user",
+      content: `task: ${opts.task}\n${opts.owner ? `owner: ${opts.owner}\n` : ""}pedido: ${input}`,
+    },
+  ]);
+  return { ...parseAgentIntent(parseAgentOutput(raw), opts.task), source: "model" };
 }

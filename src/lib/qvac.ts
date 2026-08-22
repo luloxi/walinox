@@ -39,7 +39,7 @@ function historyFrom(messages: ChatMessage[]): { role: "user" | "assistant"; con
 
 async function completeViaHttp(messages: ChatMessage[]): Promise<QvacResult> {
   const base = process.env.QVAC_BASE_URL ?? "http://127.0.0.1:11434/v1";
-  const model = process.env.QVAC_MODEL ?? "my-llm";
+  const model = process.env.QVAC_MODEL ?? "walinox";
   const timeoutMs = process.env.QVAC_BASE_URL ? 10_000 : 1_500;
   const response = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
@@ -65,11 +65,12 @@ async function completeViaHttp(messages: ChatMessage[]): Promise<QvacResult> {
 }
 
 async function completeViaSdk(messages: ChatMessage[]): Promise<QvacResult> {
-  const { completion, loadModel, LLAMA_3_2_1B_INST_Q4_0 } = await import("@qvac/sdk");
+  const { completion, loadModel, QWEN3_600M_INST_Q4 } = await import("@qvac/sdk");
 
   if (!modelId) {
     modelId = await loadModel({
-      modelSrc: LLAMA_3_2_1B_INST_Q4_0,
+      modelSrc: QWEN3_600M_INST_Q4,
+      modelConfig: { ctx_size: 2048 },
     });
   }
 

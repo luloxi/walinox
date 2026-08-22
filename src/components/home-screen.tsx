@@ -24,16 +24,16 @@ export function HomeScreen() {
       <div className="grid grid-cols-2 gap-2">
         <Link
           href="/contacts"
-          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-sm hover:bg-white/10"
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-muted px-3 py-2.5 text-sm hover:bg-muted"
         >
-          <Users className="size-4 text-teal-300" />
+          <Users className="size-4 text-primary" />
           Contactos
         </Link>
         <Link
           href="/tienda"
-          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-sm hover:bg-white/10"
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-muted px-3 py-2.5 text-sm hover:bg-muted"
         >
-          <Package className="size-4 text-teal-300" />
+          <Package className="size-4 text-primary" />
           Tienda
         </Link>
       </div>
@@ -41,7 +41,7 @@ export function HomeScreen() {
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="mb-2 flex shrink-0 items-center justify-between">
           <h2 className="text-sm font-medium">Actividad</h2>
-          <Link href="/summary" className="cursor-pointer text-xs text-teal-300">
+          <Link href="/summary" className="cursor-pointer text-xs text-primary">
             Ver todo
           </Link>
         </div>

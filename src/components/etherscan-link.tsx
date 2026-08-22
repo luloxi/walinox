@@ -17,7 +17,7 @@ export function EtherscanTxLink({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex cursor-pointer items-center gap-1 text-teal-300 hover:underline",
+        "inline-flex cursor-pointer items-center gap-1 text-primary hover:underline",
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function EtherscanAddressLink({
       href={etherscanAddressUrl(address)}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("cursor-pointer font-mono hover:text-teal-300 hover:underline", className)}
+      className={cn("cursor-pointer font-mono hover:text-primary hover:underline", className)}
     >
       {shortAddress(address)}
     </a>

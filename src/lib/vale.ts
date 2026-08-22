@@ -70,6 +70,7 @@ export type Product = {
   expiresAt?: string;
   issuer: string;
   createdAt: string;
+  category?: string;
 };
 
 export type ValeEnvelope = {

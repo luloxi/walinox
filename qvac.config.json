@@ -1,10 +1,10 @@
 {
   "serve": {
     "models": {
-      "my-llm": {
+      "walinox": {
         "model": "QWEN3_600M_INST_Q4",
         "default": true,
-        "config": { "ctx_size": 4096 }
+        "config": { "ctx_size": 2048 }
       }
     }
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { contactLabel, listContacts, type Contact } from "@/lib/contacts";
+import { contactLabel, listContacts, seedDefaultContacts, type Contact } from "@/lib/contacts";
 
 export function ContactPicker({
   onPick,
@@ -13,7 +13,11 @@ export function ContactPicker({
   const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
-    setContacts(listContacts());
+    const timer = window.setTimeout(() => {
+      seedDefaultContacts();
+      setContacts(listContacts());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (contacts.length === 0) return null;
@@ -28,7 +32,7 @@ export function ContactPicker({
             type="button"
             onClick={() => onPick(contact)}
             className={`cursor-pointer shrink-0 rounded-full px-3 py-1.5 text-xs ${
-              active ? "bg-teal-400 text-zinc-950" : "bg-white/10 text-muted-foreground hover:bg-white/15"
+              active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             {contactLabel(contact)}

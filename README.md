@@ -1,85 +1,111 @@
 # Walinox
 
-Local-first PWA: turn a sentence into a signed spend authorization, sign it on-device with Tether WDK (EIP-712), and hand it to another phone without internet.
+PWA de **USDT en Ethereum** para el día a día en Argentina: saldo en **pesos** (dólar blue), envíos online o por QR sin internet, contactos, tienda de vales de bienes físicos, avisos y actividad.
 
-Walinox is **USDT on Ethereum**. EIP-712 only signs. Tokens move when something on-chain consumes that signature via Uniswap **Permit2** `permitTransferFrom` (approve Permit2 once, then signatures work). Mainnet USDT has no `permit()`.
+Las claves las tiene el usuario. Firmar no mueve tokens: el USDT se asienta on-chain cuando alguien ejecuta la firma (Permit2). USDT mainnet **no tiene** `permit()`.
 
-## Contactos y vales NFT
+Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app) · repo `luloxi/walinox`.
 
-Pensado para particulares y comercios.
+## Qué hay hoy
 
-- **Contactos:** se recuerdan al enviar (nombre opcional). Cada contacto tiene historial de movimientos con esa address.
-- **Productos NFT:** un comercio publica un bien físico como vale. El comprador paga en USDT; el emisor firma un **EIP-712 Vale** (tokenId único). La posesión del JSON firmado es el título para canjear el objeto en el local.
-- **Compliance:** al publicar hay que aceptar que el NFT es un vale de un bien físico (no un instrumento financiero), que el emisor entrega el bien, que hay lugar/plazo/términos, y que emisión y canje quedan registrados. El canje lo confirma el emisor al escanear el QR.
+- **Login** — sin wallet no hay saldo. Conectar RainbowKit (MetaMask, Rabby, Rainbow, Trust, Ledger, inyectada) o billetera local WDK. Después: términos EIP-712 (una vez) y cómo firmar (cada envío o modo sesión ERC-7715, opcional).
+- **Billetera** — saldo en ARS + USDT, address copiable, Depositar / Enviar / Contactos.
+- **Enviar** — online (transfer ERC-20, gas en USDT vía WDK 7702) o permiso QR (Permit2). ENS / Basenames. Parser de QR de Binance, MetaMask, EIP-681, etc.
+- **Depositar** — QR de tu address o escanear un permiso.
+- **Contactos** — agenda (viene `lulox.eth`). Alta por modal. Historial por persona.
+- **Tienda**
+  - Comprador: productos con foto y precio en pesos; tiendas con su lista; vales.
+  - Vendedor: publicados, nuevo producto (foto + precio en $), canjear.
+- **Actividad** — sin saldo. Link a Etherscan. Mes / trimestre / año / total. Gráficos ingresos vs gastos y tienda vs personal (en pesos).
+- **Avisos** — Web Push + inbox. USDT, vale, ping.
+- **QVAC** — destello “¿En una frase?” en enviar / contactos / publicar. Modelo default Qwen3 0.6B. Si no hay modelo, heurística.
 
-El vale vive off-chain (firma WDK) para no depender de un contrato ERC-721 desplegado. El pago sí es on-chain en USDT.
+## Precios en pesos
 
-## Tether tech
+Los productos se **cobran en USDT**; la UI muestra **pesos al dólar blue** ([dolarapi.com](https://dolarapi.com/v1/dolares/blue)). El catálogo de demo usa precios de kiosco/panadería/tostaduría en Argentina.
 
-- **QVAC** (`@qvac/sdk`): NL → structured intent. Falls back to a heuristic parser if no model is loaded.
-- **WDK** (`@tetherto/wdk` + `@tetherto/wdk-wallet-evm`): self-custodial seed, `signTypedData`.
-- **WDK gasless** (`@tetherto/wdk-wallet-evm-7702-gasless`): online txs pay gas in USDT. See below.
+Al publicar, el precio se escribe en pesos y se guarda en USDT.
 
-## Gasless (official Tether WDK)
+## USDT y Permit2
 
-A plain Ethereum EOA still needs ETH to pay gas. Tether does **not** ship a “Tether pays your gas for free” program, but it does ship an official gasless module: [`@tetherto/wdk-wallet-evm-7702-gasless`](https://www.npmjs.com/package/@tetherto/wdk-wallet-evm-7702-gasless).
+USDT (`0xdAC17F958D2ee523a2206206994597C13D831ec7`) no implementa ERC-2612 `permit()`. Walinox firma Uniswap **Permit2** (`0x000000000022D473030F116dDEE9F6B43aC78BA3`):
 
-That module:
+1. Una vez: `approve(Permit2)`.
+2. Cada gasto offline: EIP-712 `PermitTransferFrom`.
+3. El receptor llama `permitTransferFrom`. Ahí se mueve el token.
 
-1. Delegates the EOA to a smart account via **EIP-7702** (default implementation `0xe6Cae83BdE06E4c305530e199D7217f42808555B`).
-2. Sends the call as an **ERC-4337** UserOperation.
-3. Pays the bundler through a paymaster, either sponsored (needs a policy ID + API key) or in an ERC-20.
+## Envío sin internet
 
-Walinox uses **paymaster-token mode**: gas is paid in **USDT**. No API key.
+El objeto que viaja es un JSON firmado (`SignedEnvelope`).
 
-- Bundler + paymaster: Candide public `https://api.candide.dev/public/v3/1` (documented by the WDK module; rate-limited, no key).
-- Paymaster token: mainnet USDT `0xdAC17F958D2ee523a2206206994597C13D831ec7`.
-- First UserOp from a fresh account includes the EIP-7702 delegation; later ones reuse it.
-
-Online send, Permit2 `approve`, ERC-2612 `permit()` submit, and Permit2 `permitTransferFrom` all try this path first. If the bundler/paymaster fails, the app falls back to a normal EOA transaction (that fallback **does** need ETH).
-
-You need a little extra USDT in the wallet to cover the paymaster fee, on top of the amount you send.
-
-Optional env (none required for the demo):
-
-| Variable | Default |
+| Canal | Estado |
 | --- | --- |
-| `NEXT_PUBLIC_BUNDLER_URL` | Candide public mainnet |
-| `NEXT_PUBLIC_PAYMASTER_URL` | omitted (Candide serves bundler + paymaster on one URL) |
-| `NEXT_PUBLIC_RPC_URL` | `https://ethereum-rpc.publicnode.com` |
+| QR | Funciona (demo principal). |
+| Copiar / archivo | Funciona. |
+| NFC | Escribe el JSON en un **tag**. No es tap entre dos iPhones. |
+| Bluetooth | Abre el picker; todavía no hay GATT al otro celular. |
+| Sonido / luz | Placeholder; no transportan el payload. |
 
-Sponsored (gas-free) mode exists in the same module (`isSponsored` + `sponsorshipPolicyId`) but needs a Candide or Pimlico dashboard policy. Not used here.
+Después del primer load (PWA) el QR anda en modo avión.
 
-## Install and run
+## Gas (WDK 7702)
+
+No hay “Tether te paga el gas”. El módulo `@tetherto/wdk-wallet-evm-7702-gasless` paga al bundler en **USDT** (Candide público, sin API key). Hace falta un poco extra de USDT. Si el paymaster falla, se intenta una tx EOA (esa pide ETH).
+
+## Tether
+
+- **WDK** — firma local EIP-712.
+- **QVAC** — NL → campos. No es un chat. Default `QWEN3_600M_INST_Q4`.
+- **Vale** — EIP-712 de un bien físico, no un ERC-721 deployado. El pago sí es USDT on-chain.
+
+## Install
 
 Node 22.17+.
 
 ```bash
-cd /home/lulox/repos/walinox
 npm install
 npm test
 npm run build
 npm start
 ```
 
-Open http://localhost:3000 — or `npm run dev` while hacking.
+http://localhost:3000 — o `npm run dev`.
 
-Optional QVAC: `qvac serve openai` then `QVAC_BASE_URL=http://127.0.0.1:11434/v1 npm start`
+QVAC opcional: `qvac serve openai` y `QVAC_BASE_URL=http://127.0.0.1:11434/v1 npm start`.
 
-## Send
+## WalletConnect (403 en localhost)
 
-Paste an address or scan a QR, or type an **ENS** (`vitalik.eth`) / **Basename** (`alice.base.eth`). The send field is the Scaffold-ETH AddressInput: ENS avatar when the name has one, otherwise the colorful `blo` identicon for the 0x address.
+El project id de ejemplo de RainbowKit (`3fbb6bba6ad1b0da945445a531d15c6b`) **no** autoriza `http://localhost:3000` en Reown Cloud (`api.web3modal.org` → 403). Por defecto Walinox **no carga el conector WalletConnect**; MetaMask / Rabby / inyectada andan igual.
 
-The scanner also reads raw `0x…` (Walinox receive QR), EIP-681 (`ethereum:0x…`, ERC-20 `transfer?address=`), MetaMask/Trust deep links, Rabby/Binance JSON, CAIP-10, and `usdt:` / `tether:` / `bnb:` URIs.
+Para QR de WalletConnect (conectar el teléfono sin extensión):
 
-## Demo (USDT via Permit2)
+1. Creá un proyecto en [cloud.reown.com](https://cloud.reown.com).
+2. Allowlist: `http://localhost:3000` y tu dominio de Vercel.
+3. `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...`
 
-1. Create: sample prompt allows 100 USDT → Compose → Sign with WDK (Permit2 typed data).
-2. Transmit: QR (or Copy / File). Airplane mode is fine after first load.
-3. Receive: Scan. If valid, **Approve Permit2 once** (first time only; gas paid in USDT) then **Submit via Permit2**.
+## Env opcional
 
-PWA: HTTPS or localhost → Android Chrome **Install app** / iOS Safari **Add to Home Screen**.
+| Variable | Default |
+| --- | --- |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | vacío (sin conector WC) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | demo en `src/lib/vapid.ts` |
+| `VAPID_PRIVATE_KEY` | demo en `src/lib/vapid.ts` |
+| `NEXT_PUBLIC_BUNDLER_URL` | Candide public mainnet |
+| `NEXT_PUBLIC_RPC_URL` | `https://ethereum-rpc.publicnode.com` |
 
-## Limits
+Ninguna es obligatoria para el demo.
 
-QVAC does not run in the browser. Seed is in `localStorage`. BLE/NFC/sound/light are thin; QR is the demo path. Live USDT needs real tokens (plus a bit extra USDT for the paymaster). Candide public is rate-limited.
+## PWA
+
+HTTPS o localhost. Android: Instalar app. iPhone: Agregar a Inicio. Avisos en iOS 16.4+ solo si está instalada.
+
+## Límites
+
+- QVAC no corre en el browser.
+- Seed WDK local está en `localStorage` (no es producción).
+- BLE / sonido / luz no cierran el loop celular ↔ celular.
+- Push durable en Vercel hace falta un store (hoy memoria / `.data/`).
+- Candide público está rate-limited.
+- Localhost: saldo y catálogo de prueba.
+
+Más contexto para mentores: [`docs/mentores.md`](docs/mentores.md).

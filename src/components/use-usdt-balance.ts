@@ -10,9 +10,11 @@ export function useUsdtBalance(address?: string) {
   useEffect(() => {
     if (!address) return;
     if (isLocalHost()) {
-      setUsdt(MOCK_USDT_BALANCE);
-      setOffline(false);
-      return;
+      const timer = window.setTimeout(() => {
+        setUsdt(MOCK_USDT_BALANCE);
+        setOffline(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
     let live = true;
     fetch(`/api/balance?address=${address}`)
@@ -32,5 +34,5 @@ export function useUsdtBalance(address?: string) {
     };
   }, [address]);
 
-  return { usdt, offline };
+  return { usdt: address ? usdt : null, offline };
 }

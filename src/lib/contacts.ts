@@ -15,6 +15,13 @@ export type ContactStore = {
 };
 
 const STORAGE_KEY = "walinox.contacts";
+export const DEFAULT_CONTACTS_SEED_KEY = "walinox.contacts.defaults";
+
+export const LULOX_ADDRESS = "0xfBD9Ca40386A8C632cf0529bbb16b4BEdB59a0A0";
+
+export const DEFAULT_CONTACTS: { address: string; name: string }[] = [
+  { address: LULOX_ADDRESS, name: "lulox.eth" },
+];
 
 export function memoryContactStore(seed: Contact[] = []): ContactStore {
   let contacts = [...seed];
@@ -60,6 +67,20 @@ export function normalizeAddress(value: string): string {
   return getAddress(value);
 }
 
+export function seedDefaultContacts(): void {
+  if (typeof localStorage !== "undefined" && localStorage.getItem(DEFAULT_CONTACTS_SEED_KEY) === "1") {
+    return;
+  }
+  for (const item of DEFAULT_CONTACTS) {
+    try {
+      if (!getContact(item.address)) rememberContact(item.address, { name: item.name });
+    } catch {
+      /* skip bad seed */
+    }
+  }
+  if (typeof localStorage !== "undefined") localStorage.setItem(DEFAULT_CONTACTS_SEED_KEY, "1");
+}
+
 export function listContacts(): Contact[] {
   return currentStore()
     .load()
@@ -76,7 +97,7 @@ export function getContact(address: string): Contact | undefined {
 
 export function rememberContact(
   address: string,
-  patch: { name?: string; note?: string } = {},
+  patch: { name?: string; note?: string; lastSeenAt?: string; createdAt?: string } = {},
 ): Contact {
   const checksum = normalizeAddress(address);
   const now = new Date().toISOString();
@@ -88,7 +109,7 @@ export function rememberContact(
       ...list[index],
       name: patch.name?.trim() ? patch.name.trim() : list[index].name,
       note: patch.note !== undefined ? patch.note : list[index].note,
-      lastSeenAt: now,
+      lastSeenAt: patch.lastSeenAt ?? now,
     };
     const copy = [...list];
     copy[index] = next;
@@ -99,8 +120,8 @@ export function rememberContact(
     address: checksum,
     name: patch.name?.trim() ?? "",
     note: patch.note ?? "",
-    createdAt: now,
-    lastSeenAt: now,
+    createdAt: patch.createdAt ?? now,
+    lastSeenAt: patch.lastSeenAt ?? now,
   };
   current.save([created, ...list]);
   return created;
@@ -114,6 +135,25 @@ export function removeContact(address: string): void {
 
 export function contactLabel(contact: { address: string; name: string }): string {
   return contact.name.trim() || contact.address.slice(0, 6) + "…" + contact.address.slice(-4);
+}
+
+export function searchContacts(contacts: Contact[], query: string): Contact[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return contacts;
+  const hex = q.replace(/^0x/, "");
+  return contacts.filter((contact) => {
+    const name = contact.name.toLowerCase();
+    const note = contact.note.toLowerCase();
+    const address = contact.address.toLowerCase();
+    const label = contactLabel(contact).toLowerCase();
+    return (
+      name.includes(q) ||
+      note.includes(q) ||
+      label.includes(q) ||
+      address.includes(q) ||
+      address.replace(/^0x/, "").includes(hex)
+    );
+  });
 }
 
 export function receiptsWith(address: string, me?: string): Receipt[] {
