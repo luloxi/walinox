@@ -2,22 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { isAddress } from "ethers";
+import { ConnectCta } from "@/components/connect-cta";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddressInput } from "@/components/address-input";
 import { ContactPicker } from "@/components/contact-picker";
-import { Hint } from "@/components/hint";
 import { QvacHint } from "@/components/qvac-hint";
-import { SectionBar } from "@/components/section-bar";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Price } from "@/components/price";
 import { categoryLabel } from "@/lib/categories";
 import { EtherscanTxLink } from "@/components/etherscan-link";
+import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
-import { bumpSold, getProduct, holdVale, issueVale } from "@/lib/catalog";
+import { bumpSold, getProduct, holdVale, issueVale, listProducts } from "@/lib/catalog";
 import { rememberContact } from "@/lib/contacts";
 import { isLocalHost } from "@/lib/dev";
 import { parsePaymentAddress } from "@/lib/payment-address";
@@ -35,9 +34,18 @@ import {
 export function ProductDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { wallet, connected } = useWallet();
-  const id = decodeURIComponent(params.id ?? "");
+  const { wallet, ready } = useWallet();
+  const { ensure } = usePaymentChain();
+  const rawId = params.id ?? "";
+  const id = (() => {
+    try {
+      return decodeURIComponent(rawId);
+    } catch {
+      return rawId;
+    }
+  })();
   const [product, setProduct] = useState<Product | undefined>();
+  const [looked, setLooked] = useState(false);
   const [holder, setHolder] = useState("");
   const [valeQr, setValeQr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,9 +55,17 @@ export function ProductDetail() {
   const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    setProduct(getProduct(id));
-  }, [id]);
+    const found =
+      getProduct(id) ??
+      getProduct(rawId) ??
+      listProducts().find((item) => item.id === id || item.id === rawId);
+    setProduct(found);
+    setLooked(true);
+  }, [id, rawId]);
 
+  if (!looked) {
+    return <p className="text-sm text-muted-foreground">Cargando…</p>;
+  }
   if (!product) {
     return <p className="text-sm text-muted-foreground">No está este producto.</p>;
   }
@@ -85,6 +101,7 @@ export function ProductDetail() {
     try {
       let tx: string | undefined;
       if (!demo) {
+        await ensure();
         const value = toBaseUnits(listing.price, USDT.decimals);
         tx = await wallet.transfer(USDT.address, listing.issuer, value);
         setHash(tx);
@@ -149,14 +166,16 @@ export function ProductDetail() {
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
-      <SectionBar hint={`Retiro: ${product.redemptionPlace}`}>
-        <Link href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`} className="cursor-pointer text-xs text-primary">
-          Volver
-        </Link>
-      </SectionBar>
+      <BackLink
+        href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`}
+        className={`mb-3 -ml-1 ${ready ? "hidden md:inline-flex" : ""}`}
+      >
+        Tienda
+      </BackLink>
       <p className="mt-3 text-lg font-semibold leading-tight">{product.title}</p>
       <p className="mt-1 text-xs text-muted-foreground">
         {categoryLabel(product.category)} · {product.issuerName}
+        {product.redemptionPlace ? ` · Retiro: ${product.redemptionPlace}` : ""}
       </p>
       {product.image ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -184,10 +203,7 @@ export function ProductDetail() {
         </div>
       ) : isSeller ? (
         <div className="mt-6 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm">Darle el vale a</span>
-            <Hint text="El cliente ya pagó. Poné su address y se arma el vale." />
-          </div>
+          <p className="text-sm">Darle el vale a</p>
           <ContactPicker selected={holder} onPick={(contact) => setHolder(contact.address)} />
           <AddressInput value={holder} onChange={setHolder} placeholder="Address del cliente" />
           {wallet ? (
@@ -217,19 +233,21 @@ export function ProductDetail() {
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {!connected ? (
-            <div className="[&_button]:cursor-pointer">
-              <ConnectButton label="Conectar para comprar" />
-            </div>
-          ) : null}
-          <Button
-            type="button"
-            className="h-12 w-full text-base"
-            disabled={!wallet || busy || remaining <= 0}
-            onClick={() => void buy()}
-          >
-            {busy ? "Comprando…" : "Comprar"}
-          </Button>
+          {!wallet ? (
+            <>
+              <p className="text-sm text-muted-foreground">Conectá tu billetera para comprar.</p>
+              <ConnectCta stacked label="Iniciar sesión para comprar" />
+            </>
+          ) : (
+            <Button
+              type="button"
+              className="h-12 w-full text-base"
+              disabled={busy || remaining <= 0}
+              onClick={() => void buy()}
+            >
+              {busy ? "Comprando…" : "Comprar"}
+            </Button>
+          )}
         </div>
       )}
 

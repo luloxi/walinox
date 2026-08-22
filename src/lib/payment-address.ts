@@ -81,6 +81,7 @@ function walkJson(value: unknown, out: string[], prefer: string[]): void {
   if (record.kind === "permit2" || record.kind === "erc2612") {
     if (typeof record.spender === "string") prefer.push(record.spender);
   }
+  if (record.kind === "charge" && typeof record.to === "string") prefer.push(record.to);
   for (const key of ["address", "to", "recipient", "wallet", "account", "target", "spender"]) {
     const field = record[key];
     if (typeof field === "string" && checksum(field)) prefer.push(field);

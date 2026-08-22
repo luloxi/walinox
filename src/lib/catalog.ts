@@ -1,6 +1,6 @@
 import { getAddress, isAddress } from "ethers";
-import { isLocalHost } from "@/lib/dev";
 import { MOCK_PRODUCTS, MOCK_STORES, type Store } from "@/lib/stores";
+import { matchesStore } from "@/lib/store-link";
 import type { Product, RedeemRecord, ValeEnvelope } from "@/lib/vale";
 
 type CatalogStore = {
@@ -34,15 +34,13 @@ function load(): CatalogStore {
     }
   }
   let patched = false;
-  if (isLocalHost()) {
-    const known = new Set(store.products.map((item) => item.id));
-    const missing = MOCK_PRODUCTS.filter((item) => !known.has(item.id));
-    if (missing.length > 0) {
-      store.products = [...missing, ...store.products];
-      patched = true;
-    }
-    localStorage.setItem(MOCK_FLAG, "1");
+  const known = new Set(store.products.map((item) => item.id));
+  const missing = MOCK_PRODUCTS.filter((item) => !known.has(item.id));
+  if (missing.length > 0) {
+    store.products = [...missing, ...store.products];
+    patched = true;
   }
+  if (typeof localStorage !== "undefined") localStorage.setItem(MOCK_FLAG, "1");
   for (const mock of MOCK_PRODUCTS) {
     const found = store.products.find((item) => item.id === mock.id);
     if (!found) continue;
@@ -72,6 +70,23 @@ export function listProducts(): Product[] {
   return load().products.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export function getStore(id: string): Store | undefined {
+  const key = decodeURIComponent(id).trim().toLowerCase();
+  const listed = listStores().find(
+    (store) => store.id.toLowerCase() === key || store.issuer.toLowerCase() === key,
+  );
+  if (listed) return listed;
+  if (isAddress(id)) {
+    return {
+      id: id.toLowerCase(),
+      name: "Tienda",
+      place: "",
+      issuer: getAddress(id),
+    };
+  }
+  return undefined;
+}
+
 export function listStores(): Store[] {
   const products = listProducts();
   const extra: Store[] = [];
@@ -91,7 +106,7 @@ export function listStores(): Store[] {
 }
 
 export function productsByStore(storeId: string): Product[] {
-  return listProducts().filter((product) => (product.storeId ?? product.issuer.toLowerCase()) === storeId);
+  return listProducts().filter((product) => matchesStore(product, storeId));
 }
 
 export function productsByIssuer(issuer: string): Product[] {

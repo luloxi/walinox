@@ -154,3 +154,134 @@
   background: color-mix(in oklch, var(--foreground) 25%, transparent);
   border-radius: 999px;
 }
+
+.landing-scene {
+  --landing-run: 3.2s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(20rem, 100%);
+  height: 7.5rem;
+  padding: 0 0.35rem;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(ellipse at center, #000 42%, transparent 78%);
+}
+.landing-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--primary) 55%, transparent);
+  background: color-mix(in oklch, var(--primary) 14%, var(--background));
+  box-shadow: 0 0 18px color-mix(in oklch, var(--primary) 22%, transparent);
+}
+.landing-node-shop {
+  border-radius: 0.7rem;
+}
+.landing-core {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: inherit;
+  background: var(--primary);
+}
+.landing-node::before,
+.landing-node::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid color-mix(in oklch, var(--primary) 40%, transparent);
+  animation: landing-ripple var(--landing-run) ease-out infinite;
+  pointer-events: none;
+}
+.landing-node::after {
+  animation-delay: calc(var(--landing-run) / 2);
+}
+.landing-path {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  height: 2px;
+  margin: 0 0.9rem;
+  overflow: visible;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--primary) 50%, transparent) 0 7px,
+    transparent 7px 13px
+  );
+}
+.landing-track {
+  position: absolute;
+  inset: 0;
+  animation: landing-travel var(--landing-run) ease-in-out infinite;
+}
+.landing-packet {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--primary);
+  transform: translate(-50%, -50%);
+  box-shadow:
+    -14px 0 10px -2px color-mix(in oklch, var(--primary) 28%, transparent),
+    0 0 14px 4px color-mix(in oklch, var(--primary) 45%, transparent);
+}
+.landing-chevron {
+  animation: landing-bob 2.2s ease-in-out infinite;
+}
+@keyframes landing-travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+@keyframes landing-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+@keyframes landing-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-track,
+  .landing-chevron,
+  .landing-node::before,
+  .landing-node::after {
+    animation: none;
+  }
+  .landing-track {
+    transform: translateX(50%);
+    opacity: 1;
+  }
+}

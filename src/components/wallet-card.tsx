@@ -5,7 +5,6 @@ import { Check, Copy } from "lucide-react";
 import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
-import { Hint } from "@/components/hint";
 import { Price } from "@/components/price";
 
 export function WalletCard({ children }: { children?: ReactNode }) {
@@ -30,8 +29,7 @@ export function WalletCard({ children }: { children?: ReactNode }) {
 
   return (
     <div className="flex flex-col rounded-2xl bg-gradient-to-br from-primary/15 to-card p-4 ring-1 ring-border md:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <Hint text="El saldo se muestra en pesos al dólar blue. En localhost es de prueba. El asiento on-chain es USDT." />
+      <div className="flex items-center justify-end gap-3">
         <button
           type="button"
           className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-muted-foreground hover:bg-muted/80"

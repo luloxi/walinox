@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
 import { Brand } from "@/components/brand";
+import { Landing } from "@/components/landing";
 import { useWallet } from "@/components/wallet-provider";
 import { TERMS_LINES } from "@/lib/session";
 
 export function LoginScreen() {
-  const { openConnectModal } = useConnectModal();
-  const { needsTos, needsMode, unlockLocal, signTos, chooseSignMode, hydrating } = useWallet();
+  const { needsTos, needsMode, signTos, chooseSignMode, hydrating } = useWallet();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionNote, setSessionNote] = useState<string | null>(null);
@@ -98,31 +97,7 @@ export function LoginScreen() {
     );
   }
 
-  return (
-    <Shell>
-      <p className="text-xl font-semibold">Billetera USDT</p>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        Enviá y recibí USDT en Ethereum, online o por QR. Vales para el kiosco. Las claves las tenés vos.
-      </p>
-      <p className="mt-3 text-xs text-muted-foreground">Sin wallet conectada no hay saldo.</p>
-      <Button
-        type="button"
-        className="mt-6 h-12 w-full"
-        onClick={() => openConnectModal?.()}
-        disabled={!openConnectModal}
-      >
-        Conectar billetera
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        className="mt-2 h-11 w-full text-muted-foreground"
-        onClick={() => void unlockLocal()}
-      >
-        Usar billetera local
-      </Button>
-    </Shell>
-  );
+  return <Landing />;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

@@ -52,7 +52,7 @@ export function WalletScreen() {
             Volver al saldo
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1">
           {tab === "enviar" ? <SendFlow /> : <ReceiveFlow />}
         </div>
       </div>
@@ -60,7 +60,7 @@ export function WalletScreen() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-3">
+    <div className="flex min-h-full flex-col gap-6 md:grid md:grid-cols-[minmax(20rem,32rem)_minmax(0,1fr)] md:items-start md:gap-10">
       <div className="shrink-0">
         <WalletCard>
           <div className="mt-4 flex justify-center gap-3">
@@ -104,7 +104,7 @@ export function WalletScreen() {
       </div>
 
         <section className="flex flex-col">
-          <SectionBar hint="Los últimos cinco. Tocá Ver todos para el historial completo.">
+          <SectionBar>
             <Link href="/summary" className="cursor-pointer text-xs text-primary">
               Ver todos
             </Link>

@@ -19,7 +19,6 @@ import { parsePaymentAddress } from "@/lib/payment-address";
 import { seedLivedIn } from "@/lib/seed";
 import { isEnsName, resolveEns } from "@/lib/ens";
 import { shortAddress } from "@/lib/format";
-import { SectionBar } from "@/components/section-bar";
 import { QvacHint } from "@/components/qvac-hint";
 
 export function ContactsView() {
@@ -83,22 +82,21 @@ export function ContactsView() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg pb-6">
-      <SectionBar hint="Guardá una address con nombre. El historial se arma solo.">
-        <Button type="button" className="h-9" onClick={() => setOpen(true)}>
+    <div className="flex w-full flex-col pb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar por nombre, ENS o address"
+          className="h-11 sm:min-w-0 sm:flex-1"
+          aria-label="Buscar contactos"
+        />
+        <Button type="button" className="h-11 shrink-0 sm:px-5" onClick={() => setOpen(true)}>
           Nuevo
         </Button>
-      </SectionBar>
+      </div>
 
-      <Input
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Buscar por nombre, ENS o address"
-        className="mt-4 h-11"
-        aria-label="Buscar contactos"
-      />
-
-      <ul className="mt-3 space-y-2 pb-4">
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {contacts.length === 0 ? (
           <li className="text-sm text-muted-foreground">Todavía no hay contactos.</li>
         ) : visible.length === 0 ? (
@@ -108,15 +106,15 @@ export function ContactsView() {
             <li key={contact.address}>
               <Link
                 href={`/contacts/${contact.address}`}
-                className="flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
+                className="flex h-full cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
               >
-                <span>
-                  <span className="block text-sm font-medium">{contactLabel(contact)}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{contactLabel(contact)}</span>
                   <span className="font-mono text-[11px] text-muted-foreground">
                     {shortAddress(contact.address)}
                   </span>
                 </span>
-                <span className="text-[11px] text-primary">Historial</span>
+                <span className="ml-3 shrink-0 text-[11px] text-primary">Historial</span>
               </Link>
             </li>
           ))

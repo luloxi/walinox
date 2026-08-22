@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDisconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
-import { Hint } from "@/components/hint";
+import { InboxList } from "@/components/inbox-list";
+import { useDisplay } from "@/components/display-provider";
 import { useTheme } from "@/components/theme-provider";
+import { useFx } from "@/components/use-fx";
 import { useWallet } from "@/components/wallet-provider";
+import { FIATS, fiatMeta, isFiatId } from "@/lib/display";
+import { formatFiat } from "@/lib/fx";
 import { shortAddress } from "@/lib/format";
 import {
   BANNER_KEY,
@@ -25,6 +30,8 @@ function notifyStatus(): "on" | "off" | "denied" | "unsupported" {
 
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
+  const { prefs, setPrefs } = useDisplay();
+  const fx = useFx();
   const { wallet, source, signMode, grantActive, chooseSignMode, lockLocal } = useWallet();
   const { disconnect } = useDisconnect();
   const [modeBusy, setModeBusy] = useState(false);
@@ -93,32 +100,90 @@ export function SettingsView() {
   }
 
   const fast = signMode === "session" && (grantActive || source === "local");
+  const local = fiatMeta(prefs.fiat);
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
-      <div className="flex items-center justify-end">
-        <Hint text="Tema, firma, avisos y la wallet. Nada de esto mueve fondos por sí solo." />
-      </div>
-
-      <section className="mt-4 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Apariencia</p>
+      <section className="space-y-2">
+        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Moneda</p>
+        <p className="text-sm text-muted-foreground">
+          El cobro es USDT. La otra moneda es para ver precios. Una de las dos siempre es Tether.
+        </p>
+        <select
+          className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm"
+          value={prefs.fiat}
+          onChange={(event) => {
+            const fiat = event.target.value;
+            if (isFiatId(fiat)) setPrefs({ ...prefs, fiat });
+          }}
+          aria-label="Moneda local"
+        >
+          {FIATS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.country} · {item.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-[11px] text-muted-foreground">
+          {local.source} · {formatFiat(fx.perUsdt, prefs.fiat)} por 1 USDT
+        </p>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
-            variant={theme === "dark" ? "default" : "outline"}
+            variant={prefs.primary === "fiat" ? "default" : "outline"}
             className="h-11"
-            onClick={() => setTheme("dark")}
+            onClick={() => setPrefs({ ...prefs, primary: "fiat" })}
           >
-            Oscuro
+            Primero {local.name}
           </Button>
           <Button
             type="button"
-            variant={theme === "light" ? "default" : "outline"}
+            variant={prefs.primary === "usdt" ? "default" : "outline"}
             className="h-11"
-            onClick={() => setTheme("light")}
+            onClick={() => setPrefs({ ...prefs, primary: "usdt" })}
           >
-            Claro
+            Primero USDT
           </Button>
+        </div>
+      </section>
+
+      <section className="mt-6 space-y-2">
+        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
+        <p className="font-mono text-sm">{wallet ? shortAddress(wallet.address) : "—"}</p>
+        <p className="text-xs text-muted-foreground">
+          {source === "local" ? "Billetera local de esta app." : "Wallet conectada."}
+        </p>
+        <div className="[&_button]:cursor-pointer">
+          <ConnectButton chainStatus="none" showBalance={false} accountStatus="full" label="Conectar billetera" />
+        </div>
+        <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
+          Desconectar
+        </Button>
+      </section>
+
+      <section className="mt-6 space-y-2">
+        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Avisos</p>
+        {alerts === "unsupported" ? (
+          <p className="text-sm text-muted-foreground">Este navegador no permite avisos.</p>
+        ) : alerts === "denied" ? (
+          <p className="text-sm text-muted-foreground">Los avisos están bloqueados. Activalos en el navegador.</p>
+        ) : alerts === "on" ? (
+          <>
+            <p className="text-sm">Avisos activos.</p>
+            <Button type="button" variant="outline" className="h-11 w-full" disabled={notifyBusy} onClick={() => void disableAlerts()}>
+              Silenciar avisos
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Enterate cuando te mandan USDT o un vale.</p>
+            <Button type="button" className="h-11 w-full" disabled={notifyBusy || !wallet} onClick={() => void enableAlerts()}>
+              {notifyBusy ? "Activando…" : "Activar avisos"}
+            </Button>
+          </>
+        )}
+        <div className="pt-2">
+          <InboxList />
         </div>
       </section>
 
@@ -148,37 +213,25 @@ export function SettingsView() {
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Notificaciones</p>
-        {alerts === "unsupported" ? (
-          <p className="text-sm text-muted-foreground">Este navegador no permite avisos.</p>
-        ) : alerts === "denied" ? (
-          <p className="text-sm text-muted-foreground">Los avisos están bloqueados. Activalos en el navegador.</p>
-        ) : alerts === "on" ? (
-          <>
-            <p className="text-sm">Avisos activos.</p>
-            <Button type="button" variant="outline" className="h-11 w-full" disabled={notifyBusy} onClick={() => void disableAlerts()}>
-              Silenciar avisos
-            </Button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground">Enterate cuando te mandan USDT o un vale.</p>
-            <Button type="button" className="h-11 w-full" disabled={notifyBusy || !wallet} onClick={() => void enableAlerts()}>
-              {notifyBusy ? "Activando…" : "Activar avisos"}
-            </Button>
-          </>
-        )}
-      </section>
-
-      <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
-        <p className="font-mono text-sm">{wallet ? shortAddress(wallet.address) : "—"}</p>
-        <p className="text-xs text-muted-foreground">
-          {source === "local" ? "Billetera local de esta app." : "Wallet conectada."}
-        </p>
-        <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
-          Desconectar
-        </Button>
+        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Apariencia</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant={theme === "dark" ? "default" : "outline"}
+            className="h-11"
+            onClick={() => setTheme("dark")}
+          >
+            Oscuro
+          </Button>
+          <Button
+            type="button"
+            variant={theme === "light" ? "default" : "outline"}
+            className="h-11"
+            onClick={() => setTheme("light")}
+          >
+            Claro
+          </Button>
+        </div>
       </section>
 
       {note ? <p className="mt-4 text-xs text-primary">{note}</p> : null}

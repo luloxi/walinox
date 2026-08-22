@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SectionBar } from "@/components/section-bar";
 import { QvacHint } from "@/components/qvac-hint";
 import { useWallet } from "@/components/wallet-provider";
+import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
-import { formatArs, formatUsdt, parsePriceField, usdtToArs } from "@/lib/fx";
+import { fiatMeta } from "@/lib/display";
+import { formatFiat, formatUsdt, parsePriceField, usdtToFiat } from "@/lib/fx";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { CATEGORY_LABEL, PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/categories";
 import { saveProduct } from "@/lib/catalog";
@@ -22,7 +23,9 @@ export function ProductForm({
   onPublished?: () => void;
 }) {
   const { wallet } = useWallet();
+  const { prefs } = useDisplay();
   const fx = useFx();
+  const local = fiatMeta(prefs.fiat);
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<ProductCategory>("almacen");
@@ -42,7 +45,7 @@ export function ProductForm({
       setError("Confirmá que lo vas a entregar");
       return;
     }
-    const usdt = parsePriceField(price, fx.arsPerUsdt);
+    const usdt = parsePriceField(price, fx.perUsdt, prefs.fiat);
     if (!usdt) {
       setError("Precio inválido");
       return;
@@ -74,14 +77,13 @@ export function ProductForm({
     setOk(false);
     setError(null);
     onPublished?.();
-    if (!onPublished) router.push(`/products/${product.id}`);
+    if (!onPublished) router.push(`/tienda/${wallet.address.toLowerCase()}`);
   }
 
-  const parsedUsdt = price ? parsePriceField(price, fx.arsPerUsdt) : "";
+  const parsedUsdt = price ? parsePriceField(price, fx.perUsdt, prefs.fiat) : "";
 
   return (
-    <div className={embedded ? "space-y-2" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
-      <SectionBar hint="Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás." />
+    <div className={embedded ? "space-y-2" : "mx-auto w-full max-w-lg pb-6 space-y-2"}>
       <label className="flex cursor-pointer flex-col gap-1">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -120,7 +122,7 @@ export function ProductForm({
       <Input
         value={price}
         onChange={(event) => setPrice(event.target.value)}
-        placeholder="Precio en pesos"
+        placeholder={`Precio en ${local.name.toLowerCase()}`}
         inputMode="decimal"
         className="h-11"
       />
@@ -128,11 +130,13 @@ export function ProductForm({
         <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
           {formatUsdt(parsedUsdt, 6)}
           <UsdtLogo className="size-3" />
-          <span>al blue ({formatArs(fx.arsPerUsdt)})</span>
+          <span>
+            {local.source} ({formatFiat(fx.perUsdt, prefs.fiat)})
+          </span>
         </p>
       ) : (
         <p className="text-[11px] text-muted-foreground">
-          Precio en pesos. Se cobra en USDT al blue ({formatArs(fx.arsPerUsdt)}).
+          Precio en {local.name.toLowerCase()}. Se cobra en USDT ({local.source}: {formatFiat(fx.perUsdt, prefs.fiat)}).
         </p>
       )}
       <Input
@@ -152,7 +156,7 @@ export function ProductForm({
               const n = Number(intent.price);
               setPrice(
                 Number.isFinite(n) && n > 0 && n < 100
-                  ? String(Math.round(usdtToArs(n, fx.arsPerUsdt)))
+                  ? String(Math.round(usdtToFiat(n, fx.perUsdt)))
                   : intent.price,
               );
             }

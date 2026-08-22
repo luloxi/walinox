@@ -44,7 +44,7 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <div className={embedded ? "" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
+    <div className={embedded ? "" : "mx-auto w-full max-w-lg pb-6"}>
       <Button
         type="button"
         variant="secondary"

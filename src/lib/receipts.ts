@@ -1,4 +1,5 @@
 import type { Channel } from "@/lib/channels";
+import { blueAt, cachedArsPerUsdt } from "@/lib/fx";
 
 export type ReceiptAction = "created" | "signed" | "sent" | "received" | "issued" | "redeemed";
 
@@ -23,6 +24,8 @@ export type Receipt = {
   signature: string;
   valid?: boolean;
   digest?: string;
+  /** Dólar blue venta al momento del movimiento. */
+  arsPerUsdt?: number;
 };
 
 export type ReceiptStore = {
@@ -86,8 +89,22 @@ function currentStore(): ReceiptStore {
   return store;
 }
 
+function withRates(rows: Receipt[]): Receipt[] {
+  let changed = false;
+  const next = rows.map((row) => {
+    if (row.arsPerUsdt && row.arsPerUsdt > 0) return row;
+    changed = true;
+    return { ...row, arsPerUsdt: blueAt(row.at, cachedArsPerUsdt()) };
+  });
+  return changed ? next : rows;
+}
+
 export function listReceipts(): Receipt[] {
-  return currentStore().load();
+  const current = currentStore();
+  const loaded = current.load();
+  const next = withRates(loaded);
+  if (next !== loaded) current.save(next);
+  return next;
 }
 
 export function addReceipt(
@@ -99,10 +116,13 @@ export function addReceipt(
     const found = existing.find((row) => row.id === input.id);
     if (found) return found;
   }
+  const at = input.at ?? new Date().toISOString();
   const receipt: Receipt = {
     ...input,
     id: input.id ?? crypto.randomUUID(),
-    at: input.at ?? new Date().toISOString(),
+    at,
+    arsPerUsdt:
+      input.arsPerUsdt && input.arsPerUsdt > 0 ? input.arsPerUsdt : blueAt(at, cachedArsPerUsdt()),
   };
   current.save([receipt, ...existing]);
   return receipt;

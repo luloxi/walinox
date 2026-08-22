@@ -1,4 +1,5 @@
 import { fromBaseUnits } from "@/lib/format";
+import { FALLBACK_ARS_PER_USDT, receiptRate, usdtToArs } from "@/lib/fx";
 import type { Receipt } from "@/lib/receipts";
 
 export type PeriodKind = "month" | "quarter" | "year" | "all";
@@ -10,6 +11,8 @@ export type Bucket = {
   label: string;
   income: number;
   expense: number;
+  incomeArs: number;
+  expenseArs: number;
   store: number;
   personal: number;
 };
@@ -23,6 +26,9 @@ export type ActivityReport = {
   income: number;
   expense: number;
   net: number;
+  incomeArs: number;
+  expenseArs: number;
+  netArs: number;
   store: number;
   personal: number;
   storeIncome: number;
@@ -142,7 +148,7 @@ function monthLabel(at: Date): string {
 
 export function buildActivityReport(
   receipts: Receipt[],
-  opts: { kind: PeriodKind; anchor?: Date; me?: string; storeIssuers?: string[] },
+  opts: { kind: PeriodKind; anchor?: Date; me?: string; storeIssuers?: string[]; arsPerUsdt?: number },
 ): ActivityReport {
   const anchor = opts.anchor ?? new Date();
   const { from, to, label } = periodBounds(opts.kind, anchor);
@@ -151,8 +157,11 @@ export function buildActivityReport(
     .slice()
     .sort((a, b) => b.at.localeCompare(a.at));
 
+  const live = opts.arsPerUsdt ?? FALLBACK_ARS_PER_USDT;
   let income = 0;
   let expense = 0;
+  let incomeArs = 0;
+  let expenseArs = 0;
   let storeIncome = 0;
   let storeExpense = 0;
   let personalIncome = 0;
@@ -169,6 +178,8 @@ export function buildActivityReport(
       label: monthLabel(at),
       income: 0,
       expense: 0,
+      incomeArs: 0,
+      expenseArs: 0,
       store: 0,
       personal: 0,
     };
@@ -178,13 +189,16 @@ export function buildActivityReport(
 
   for (const receipt of filtered) {
     const amount = amountUsdt(receipt.value);
+    const ars = usdtToArs(amount, receiptRate(receipt, live));
     const flow = receiptFlow(receipt, opts.me);
     const origin = receiptOrigin(receipt, opts.storeIssuers, opts.me);
     const at = new Date(receipt.at);
     const bucket = bucketFor(at);
     if (flow === "in") {
       income += amount;
+      incomeArs += ars;
       bucket.income += amount;
+      bucket.incomeArs += ars;
       if (origin === "tienda") {
         storeIncome += amount;
         bucket.store += amount;
@@ -194,7 +208,9 @@ export function buildActivityReport(
       }
     } else if (flow === "out") {
       expense += amount;
+      expenseArs += ars;
       bucket.expense += amount;
+      bucket.expenseArs += ars;
       if (origin === "tienda") {
         storeExpense += amount;
         bucket.store += amount;
@@ -216,6 +232,9 @@ export function buildActivityReport(
     income,
     expense,
     net: income - expense,
+    incomeArs,
+    expenseArs,
+    netArs: incomeArs - expenseArs,
     store: storeIncome + storeExpense,
     personal: personalIncome + personalExpense,
     storeIncome,

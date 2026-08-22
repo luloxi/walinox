@@ -68,7 +68,7 @@ export function RedeemView({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <div className={embedded ? "space-y-3" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
+    <div className={embedded ? "space-y-3" : "mx-auto w-full max-w-lg space-y-3 pb-6"}>
       <Button type="button" className="h-12 w-full" onClick={() => setScanning((value) => !value)}>
         {scanning ? "Cerrar cámara" : "Escanear vale del cliente"}
       </Button>

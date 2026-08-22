@@ -6,7 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionBar } from "@/components/section-bar";
 import { Button } from "@/components/ui/button";
+import { PayCharge } from "@/components/pay-charge";
+import { PosView } from "@/components/pos-view";
+import { StoreShare } from "@/components/store-share";
 import { ProductBrowser } from "@/components/product-browser";
+import { QrScanner } from "@/components/qr-scanner";
 import { ProductFilters } from "@/components/product-filters";
 import { ProductForm } from "@/components/product-form";
 import { ValesView } from "@/components/vales-view";
@@ -15,6 +19,7 @@ import { useWallet } from "@/components/wallet-provider";
 import { Price } from "@/components/price";
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { listProducts, listStores, productsByIssuer, removeProduct } from "@/lib/catalog";
+import { decodeCharge, type ChargeRequest } from "@/lib/charge";
 import { seedLivedIn } from "@/lib/seed";
 import type { Store } from "@/lib/stores";
 import type { Product } from "@/lib/vale";
@@ -36,6 +41,8 @@ export function TiendaView() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState<ProductSort>("categoria");
+  const [payScan, setPayScan] = useState(false);
+  const [charge, setCharge] = useState<ChargeRequest | null>(null);
 
   function refresh() {
     seedLivedIn(wallet?.address);
@@ -66,7 +73,7 @@ export function TiendaView() {
   return (
     <div className="flex w-full flex-col pb-6">
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-0">
-        <SectionBar hint="Comprador: productos, locales y tus vales. Vendedor: primero escaneás el vale del cliente; abajo publicás.">
+        <SectionBar>
           <TabsList>
             <TabsTrigger value="comprador" className="cursor-pointer">
               Comprador
@@ -80,9 +87,33 @@ export function TiendaView() {
         <TabsContent value="comprador" className="mt-4">
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10">
             <ProductBrowser products={products} stores={stores} empty="No hay productos con eso." />
-            <section className="lg:sticky lg:top-2">
-              <p className="mb-3 text-sm font-medium">Tus vales</p>
-              <ValesView embedded />
+            <section className="space-y-5 lg:sticky lg:top-2">
+              {charge ? (
+                <PayCharge charge={charge} onBack={() => setCharge(null)} />
+              ) : (
+                <div>
+                  <p className="mb-2 text-sm font-medium">Pagar en el local</p>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Escaneá el pedido. Firmás sin red. El local publica el pago.
+                  </p>
+                  <Button type="button" className="h-11 w-full" onClick={() => setPayScan((value) => !value)}>
+                    {payScan ? "Cerrar cámara" : "Escanear pedido"}
+                  </Button>
+                  <QrScanner
+                    active={payScan}
+                    onResult={(text) => {
+                      const next = decodeCharge(text);
+                      if (!next) return;
+                      setCharge(next);
+                      setPayScan(false);
+                    }}
+                  />
+                </div>
+              )}
+              <div>
+                <p className="mb-3 text-sm font-medium">Tus vales</p>
+                <ValesView embedded />
+              </div>
             </section>
           </div>
         </TabsContent>
@@ -90,10 +121,13 @@ export function TiendaView() {
         <TabsContent value="vendedor" className="mt-4">
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start lg:gap-10">
           <div className="space-y-6 lg:sticky lg:top-2">
+          <PosView products={mine} />
           <section>
             <p className="mb-3 text-sm font-medium">Escanear vale del cliente</p>
             <RedeemView embedded />
           </section>
+
+          {wallet ? <StoreShare storeId={wallet.address} /> : null}
 
           <section>
             <div className="mb-3 flex items-center justify-between gap-2">

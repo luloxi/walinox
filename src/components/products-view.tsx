@@ -18,7 +18,7 @@ export function ProductsView() {
   }, []);
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
+    <div className="mx-auto w-full max-w-lg pb-6">
       <h2 className="text-lg font-semibold">Productos</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Publicá un bien físico. El precio se ve en pesos (USDT al blue) y se canjea en el local.

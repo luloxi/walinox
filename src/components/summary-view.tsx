@@ -5,7 +5,6 @@ import type { Receipt } from "@/lib/receipts";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { ActivityList } from "@/components/activity-list";
 import { ActivityCharts } from "@/components/activity-charts";
-import { SectionBar } from "@/components/section-bar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/components/wallet-provider";
@@ -19,6 +18,7 @@ import { etherscanAddressActivityUrl } from "@/lib/etherscan";
 import { listReceipts } from "@/lib/receipts";
 import { seedLivedIn } from "@/lib/seed";
 import { Price } from "@/components/price";
+import { useFx } from "@/components/use-fx";
 
 const PERIODS: { id: PeriodKind; label: string }[] = [
   { id: "month", label: "Mes" },
@@ -43,6 +43,7 @@ export function SummaryView() {
     return () => window.clearTimeout(timer);
   }, [wallet?.address]);
 
+  const fx = useFx();
   const report = useMemo(
     () =>
       buildActivityReport(receipts, {
@@ -50,14 +51,15 @@ export function SummaryView() {
         anchor,
         me: wallet?.address,
         storeIssuers,
+        arsPerUsdt: fx.perUsdt,
       }),
-    [receipts, kind, anchor, wallet?.address, storeIssuers],
+    [receipts, kind, anchor, wallet?.address, storeIssuers, fx.perUsdt],
   );
 
   const moneyStats = [
-    ["Ingresos", report.income],
-    ["Gastos", report.expense],
-    ["Neto", report.net],
+    ["Ingresos", report.income, report.incomeArs],
+    ["Gastos", report.expense, report.expenseArs],
+    ["Neto", report.net, report.netArs],
   ] as const;
 
   const address = wallet?.address;
@@ -65,15 +67,12 @@ export function SummaryView() {
 
   return (
     <div className="flex w-full flex-col pb-6">
-      <SectionBar hint="Ingresos y gastos de este período. Tienda es compra/venta de vales; personal es envío entre wallets." />
-
       <Tabs
         value={kind}
         onValueChange={(value) => {
           setKind(value as PeriodKind);
           setAnchor(new Date());
         }}
-        className="mt-3"
       >
         <TabsList>
           {PERIODS.map((item) => (
@@ -110,14 +109,14 @@ export function SummaryView() {
         </Button>
       </div>
 
-      <div className="mt-6 grid gap-8 xl:grid-cols-2 xl:items-start">
+      <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:items-start">
         <div>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
-            {moneyStats.map(([label, value]) => (
+            {moneyStats.map(([label, usdt, ars]) => (
               <div key={label} className="rounded-2xl bg-muted px-3 py-2">
                 <dt className="text-[11px] text-muted-foreground">{label}</dt>
                 <dd>
-                  <Price usdt={value} size="md" />
+                  <Price usdt={usdt} ars={ars} size="md" />
                 </dd>
               </div>
             ))}

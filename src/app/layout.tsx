@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { NotifyProvider } from "@/components/notify-provider";
 import { RegisterServiceWorker } from "@/components/register-sw";
+import { DisplayProvider } from "@/components/display-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WalletProvider } from "@/components/wallet-provider";
 import { Web3Provider } from "@/components/web3-provider";
@@ -63,13 +64,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         <RegisterServiceWorker />
         <ThemeProvider>
-          <Web3Provider>
-            <WalletProvider>
-              <NotifyProvider>
-                <AppShell>{children}</AppShell>
-              </NotifyProvider>
-            </WalletProvider>
-          </Web3Provider>
+          <DisplayProvider>
+            <Web3Provider>
+              <WalletProvider>
+                <NotifyProvider>
+                  <AppShell>{children}</AppShell>
+                </NotifyProvider>
+              </WalletProvider>
+            </Web3Provider>
+          </DisplayProvider>
         </ThemeProvider>
       </body>
     </html>

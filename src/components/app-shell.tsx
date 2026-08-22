@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { History, Settings, Store, Users, Wallet } from "lucide-react";
+import { BackLink, nestedBack } from "@/components/back-link";
 import { Brand } from "@/components/brand";
-import { InboxBell } from "@/components/inbox-bell";
 import { LoginScreen } from "@/components/login-screen";
+import { PublicShell } from "@/components/public-shell";
 import { useWallet } from "@/components/wallet-provider";
+import { isPublicStorePath } from "@/lib/store-link";
 
 const NAV = [
   { href: "/", label: "Billetera", icon: Wallet },
@@ -71,7 +72,17 @@ function NavLink({
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { ready, hydrating } = useWallet();
+  const { ready, hydrating, needsTos, needsMode } = useWallet();
+  const back = nestedBack(pathname);
+  const publicStore = isPublicStorePath(pathname);
+
+  if (needsTos || needsMode) {
+    return <LoginScreen />;
+  }
+
+  if (!ready && publicStore) {
+    return <PublicShell>{children}</PublicShell>;
+  }
 
   if (hydrating || !ready) {
     return <LoginScreen />;
@@ -86,22 +97,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavLink key={item.href} {...item} pathname={pathname} />
           ))}
         </nav>
-        <div className="mt-4 flex items-center gap-2 [&_button]:cursor-pointer">
-          <InboxBell />
-          <ConnectButton chainStatus="icon" showBalance={false} accountStatus="avatar" />
-        </div>
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 px-4 pt-4 md:hidden">
-          <Brand />
-          <div className="flex items-center gap-1 [&_button]:cursor-pointer">
-            <InboxBell />
-            <ConnectButton chainStatus="none" showBalance={false} accountStatus="avatar" />
-          </div>
+        <header className="flex shrink-0 items-center px-4 pt-4 md:hidden">
+          {back ? (
+            <BackLink href={back.href}>{back.label}</BackLink>
+          ) : (
+            <Brand />
+          )}
         </header>
-        <main className="shell-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-4 md:px-8 md:pb-8 md:pt-6 lg:px-10">
-          <div className="min-h-full w-full">{children}</div>
+        <main className="shell-scroll min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-24 pt-4 md:px-8 md:pb-8 md:pt-6 lg:px-10">
+          <div className="min-h-full w-full max-w-none">{children}</div>
         </main>
       </div>
 

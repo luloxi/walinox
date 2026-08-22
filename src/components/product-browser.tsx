@@ -9,7 +9,7 @@ import type { Product } from "@/lib/vale";
 
 function ProductGrid({ products }: { products: Product[] }) {
   return (
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {products.map((product) => (
         <ProductTile key={product.id} product={product} />
       ))}

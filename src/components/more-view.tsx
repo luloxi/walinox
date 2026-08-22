@@ -13,7 +13,7 @@ const ITEMS = [
 
 export function MoreView() {
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
+    <div className="mx-auto w-full max-w-lg pb-6">
       <h2 className="text-lg font-semibold">Negocio</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Contactos, historial por cliente y vales NFT de producto físico.

@@ -19,10 +19,13 @@ import { SaveContact } from "@/components/save-contact";
 import { QrScanner } from "@/components/qr-scanner";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { Price } from "@/components/price";
-import { arsToUsdt, formatUsdt, usdtToArs } from "@/lib/fx";
+import { fiatToUsdt, formatUsdt, usdtToFiat } from "@/lib/fx";
+import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
+import { fiatMeta, fiatPrefix } from "@/lib/display";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
+import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
@@ -65,7 +68,9 @@ function takePercent(balance: string, ratio: number): string {
 
 export function SendFlow() {
   const { wallet, error: walletError, connected } = useWallet();
+  const { needsSwitch, ensure } = usePaymentChain();
   const { usdt } = useUsdtBalance(wallet?.address);
+  const { prefs } = useDisplay();
   const fx = useFx();
   const [tab, setTab] = useState("online");
   const [to, setTo] = useState("");
@@ -129,6 +134,7 @@ export function SendFlow() {
     setError(null);
     setHash(null);
     try {
+      await ensure();
       const value = toBaseUnits(amount, USDT.decimals);
       const tx = await wallet.transfer(USDT.address, dest, value);
       setHash(tx);
@@ -203,19 +209,19 @@ export function SendFlow() {
     }
   }
 
-  const amount = exactUsdt ?? (arsAmount.trim() ? arsToUsdt(arsAmount, fx.arsPerUsdt) : "");
+  const amount = exactUsdt ?? (arsAmount.trim() ? fiatToUsdt(arsAmount, fx.perUsdt) : "");
   const hasBalance = Boolean(usdt && Number(usdt) > 0);
 
   function setFromUsdt(value: string) {
     setExactUsdt(value);
-    setArsAmount(String(Math.round(usdtToArs(value, fx.arsPerUsdt))));
+    setArsAmount(String(Math.round(usdtToFiat(value, fx.perUsdt))));
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
+    <div className="mx-auto w-full max-w-lg pb-6">
     <div className="space-y-3 pb-2 md:space-y-4">
       <Tabs value={tab} onValueChange={setTab}>
-        <SectionBar hint="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR.">
+        <SectionBar>
           <TabsList>
             <TabsTrigger value="online" className="cursor-pointer">
               Online
@@ -281,7 +287,7 @@ export function SendFlow() {
             </div>
             <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
               <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
-                $
+                {fiatPrefix(prefs.fiat)}
               </span>
               <Input
                 inputMode="decimal"
@@ -292,9 +298,9 @@ export function SendFlow() {
                 }}
                 placeholder="0"
                 className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
-                aria-label="Monto en pesos"
+                aria-label={`Monto en ${fiatMeta(prefs.fiat).name}`}
               />
-              <span className="pr-3 text-xs text-muted-foreground">ARS</span>
+              <span className="pr-3 text-xs text-muted-foreground">{prefs.fiat}</span>
             </div>
             {amount && Number(amount) > 0 ? (
               <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -346,6 +352,9 @@ export function SendFlow() {
             <div className="[&_button]:cursor-pointer">
               <ConnectButton label="Conectar wallet" />
             </div>
+          ) : null}
+          {needsSwitch ? (
+            <p className="text-xs text-muted-foreground">Al enviar te va a pedir cambiar a Ethereum.</p>
           ) : null}
           <Button
             type="button"

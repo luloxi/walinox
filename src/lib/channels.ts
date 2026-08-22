@@ -20,14 +20,14 @@ export type ChannelStatus = {
 };
 
 const LABELS: Record<Channel, { label: string; description: string }> = {
-  online: { label: "On-chain", description: "ERC-20 transfer. Gas paid in USDT via WDK 7702 gasless." },
-  qr: { label: "QR code", description: "Show or scan a QR. Primary offline path." },
-  ble: { label: "Bluetooth", description: "Web Bluetooth GATT write, Chrome/Android only." },
-  nfc: { label: "NFC", description: "Web NFC NDEF write, Android Chrome only." },
-  ultrasonic: { label: "Sound", description: "Short audio burst of the payload." },
-  optical: { label: "Light", description: "Flash the screen as a binary pattern." },
-  copy: { label: "Copy", description: "Copy the signed JSON to the clipboard." },
-  file: { label: "File", description: "Download or import a .json permit file." },
+  online: { label: "On-chain", description: "Transfer ERC-20. Gas en USDT vía WDK 7702." },
+  qr: { label: "QR", description: "Mostrá o escaneá. El camino principal sin internet." },
+  ble: { label: "Bluetooth", description: "Web Bluetooth. Chrome/Android." },
+  nfc: { label: "NFC", description: "Web NFC. Android Chrome." },
+  ultrasonic: { label: "Sonido", description: "Un burst corto con el payload." },
+  optical: { label: "Luz", description: "Destello de pantalla." },
+  copy: { label: "Copiar", description: "Copiá el JSON al portapapeles." },
+  file: { label: "Archivo", description: "Descargá o importá un .json." },
 };
 
 export function channelStatus(id: Channel): ChannelStatus {

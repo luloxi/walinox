@@ -77,6 +77,7 @@ describe("activity", () => {
 
     const all = buildActivityReport(rows, { kind: "all", me: ME, storeIssuers: [STORE] });
     expect(all.income).toBe(8);
+    expect(all.incomeArs).toBeGreaterThan(0);
     expect(all.buckets.length).toBeGreaterThanOrEqual(2);
   });
 
