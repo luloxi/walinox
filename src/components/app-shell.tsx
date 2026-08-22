@@ -15,14 +15,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-4 pb-32 pt-5">
-      <header className="mb-5 flex items-center justify-between">
-        <p className="text-sm font-semibold tracking-tight">Walinox</p>
-        <p className="text-[11px] text-muted-foreground">USDT · Ethereum</p>
-      </header>
-      <main className="flex-1">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0c1110]/92 backdrop-blur">
-        <div className="mx-auto grid max-w-md grid-cols-4 px-1 py-2">
+    <div className="flex h-dvh flex-col md:flex-row">
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-white/10 px-4 py-6 md:flex">
+        <p className="px-2 text-sm font-semibold tracking-tight">Walinox</p>
+        <p className="mt-1 px-2 text-[11px] text-muted-foreground">USDT · Ethereum</p>
+        <nav className="mt-8 flex flex-col gap-1">
+          {NAV.map((item) => {
+            const active = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${
+                  active ? "bg-white/10 text-teal-300" : "text-muted-foreground hover:bg-white/5"
+                }`}
+              >
+                <Icon className="size-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 items-center justify-between px-4 pt-4 md:hidden">
+          <p className="text-sm font-semibold tracking-tight">Walinox</p>
+          <p className="text-[11px] text-muted-foreground">USDT · Ethereum</p>
+        </header>
+        <main className="min-h-0 flex-1 overflow-hidden px-4 pb-24 pt-4 md:px-10 md:pb-8 md:pt-8">
+          <div className="h-full min-h-0">{children}</div>
+        </main>
+      </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0c1110]/92 backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-4 px-1 py-2">
           {NAV.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;

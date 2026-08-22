@@ -47,10 +47,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="es"
+      className={`dark ${geistSans.variable} ${geistMono.variable} h-dvh overflow-hidden antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">
+      <body className="h-dvh overflow-hidden bg-background text-foreground">
         <RegisterServiceWorker />
         <WalletProvider>
           <AppShell>{children}</AppShell>

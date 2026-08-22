@@ -173,7 +173,8 @@ export function SendFlow() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
+    <div className="space-y-5 pb-4">
       <div>
         <h2 className="text-lg font-semibold">Enviar</h2>
         <p className="text-xs text-muted-foreground">Online con gas, o sin internet con un QR.</p>
@@ -304,6 +305,7 @@ export function SendFlow() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
+    </div>
     </div>
   );
 }

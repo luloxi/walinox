@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { WalletCard } from "@/components/wallet-card";
 import { Guide } from "@/components/guide";
 import { ActivityList } from "@/components/activity-list";
@@ -12,38 +11,26 @@ export function HomeScreen() {
   const [recent, setRecent] = useState<Receipt[]>([]);
 
   useEffect(() => {
-    setRecent(listReceipts().slice(0, 4));
+    setRecent(listReceipts().slice(0, 8));
   }, []);
 
   return (
-    <div className="space-y-5">
-      <WalletCard />
+    <div className="relative h-full min-h-0">
       <Guide />
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/send"
-          className="flex h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl bg-teal-400 text-zinc-950"
-        >
-          <ArrowUpRight className="size-6" />
-          <span className="text-sm font-semibold">Enviar</span>
-        </Link>
-        <Link
-          href="/receive"
-          className="flex h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl bg-white/10 ring-1 ring-white/10"
-        >
-          <ArrowDownLeft className="size-6" />
-          <span className="text-sm font-semibold">Recibir</span>
-        </Link>
-      </div>
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="flex h-full min-h-0 flex-col gap-4 md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-8">
+      <WalletCard actions />
+      <section className="flex min-h-0 flex-1 flex-col">
+        <div className="mb-2 flex shrink-0 items-center justify-between">
           <h2 className="text-sm font-medium">Actividad</h2>
           <Link href="/summary" className="cursor-pointer text-xs text-teal-300">
             Ver todo
           </Link>
         </div>
-        <ActivityList receipts={recent} empty="Todavía no moviste nada." />
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <ActivityList receipts={recent} empty="Todavía no moviste nada." />
+        </div>
       </section>
+      </div>
     </div>
   );
 }

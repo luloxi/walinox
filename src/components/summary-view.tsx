@@ -27,8 +27,11 @@ export function SummaryView() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto flex h-full min-h-0 max-w-3xl flex-col gap-5 overflow-y-auto md:grid md:grid-cols-2 md:overflow-hidden">
+    <div className="shrink-0 md:h-full">
       <WalletCard />
+    </div>
+    <div className="min-h-0 space-y-5 md:overflow-y-auto">
       <Card>
         <CardHeader>
           <CardTitle>{summary.label}</CardTitle>
@@ -52,6 +55,7 @@ export function SummaryView() {
           empty="Sin movimientos este mes. Enviá o recibí desde Inicio."
         />
       </section>
+    </div>
     </div>
   );
 }
