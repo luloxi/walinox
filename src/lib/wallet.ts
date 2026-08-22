@@ -71,6 +71,7 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
     return gasless;
   }
 
+  /** Try WDK 7702 gasless (gas paid in USDT) first; fall back to plain EOA (needs ETH). */
   async function gaslessThenEvm<T>(
     run: (session: GaslessSession) => Promise<T>,
     fallback: () => Promise<T>,
@@ -84,7 +85,9 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
     try {
       return await fallback();
     } catch (ethErr) {
-      throw new Error(`Gasless USDT: ${errMsg(gaslessErr)}. ETH: ${errMsg(ethErr)}`);
+      throw new Error(
+        `Gasless USDT falló (${errMsg(gaslessErr)}). Fallback EOA también falló: ${errMsg(ethErr)}`,
+      );
     }
   }
 
