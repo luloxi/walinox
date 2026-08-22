@@ -22,6 +22,7 @@ export async function sendCall(to: string, data: string): Promise<string> {
 
 const ERC20 = new Interface([
   "function approve(address spender, uint256 amount)",
+  "function transfer(address to, uint256 amount)",
 ]);
 
 export function encodeApprove(
@@ -32,5 +33,16 @@ export function encodeApprove(
   return {
     to: getAddress(token),
     data: ERC20.encodeFunctionData("approve", [getAddress(spender), amount]),
+  };
+}
+
+export function encodeTransfer(
+  token: string,
+  to: string,
+  amount: string,
+): { to: string; data: string } {
+  return {
+    to: getAddress(token),
+    data: ERC20.encodeFunctionData("transfer", [getAddress(to), amount]),
   };
 }

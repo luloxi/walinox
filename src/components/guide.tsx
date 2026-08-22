@@ -16,19 +16,19 @@ export function Guide() {
 
   return (
     <div className="rounded-3xl border border-teal-400/20 bg-teal-400/5 p-5">
-      <p className="text-sm font-medium">How this works</p>
+      <p className="text-sm font-medium">Tu plata, dos formas de moverla</p>
       <ol className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
         <li>
-          <span className="font-medium text-foreground">1. Send.</span> Write who can spend
-          your tokens, then sign on this phone.
+          <span className="font-medium text-foreground">Recibir:</span> copiá tu address (como un
+          CBU) o mostrá el QR.
         </li>
         <li>
-          <span className="font-medium text-foreground">2. Show the QR</span> to the other
-          phone — no internet needed.
+          <span className="font-medium text-foreground">Enviar online:</span> address + monto +
+          Enviar (hace falta ETH para gas).
         </li>
         <li>
-          <span className="font-medium text-foreground">3. Scan</span> on the other phone.
-          They submit it on-chain later (that part needs gas).
+          <span className="font-medium text-foreground">Enviar sin internet:</span> firmás acá y le
+          mostrás el QR al otro. Ellos lo mandan a la red después.
         </li>
       </ol>
       <Button
@@ -39,7 +39,7 @@ export function Guide() {
           setOpen(false);
         }}
       >
-        Got it — let’s go
+        Entendido
       </Button>
     </div>
   );

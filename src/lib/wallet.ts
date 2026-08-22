@@ -1,5 +1,6 @@
 import WDK from "@tetherto/wdk";
 import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
+import { RPC_URL } from "@/lib/balance";
 import type { Eip712Domain, PermitTypedData } from "@/lib/permit";
 
 export const SEED_STORAGE_KEY = "walinox.seed";
@@ -15,6 +16,7 @@ export type LocalWallet = {
   address: string;
   signTypedData: (typed: Signable) => Promise<string>;
   signPermit: (typed: PermitTypedData) => Promise<string>;
+  transfer: (token: string, recipient: string, amount: string) => Promise<string>;
   dispose: () => void;
 };
 
@@ -27,10 +29,17 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
     throw new Error("Invalid BIP-39 seed phrase");
   }
 
-  const wdk = new WDK(seedPhrase).registerWallet("ethereum", WalletManagerEvm, {});
+  const wdk = new WDK(seedPhrase).registerWallet("ethereum", WalletManagerEvm, {
+    provider: RPC_URL,
+  });
   const account = await wdk.getAccount("ethereum", 0);
   const evm = account as typeof account & {
     signTypedData: (typed: Signable) => Promise<string>;
+    transfer: (opts: {
+      token: string;
+      recipient: string;
+      amount: bigint;
+    }) => Promise<{ hash: string }>;
   };
   if (typeof evm.signTypedData !== "function") {
     throw new Error("WDK EVM account is missing signTypedData");
@@ -49,6 +58,14 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
         types: typed.types,
         message: typed.message,
       });
+    },
+    async transfer(token, recipient, amount) {
+      const result = await evm.transfer({
+        token,
+        recipient,
+        amount: BigInt(amount),
+      });
+      return result.hash;
     },
     dispose() {
       evm.dispose();

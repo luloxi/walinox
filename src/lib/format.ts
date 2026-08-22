@@ -3,6 +3,13 @@ export function shortAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
+export function fromBaseUnits(value: string, decimals = 6): string {
+  const padded = value.padStart(decimals + 1, "0");
+  const whole = padded.slice(0, -decimals) || "0";
+  const frac = padded.slice(-decimals).replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : whole;
+}
+
 export function formatTokenAmount(value: string, decimals = 6, symbol = "USDC"): string {
   const padded = value.padStart(decimals + 1, "0");
   const whole = padded.slice(0, -decimals) || "0";

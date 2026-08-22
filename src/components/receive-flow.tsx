@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
+import { useWallet } from "@/components/wallet-provider";
 import { decodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { broadcastPermit, encodePermitCall, validatePermitSignature, type PermitTypedData } from "@/lib/permit";
 import {
@@ -18,6 +19,8 @@ import {
 import { sendCall } from "@/lib/chain";
 import { receiptFromPermit } from "@/lib/receipts";
 import { tokenByAddress } from "@/lib/tokens";
+import { payloadToDataUrl } from "@/lib/qr";
+import { shortAddress } from "@/lib/format";
 import type { Channel } from "@/lib/channels";
 
 type Result = {
@@ -71,12 +74,20 @@ function ingest(raw: string, channel: Channel): Result {
 }
 
 export function ReceiveFlow() {
+  const { wallet } = useWallet();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [addressQr, setAddressQr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [pasted, setPasted] = useState("");
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [tx, setTx] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!wallet) return;
+    void payloadToDataUrl(wallet.address).then(setAddressQr);
+  }, [wallet]);
 
   useEffect(() => {
     if (!scanning) return;
@@ -111,14 +122,14 @@ export function ReceiveFlow() {
               setError(null);
               return;
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Invalid QR payload");
+              setError(err instanceof Error ? err.message : "QR inválido");
             }
           }
           frame = requestAnimationFrame(tick);
         };
         frame = requestAnimationFrame(tick);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Camera unavailable");
+        setError(err instanceof Error ? err.message : "No hay cámara");
         setScanning(false);
       }
     }
@@ -130,24 +141,6 @@ export function ReceiveFlow() {
     };
   }, [scanning]);
 
-  function fromPaste() {
-    try {
-      setResult(ingest(pasted, "copy"));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid payload");
-    }
-  }
-
-  async function fromFile(file: File) {
-    try {
-      setResult(ingest(await file.text(), "file"));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid file");
-    }
-  }
-
   const envelope = result?.envelope;
   const tokenLabel = envelope
     ? `${tokenByAddress(envelope.token)?.symbol ?? envelope.token} · ${envelope.kind}`
@@ -155,160 +148,193 @@ export function ReceiveFlow() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="text-sm font-medium">You’re the other phone</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Point the camera at their QR. If that fails, ask them to tap Copy and paste it here.
+      <div>
+        <h2 className="text-lg font-semibold">Recibir</h2>
+        <p className="text-xs text-muted-foreground">
+          Mostrá tu address o escaneá un permiso offline.
         </p>
       </div>
-      {result && envelope ? (
-        <div className="space-y-3">
-          <p className={result.valid ? "text-sm text-teal-300" : "text-sm text-red-400"}>
-            {result.valid
-              ? `Signature valid · owner ${envelope.owner.slice(0, 8)}…`
-              : `Invalid signature${result.reason ? `: ${result.reason}` : ""}`}
+
+      <Tabs defaultValue="me">
+        <TabsList className="w-full">
+          <TabsTrigger value="me" className="flex-1 cursor-pointer">
+            Mi address
+          </TabsTrigger>
+          <TabsTrigger value="scan" className="flex-1 cursor-pointer">
+            Escanear permiso
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="me" className="mt-4 space-y-3">
+          {addressQr ? (
+            <div className="overflow-hidden rounded-3xl bg-white p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={addressQr} alt="Tu address" className="mx-auto h-56 w-56" />
+            </div>
+          ) : (
+            <div className="flex h-56 items-center justify-center rounded-3xl bg-white/5 text-sm text-muted-foreground">
+              Generando QR…
+            </div>
+          )}
+          <p className="break-all text-center font-mono text-xs text-muted-foreground">
+            {wallet ? wallet.address : "…"}
           </p>
-          <PermitCard
-            kind={envelope.kind}
-            owner={envelope.owner}
-            spender={envelope.spender}
-            value={envelope.value}
-            tokenLabel={tokenLabel}
-            nonce={String(envelope.typedData.message.nonce ?? "")}
-            deadline={String(envelope.typedData.message.deadline ?? "")}
-            chainId={envelope.typedData.domain.chainId}
-            explanation={envelope.explanation}
-            complianceNote={envelope.complianceNote}
-          />
-          {result.valid ? (
-            <div className="space-y-2">
-              {envelope.kind === "permit2" ? (
-                <>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    USDT has no <span className="font-mono">permit()</span>. Owner must have
-                    approved Permit2 once. This call is Permit2.permitTransferFrom — spender
-                    submits, USDT moves.
-                  </p>
-                  <Button
-                    type="button"
-                    className="h-11 w-full"
-                    onClick={() => {
-                      const { to, data } = encodePermit2TransferFrom(
-                        buildPermit2({
-                          token: envelope.token,
-                          spender: envelope.spender,
-                          amount: envelope.value,
-                          nonce: String(envelope.typedData.message.nonce ?? ""),
-                          deadline: String(envelope.typedData.message.deadline ?? ""),
-                          chainId: envelope.typedData.domain.chainId,
-                        }),
-                        envelope.signature,
-                        envelope.owner,
-                      );
-                      void sendCall(to, data)
-                        .then(setTx)
-                        .catch((err: unknown) =>
-                          setError(err instanceof Error ? err.message : "Broadcast failed"),
+          <Button
+            type="button"
+            className="h-11 w-full"
+            disabled={!wallet}
+            onClick={() => {
+              if (!wallet) return;
+              void navigator.clipboard.writeText(wallet.address).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1200);
+              });
+            }}
+          >
+            {copied ? "Address copiada" : "Copiar address"}
+          </Button>
+        </TabsContent>
+
+        <TabsContent value="scan" className="mt-4 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Si te mandaron un permiso sin internet, escaneá el QR o pegá el JSON.
+          </p>
+          {result && envelope ? (
+            <div className="space-y-3">
+              <p className={result.valid ? "text-sm text-teal-300" : "text-sm text-red-400"}>
+                {result.valid
+                  ? `Firma válida · ${shortAddress(envelope.owner)}`
+                  : `Firma inválida${result.reason ? `: ${result.reason}` : ""}`}
+              </p>
+              <PermitCard
+                kind={envelope.kind}
+                owner={envelope.owner}
+                spender={envelope.spender}
+                value={envelope.value}
+                tokenLabel={tokenLabel}
+                nonce={String(envelope.typedData.message.nonce ?? "")}
+                deadline={String(envelope.typedData.message.deadline ?? "")}
+                chainId={envelope.typedData.domain.chainId}
+                explanation={envelope.explanation}
+                complianceNote={envelope.complianceNote}
+              />
+              {result.valid ? (
+                <div className="space-y-2">
+                  {envelope.kind === "permit2" ? (
+                    <Button
+                      type="button"
+                      className="h-11 w-full"
+                      onClick={() => {
+                        const { to, data } = encodePermit2TransferFrom(
+                          buildPermit2({
+                            token: envelope.token,
+                            spender: envelope.spender,
+                            amount: envelope.value,
+                            nonce: String(envelope.typedData.message.nonce ?? ""),
+                            deadline: String(envelope.typedData.message.deadline ?? ""),
+                            chainId: envelope.typedData.domain.chainId,
+                          }),
+                          envelope.signature,
+                          envelope.owner,
                         );
-                    }}
-                  >
-                    Submit via Permit2
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    EIP-712 signed this Permit. ERC-2612 permit() sets allowance. Tokens move on
-                    transferFrom.
-                  </p>
-                  <Button
-                    type="button"
-                    className="h-11 w-full"
-                    onClick={() => {
-                      void broadcastPermit(
-                        envelope.typedData as unknown as PermitTypedData,
-                        envelope.signature,
-                      )
-                        .then(setTx)
-                        .catch((err: unknown) =>
-                          setError(err instanceof Error ? err.message : "Broadcast failed"),
-                        );
-                    }}
-                  >
-                    Submit permit()
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 w-full"
-                    onClick={() => {
-                      const { data } = encodePermitCall(
-                        envelope.typedData as unknown as PermitTypedData,
-                        envelope.signature,
-                      );
-                      void navigator.clipboard.writeText(data);
-                      setTx("calldata copied");
-                    }}
-                  >
-                    Copy permit() calldata
-                  </Button>
-                </>
-              )}
-              {tx ? (
-                <p className="font-mono text-[11px] break-all text-muted-foreground">{tx}</p>
+                        void sendCall(to, data)
+                          .then(setTx)
+                          .catch((err: unknown) =>
+                            setError(err instanceof Error ? err.message : "Falló el envío"),
+                          );
+                      }}
+                    >
+                      Enviar por Permit2
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        className="h-11 w-full"
+                        onClick={() => {
+                          void broadcastPermit(
+                            envelope.typedData as unknown as PermitTypedData,
+                            envelope.signature,
+                          )
+                            .then(setTx)
+                            .catch((err: unknown) =>
+                              setError(err instanceof Error ? err.message : "Falló el envío"),
+                            );
+                        }}
+                      >
+                        Enviar permit()
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 w-full"
+                        onClick={() => {
+                          const { data } = encodePermitCall(
+                            envelope.typedData as unknown as PermitTypedData,
+                            envelope.signature,
+                          );
+                          void navigator.clipboard.writeText(data);
+                          setTx("calldata copiado");
+                        }}
+                      >
+                        Copiar calldata
+                      </Button>
+                    </>
+                  )}
+                  {tx ? (
+                    <p className="break-all font-mono text-[11px] text-muted-foreground">{tx}</p>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           ) : null}
-        </div>
-      ) : null}
 
-      <Tabs defaultValue="qr">
-        <TabsList className="w-full">
-          <TabsTrigger value="qr" className="flex-1 cursor-pointer">
-            Scan QR
-          </TabsTrigger>
-          <TabsTrigger value="paste" className="flex-1 cursor-pointer">
-            Paste
-          </TabsTrigger>
-          <TabsTrigger value="file" className="flex-1 cursor-pointer">
-            File
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="qr" className="space-y-3">
           <video
             ref={videoRef}
             className="aspect-square w-full rounded-2xl bg-black object-cover"
             muted
             playsInline
           />
-          <Button
-            type="button"
-            className="h-11 w-full"
-            onClick={() => setScanning((value) => !value)}
-          >
-            {scanning ? "Stop camera" : "Scan QR"}
+          <Button type="button" className="h-11 w-full" onClick={() => setScanning((value) => !value)}>
+            {scanning ? "Parar cámara" : "Escanear QR"}
           </Button>
-        </TabsContent>
-        <TabsContent value="paste" className="space-y-3">
           <Textarea
             value={pasted}
             onChange={(event) => setPasted(event.target.value)}
-            rows={5}
-            placeholder="Paste the signed permit JSON"
+            rows={3}
+            placeholder="O pegá el JSON acá"
             className="font-mono text-xs"
           />
-          <Button type="button" className="h-11 w-full" onClick={fromPaste}>
-            Validate payload
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => {
+              try {
+                setResult(ingest(pasted, "copy"));
+                setError(null);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "JSON inválido");
+              }
+            }}
+          >
+            Validar JSON
           </Button>
-        </TabsContent>
-        <TabsContent value="file" className="space-y-3">
           <Input
             type="file"
             accept="application/json,.json"
             className="cursor-pointer"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) void fromFile(file);
+              if (!file) return;
+              void file.text().then((text) => {
+                try {
+                  setResult(ingest(text, "file"));
+                  setError(null);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Archivo inválido");
+                }
+              });
             }}
           />
         </TabsContent>

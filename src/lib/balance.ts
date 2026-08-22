@@ -1,7 +1,11 @@
 import { Contract, JsonRpcProvider, formatUnits } from "ethers";
 import { USDC, USDT } from "@/lib/tokens";
 
-const RPC = process.env.RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+export const RPC_URL =
+  process.env.NEXT_PUBLIC_RPC_URL ??
+  process.env.RPC_URL ??
+  "https://ethereum-rpc.publicnode.com";
+
 const ABI = ["function balanceOf(address) view returns (uint256)"];
 
 export type TokenBalances = {
@@ -10,7 +14,7 @@ export type TokenBalances = {
 };
 
 export async function readBalances(owner: string): Promise<TokenBalances> {
-  const provider = new JsonRpcProvider(RPC, 1, { staticNetwork: true });
+  const provider = new JsonRpcProvider(RPC_URL, 1, { staticNetwork: true });
   const [usdt, usdc] = await Promise.all([
     new Contract(USDT.address, ABI, provider).balanceOf(owner),
     new Contract(USDC.address, ABI, provider).balanceOf(owner),

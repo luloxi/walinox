@@ -21,8 +21,7 @@ export const metadata: Metadata = {
     default: "Walinox",
     template: "%s · Walinox",
   },
-  description:
-    "Let someone spend your USDT — sign offline, send by QR.",
+  description: "Billetera USDT: saldo, enviar y recibir. Online o sin internet.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

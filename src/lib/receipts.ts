@@ -3,10 +3,10 @@ import type { Channel } from "@/lib/channels";
 export type ReceiptAction = "created" | "signed" | "sent" | "received";
 
 export const ACTION_LABEL: Record<ReceiptAction, string> = {
-  created: "Drafted",
-  signed: "You signed",
-  sent: "You sent",
-  received: "You received",
+  created: "Borrador",
+  signed: "Firmaste",
+  sent: "Enviaste",
+  received: "Recibiste",
 };
 
 export type Receipt = {

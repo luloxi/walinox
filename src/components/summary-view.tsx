@@ -20,10 +20,10 @@ export function SummaryView() {
   }, []);
 
   const stats = [
-    ["This month", String(summary.count)],
-    ["Signed", String(summary.signed)],
-    ["Sent", String(summary.sent)],
-    ["Received", String(summary.received)],
+    ["Este mes", String(summary.count)],
+    ["Firmas", String(summary.signed)],
+    ["Envíos", String(summary.sent)],
+    ["Recibidos", String(summary.received)],
   ];
 
   return (
@@ -46,10 +46,10 @@ export function SummaryView() {
         </CardContent>
       </Card>
       <section className="space-y-2">
-        <h2 className="text-sm font-medium">All activity</h2>
+        <h2 className="text-sm font-medium">Movimientos</h2>
         <ActivityList
           receipts={summary.receipts}
-          empty="No activity this month. Send a permission from the first tab."
+          empty="Sin movimientos este mes. Enviá o recibí desde Inicio."
         />
       </section>
     </div>

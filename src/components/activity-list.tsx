@@ -18,7 +18,7 @@ export function ActivityList({ receipts, empty }: { receipts: Receipt[]; empty: 
             <span className="font-medium">
               {ACTION_LABEL[receipt.action]}
               <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                via {receipt.channel}
+                · {receipt.channel === "online" ? "on-chain" : receipt.channel}
               </span>
             </span>
             <time className="text-[11px] text-muted-foreground">

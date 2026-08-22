@@ -1,4 +1,5 @@
 export const CHANNELS = [
+  "online",
   "qr",
   "ble",
   "nfc",
@@ -19,6 +20,7 @@ export type ChannelStatus = {
 };
 
 const LABELS: Record<Channel, { label: string; description: string }> = {
+  online: { label: "On-chain", description: "Normal ERC-20 transfer with gas." },
   qr: { label: "QR code", description: "Show or scan a QR. Primary offline path." },
   ble: { label: "Bluetooth", description: "Web Bluetooth GATT write, Chrome/Android only." },
   nfc: { label: "NFC", description: "Web NFC NDEF write, Android Chrome only." },

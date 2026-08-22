@@ -17,7 +17,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [optical, setOptical] = useState(false);
   const payload = encodeEnvelope(envelope);
-  const statuses = allChannelStatuses();
+  const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
 
   async function markSent(channel: Channel, detail: string) {
     receiptFromPermit(

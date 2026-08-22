@@ -1,5 +1,5 @@
-import { CreateFlow } from "@/components/create-flow";
+import { HomeScreen } from "@/components/home-screen";
 
-export default function CreatePage() {
-  return <CreateFlow />;
+export default function HomePage() {
+  return <HomeScreen />;
 }
