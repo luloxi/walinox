@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddressInput } from "@/components/address-input";
 import { ContactPicker } from "@/components/contact-picker";
 import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
+import Link from "next/link";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { useWallet } from "@/components/wallet-provider";
@@ -129,9 +131,12 @@ export function ProductDetail() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto pb-4">
-      <p className="text-xs text-muted-foreground">{product.issuerName}</p>
-      <h2 className="text-xl font-semibold">{product.title}</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Retiro: {product.redemptionPlace}</p>
+      <SectionBar title={product.title} hint={`Retiro: ${product.redemptionPlace}`}>
+        <Link href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`} className="cursor-pointer text-xs text-teal-300">
+          Volver
+        </Link>
+      </SectionBar>
+      <p className="mt-2 text-xs text-muted-foreground">{product.issuerName}</p>
       {product.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={product.image} alt="" className="mt-4 h-40 w-full rounded-2xl object-cover" />

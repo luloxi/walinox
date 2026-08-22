@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ActivityList } from "@/components/activity-list";
 import { WalletCard } from "@/components/wallet-card";
 import {
@@ -9,6 +9,7 @@ import {
   listReceipts,
   type MonthlySummary,
 } from "@/lib/receipts";
+import { SectionBar } from "@/components/section-bar";
 
 export function SummaryView() {
   const [summary, setSummary] = useState<MonthlySummary>(() =>
@@ -32,11 +33,9 @@ export function SummaryView() {
       <WalletCard />
     </div>
     <div className="min-h-0 space-y-5 md:overflow-y-auto">
+      <SectionBar title={summary.label} />
       <Card>
-        <CardHeader>
-          <CardTitle>{summary.label}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           <dl className="grid grid-cols-2 gap-3 text-sm">
             {stats.map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-white/5 px-3 py-2">

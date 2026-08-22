@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { ProductForm } from "@/components/product-form";
 import { ValesView } from "@/components/vales-view";
@@ -29,20 +29,22 @@ export function TiendaView() {
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex items-center gap-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="comprar" className="flex-1 cursor-pointer">
+        <SectionBar
+          title={tab === "vales" ? "Vales" : tab === "vender" ? "Vender" : "Locales"}
+          hint="1. Comprás. 2. Te queda un vale. 3. Lo mostrás en el local."
+        >
+          <TabsList>
+            <TabsTrigger value="comprar" className="cursor-pointer">
               Comprar
             </TabsTrigger>
-            <TabsTrigger value="vales" className="flex-1 cursor-pointer">
-              Mis vales
+            <TabsTrigger value="vales" className="cursor-pointer">
+              Vales
             </TabsTrigger>
-            <TabsTrigger value="vender" className="flex-1 cursor-pointer">
+            <TabsTrigger value="vender" className="cursor-pointer">
               Vender
             </TabsTrigger>
           </TabsList>
-          <Hint text="1. Comprás. 2. Te queda un vale. 3. Lo mostrás en el local y te dan el producto." />
-        </div>
+        </SectionBar>
 
         <TabsContent value="comprar" className="mt-4">
           <ul className="space-y-2 pb-4">

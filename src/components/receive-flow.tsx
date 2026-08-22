@@ -20,7 +20,7 @@ import { tokenByAddress } from "@/lib/tokens";
 import { payloadToDataUrl } from "@/lib/qr";
 import { shortAddress } from "@/lib/format";
 import { QrScanner } from "@/components/qr-scanner";
-import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import type { Channel } from "@/lib/channels";
 
@@ -98,17 +98,19 @@ export function ReceiveFlow() {
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
     <div className="space-y-5 pb-4">
       <Tabs defaultValue="me">
-        <div className="flex items-center gap-2">
-        <TabsList className="w-full">
-          <TabsTrigger value="me" className="flex-1 cursor-pointer">
-            Mi address
-          </TabsTrigger>
-          <TabsTrigger value="scan" className="flex-1 cursor-pointer">
-            Escanear
-          </TabsTrigger>
-        </TabsList>
-        <Hint text="Mostrá tu address o escaneá un permiso firmado offline para cobrarlo on-chain." />
-        </div>
+        <SectionBar
+          title="Depósito"
+          hint="Mostrá tu address o escaneá un permiso firmado offline."
+        >
+          <TabsList>
+            <TabsTrigger value="me" className="cursor-pointer">
+              Address
+            </TabsTrigger>
+            <TabsTrigger value="scan" className="cursor-pointer">
+              Escanear
+            </TabsTrigger>
+          </TabsList>
+        </SectionBar>
 
         <TabsContent value="me" className="mt-4 space-y-3">
           {addressQr ? (

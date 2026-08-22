@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
 import { useWallet } from "@/components/wallet-provider";
 import { saveProduct } from "@/lib/catalog";
 import { DEFAULT_TERMS, productIdFor, type Product } from "@/lib/vale";
@@ -55,10 +55,7 @@ export function ProductForm({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className={embedded ? "space-y-2" : "mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto"}>
-      <div className="flex items-center">
-        <span className="text-sm">Nuevo producto</span>
-        <Hint text="Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás." />
-      </div>
+      <SectionBar title="Nuevo" hint="Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás." />
       <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Qué vendés" className="h-11" />
       <Input
         value={price}

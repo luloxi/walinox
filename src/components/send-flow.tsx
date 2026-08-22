@@ -7,7 +7,7 @@ import { ClipboardPaste, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddressInput } from "@/components/address-input";
-import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -202,17 +202,19 @@ export function SendFlow() {
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
     <div className="space-y-5 pb-4">
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex items-center gap-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="online" className="flex-1 cursor-pointer">
+        <SectionBar
+          title="Envío"
+          hint="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR."
+        >
+          <TabsList>
+            <TabsTrigger value="online" className="cursor-pointer">
               Online
             </TabsTrigger>
-            <TabsTrigger value="offline" className="flex-1 cursor-pointer">
-              Sin internet
+            <TabsTrigger value="offline" className="cursor-pointer">
+              QR
             </TabsTrigger>
           </TabsList>
-          <Hint text="Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR." />
-        </div>
+        </SectionBar>
 
         <div className="mt-4 space-y-3">
           <div className="space-y-1.5">

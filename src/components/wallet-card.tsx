@@ -33,13 +33,15 @@ export function WalletCard() {
     <div className="flex flex-col rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-6">
       <div>
         <p className="text-[11px] font-medium tracking-[0.18em] text-teal-200/80 uppercase">
-          Saldo
+          Saldo disponible
           <Hint text="En localhost el saldo es de prueba. Conectá una wallet para firmar envíos reales en Ethereum." />
         </p>
-        <p className="mt-3 flex items-center gap-3 text-4xl font-semibold tracking-tight md:text-5xl">
+        <p className="mt-3 flex items-baseline gap-2 text-4xl font-semibold tracking-tight md:text-5xl">
           {usdt == null ? "—" : Number(usdt).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          <UsdtLogo className="size-8 shrink-0 md:size-10" />
-          <span className="sr-only">USDT</span>
+          <span className="inline-flex items-center gap-1 text-lg font-medium text-teal-200/80">
+            <UsdtLogo className="size-5" />
+            USDT
+          </span>
         </p>
         {!connected ? (
           <div className="mt-3 [&_button]:cursor-pointer">

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { SectionBar } from "@/components/section-bar";
+import { Button } from "@/components/ui/button";
 import { productsByStore } from "@/lib/catalog";
 import { storeById } from "@/lib/stores";
 import type { Product } from "@/lib/vale";
@@ -22,8 +24,11 @@ export function StoreView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <p className="text-sm font-medium">{name}</p>
-      {store ? <p className="text-xs text-muted-foreground">{store.place}</p> : null}
+      <SectionBar title={name} hint={store?.place}>
+        <Button asChild variant="ghost" className="h-8 px-2">
+          <Link href="/tienda">Volver</Link>
+        </Button>
+      </SectionBar>
       <ul className="mt-4 space-y-2 pb-4">
         {products.map((product) => (
           <li key={product.id}>

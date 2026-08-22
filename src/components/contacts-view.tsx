@@ -13,7 +13,7 @@ import {
 } from "@/lib/contacts";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { shortAddress } from "@/lib/format";
-import { Hint } from "@/components/hint";
+import { SectionBar } from "@/components/section-bar";
 
 export function ContactsView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -31,9 +31,10 @@ export function ContactsView() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-lg flex-col overflow-y-auto">
-      <div className="flex justify-end">
-        <Hint text="Guardá una address con nombre. El historial se arma con los movimientos entre ustedes." />
-      </div>
+      <SectionBar
+        title="Agenda"
+        hint="Guardá una address con nombre. El historial se arma solo."
+      />
       <form
         className="mt-3 space-y-2 rounded-2xl border border-white/10 p-3"
         onSubmit={(event) => {
