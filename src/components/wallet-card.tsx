@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Check, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
 
@@ -66,36 +65,34 @@ export function WalletCard({ actions = false }: { actions?: boolean }) {
             Sin red: no se puede ver el saldo. Igual podés firmar offline.
           </p>
         ) : null}
-      </div>
-      <div className="mt-6 space-y-3">
-        <Button
+        <button
           type="button"
-          variant="secondary"
-          className="h-11 w-full"
+          className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-muted-foreground hover:bg-white/10"
           onClick={() => void copy(address)}
+          aria-label={copied ? "Address copiada" : "Copiar address"}
         >
-          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          {copied ? "Address copiada" : `Copiar address · ${shortAddress(address)}`}
-        </Button>
-        {actions ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/send"
-              className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-teal-400 text-sm font-semibold text-zinc-950"
-            >
-              <ArrowUpRight className="size-5" />
-              Enviar
-            </Link>
-            <Link
-              href="/receive"
-              className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold ring-1 ring-white/10"
-            >
-              <ArrowDownLeft className="size-5" />
-              Recibir
-            </Link>
-          </div>
-        ) : null}
+          <span className="font-mono text-sm">{shortAddress(address)}</span>
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        </button>
       </div>
+      {actions ? (
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Link
+            href="/send"
+            className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-teal-400 text-sm font-semibold text-zinc-950"
+          >
+            <ArrowUpRight className="size-5" />
+            Enviar
+          </Link>
+          <Link
+            href="/receive"
+            className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold ring-1 ring-white/10"
+          >
+            <ArrowDownLeft className="size-5" />
+            Recibir
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
