@@ -1,3 +1,4 @@
+/** Offline channels: device-to-device payload today; Pears P2P is the natural next step. */
 export const CHANNELS = [
   "online",
   "qr",
