@@ -55,6 +55,13 @@ Reglas: USDT; amount y price en unidades humanas (10, no 10000000). Si falta un 
 
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 
+export function toBaseUnits(amount: string, decimals = 6): string {
+  const [whole, frac = ""] = amount.trim().split(".");
+  const fracPadded = (frac + "0".repeat(decimals)).slice(0, decimals);
+  const raw = `${whole.replace(/^0+/, "") || "0"}${fracPadded}`;
+  return raw.replace(/^0+/, "") || "0";
+}
+
 function extractAmount(input: string): string | undefined {
   const spend = input.match(/spend\s+(\d+(?:\.\d+)?)/i);
   if (spend) return spend[1];
@@ -82,33 +89,17 @@ function humanAmount(value?: string): string | undefined {
   return trimmed;
 }
 
-export function heuristicIntent(input: string, task: AgentTask): AgentIntent {
-  const amount = humanAmount(extractAmount(input));
-  const to = extractRecipient(input);
-  if (task === "send") {
-    return { task, to, amount, source: "heuristic" };
-  }
-  if (task === "contact") {
-    const nameMatch = input.match(/(?:contacto|contact|nombre|llam[aeo])\s+([\w\s.]+)/i);
-    const name = nameMatch?.[1]?.trim();
-    return { task, name, to, source: "heuristic" };
-  }
-  const titleMatch = input.match(/(?:producto|title|título|titulo|café|cafe|pan)\s*[:\s]?([\w\s]+)/i);
-  const price = humanAmount(extractAmount(input));
-  return {
-    task: "product",
-    title: titleMatch?.[1]?.trim(),
-    price,
-    source: "heuristic",
-  };
-}
-
 function parseAgentOutput(raw: string): Record<string, unknown> {
   const cleaned = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start < 0 || end < 0) throw new Error("Agent did not return JSON");
   return JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+}
+
+function readString(obj: Record<string, unknown>, key: string): string | undefined {
+  const v = obj[key];
+  return typeof v === "string" ? v : undefined;
 }
 
 function normalizePermit(
@@ -143,46 +134,93 @@ function normalizePermit(
   };
 }
 
-export async function completePermit(
-  complete: CompletionFn,
-  opts: { owner: string; input: string },
+export async function heuristicComplete(messages: ChatMessage[]): Promise<string> {
+  void messages;
+  throw new Error("heuristicComplete is not a model");
+}
+
+export async function naturalLanguageToPermit(
+  input: string,
+  opts: { owner: string; complete: CompletionFn },
 ): Promise<AgentPermit> {
-  const raw = await complete([
+  const raw = await opts.complete([
     { role: "system", content: AGENT_SYSTEM },
-    { role: "user", content: `Owner: ${opts.owner}\nRequest: ${opts.input}` },
+    { role: "user", content: `Owner: ${opts.owner}\nRequest: ${input}` },
   ]);
   return {
-    ...normalizePermit(parseAgentOutput(raw), { owner: opts.owner, input: opts.input }),
+    ...normalizePermit(parseAgentOutput(raw), { owner: opts.owner, input }),
     source: "model",
   };
 }
 
-export async function completeIntent(
-  complete: CompletionFn,
-  opts: { prompt: string; task: AgentTask; owner?: string },
+function parseAgentIntent(data: Record<string, unknown>, task: AgentTask): Omit<AgentIntent, "source"> {
+  const root = data;
+  const permit = (data.permit as Record<string, unknown> | undefined) ?? undefined;
+  const to =
+    readString(root, "to") ??
+    readString(root, "recipient") ??
+    readString(root, "address") ??
+    readString(root, "holder") ??
+    (permit ? readString(permit, "spender") : undefined);
+  const amount = readString(root, "amount") ?? humanAmount(permit ? readString(permit, "value") : undefined);
+  const name = readString(root, "name");
+  const title = readString(root, "title");
+  const price = readString(root, "price") ?? (task === "product" ? amount : undefined);
+  const place = readString(root, "place") ?? readString(root, "redemptionPlace");
+  return { task, to, amount, name, title, price, place };
+}
+
+export function heuristicIntent(input: string, task: AgentTask): AgentIntent {
+  if (task === "send") {
+    const to = extractRecipient(input);
+    if (!to) throw new Error("Poné un address 0x…, un ENS o un Basename");
+    return { task: "send", to, amount: extractAmount(input), source: "heuristic" };
+  }
+  if (task === "contact") {
+    const to = extractRecipient(input);
+    if (!to) throw new Error("Poné un address 0x…, un ENS o un Basename");
+    const name = input
+      .replace(ADDRESS_RE, " ")
+      .replace(to, " ")
+      .replace(/guard[aá]r?/gi, " ")
+      .replace(/agend[aá]r?/gi, " ")
+      .replace(/\b(contacto|contact|nombre|llamada|llamado)\b/gi, " ")
+      .replace(/\bse llama\b/gi, " ")
+      .replace(/(?:^|\s)[aA]\s+/g, " ")
+      .replace(/[.,;:]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return { task: "contact", to, name: name || undefined, source: "heuristic" };
+  }
+  const priceMatch = input.match(/(\d+(?:\.\d+)?)\s*(USDT)?/i);
+  const placeMatch = input.match(/(?:retiro(?:\s+en)?|en)\s+(.+)$/i);
+  let rest = input;
+  if (priceMatch) rest = rest.replace(priceMatch[0], " ");
+  if (placeMatch) rest = rest.replace(placeMatch[0], " ");
+  rest = rest
+    .replace(/\b(vendo|vendemos|producto|vale|public[aá]|un|una|a)\b/gi, " ")
+    .replace(/[.,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return {
+    task: "product",
+    title: rest || undefined,
+    price: priceMatch?.[1],
+    place: placeMatch?.[1]?.replace(/[.,;]+$/, "").trim(),
+    source: "heuristic",
+  };
+}
+
+export async function naturalLanguageToIntent(
+  input: string,
+  opts: { task: AgentTask; owner?: string; complete: CompletionFn },
 ): Promise<AgentIntent> {
-  const raw = await complete([
+  const raw = await opts.complete([
     { role: "system", content: INTENT_SYSTEM },
     {
       role: "user",
-      content: opts.owner
-        ? `task=${opts.task}\nowner=${opts.owner}\n${opts.prompt}`
-        : `task=${opts.task}\n${opts.prompt}`,
+      content: `task: ${opts.task}\n${opts.owner ? `owner: ${opts.owner}\n` : ""}pedido: ${input}`,
     },
   ]);
-  try {
-    const data = parseAgentOutput(raw) as Partial<AgentIntent>;
-    return {
-      task: opts.task,
-      to: typeof data.to === "string" ? data.to : undefined,
-      amount: typeof data.amount === "string" ? data.amount : undefined,
-      name: typeof data.name === "string" ? data.name : undefined,
-      title: typeof data.title === "string" ? data.title : undefined,
-      price: typeof data.price === "string" ? data.price : undefined,
-      place: typeof data.place === "string" ? data.place : undefined,
-      source: "model",
-    };
-  } catch {
-    return heuristicIntent(opts.prompt, opts.task);
-  }
+  return { ...parseAgentIntent(parseAgentOutput(raw), opts.task), source: "model" };
 }
