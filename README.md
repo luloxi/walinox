@@ -57,7 +57,7 @@ No hay “Tether te paga el gas”. El módulo `@tetherto/wdk-wallet-evm-7702-ga
 
 - **WDK** — firma local EIP-712 + gasless 7702 (gas en USDT).
 - **QVAC** — NL → campos. No es un chat. Default `QWEN3_600M_INST_Q4`.
-- **Pears** — dirección del offline: local-first, sin servidor. Hoy los canales (QR, sonido, luz, share, NFC) llevan el JSON firmado dispositivo a dispositivo; el siguiente paso natural es sync P2P real con el stack Pears.
+- **Pears** — invite 8 chars + topic 32 bytes en cada permiso offline (QR, copy, file, NFC, air). Compatible tamaño Hyperswarm; el transporte sigue siendo el canal local.
 - **Vale** — EIP-712 de un bien físico, no un ERC-721 deployado. El pago sí es USDT on-chain.
 
 ## Install

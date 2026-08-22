@@ -9,6 +9,7 @@ import { toBaseUnits } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
 import type { ChargeRequest } from "@/lib/charge";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
+import { wrapForPears } from "@/lib/pears";
 import { buildPermit2 } from "@/lib/permit2";
 import { payloadToDataUrl } from "@/lib/qr";
 import { USDT } from "@/lib/tokens";
@@ -55,7 +56,9 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
         complianceNote: "USDT no tiene permit(). Se usa Permit2. El local confirma on-chain.",
       };
       setEnvelope(next);
-      setQrUrl(await payloadToDataUrl(encodeEnvelope(next)));
+      setQrUrl(
+        await payloadToDataUrl(await wrapForPears(encodeEnvelope(next), next.signature)),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo firmar");
     } finally {

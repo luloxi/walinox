@@ -28,6 +28,7 @@ import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
+import { wrapForPears } from "@/lib/pears";
 import { payloadToDataUrl } from "@/lib/qr";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -244,7 +245,9 @@ export function SendFlow() {
         complianceNote: draft.complianceNote,
       };
       setEnvelope(next);
-      setQrUrl(await payloadToDataUrl(encodeEnvelope(next)));
+      setQrUrl(
+        await payloadToDataUrl(await wrapForPears(encodeEnvelope(next), next.signature)),
+      );
       setSavedTo(draft.spender);
       receiptFromPermit(
         { owner: draft.owner, spender: draft.spender, value: draft.value, token: draft.token.symbol },
