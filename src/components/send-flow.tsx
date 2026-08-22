@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { isAddress } from "ethers";
 import { ClipboardPaste, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddressInput } from "@/components/address-input";
-import { SectionBar } from "@/components/section-bar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
@@ -39,6 +38,8 @@ import { rememberContact } from "@/lib/contacts";
 import { isEnsName, resolveEns } from "@/lib/ens";
 import type { AgentPermit } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
+
+type PayMode = "online" | "offline";
 
 function draftFromForm(owner: string, to: string, amount: string): AgentPermit {
   const value = toBaseUnits(amount, USDT.decimals);
@@ -72,8 +73,9 @@ export function SendFlow() {
   const { usdt } = useUsdtBalance(wallet?.address);
   const { prefs } = useDisplay();
   const fx = useFx();
-  const [tab, setTab] = useState("online");
-  const [to, setTo] = useState("");
+  const search = useSearchParams();
+  const [mode, setMode] = useState<PayMode>("online");
+  const [to, setTo] = useState(() => search.get("to") ?? "");
   const [arsAmount, setArsAmount] = useState("");
   const [exactUsdt, setExactUsdt] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -85,10 +87,38 @@ export function SendFlow() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [sent, setSent] = useState<Channel | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
+  const draftRef = useRef(draft);
+  const envelopeRef = useRef(envelope);
 
   useEffect(() => {
-    const preset = new URLSearchParams(window.location.search).get("to");
-    if (preset) setTo(preset);
+    draftRef.current = draft;
+    envelopeRef.current = envelope;
+  }, [draft, envelope]);
+
+  function applyMode(next: PayMode) {
+    setMode(next);
+    if (next === "online") {
+      setDraft(null);
+      setEnvelope(null);
+      setQrUrl(null);
+      setSent(null);
+    }
+  }
+
+  useEffect(() => {
+    const sync = () => {
+      if (draftRef.current || envelopeRef.current) return;
+      const next: PayMode = navigator.onLine ? "online" : "offline";
+      setMode(next);
+    };
+    const id = window.setTimeout(sync, 0);
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
   }, []);
 
   function applyAddress(raw: string) {
@@ -158,15 +188,32 @@ export function SendFlow() {
 
   async function prepareOffline() {
     if (!wallet) return;
-    const dest = await destination();
-    if (!dest || !isAddress(dest)) {
-      setError("Address, ENS o Basename inválido");
+    setBusy(true);
+    setError(null);
+    try {
+      const dest = await destination();
+      if (!dest || !isAddress(dest)) {
+        setError("Address, ENS o Basename inválido");
+        return;
+      }
+      setTo(dest);
+      setEnvelope(null);
+      setDraft(draftFromForm(wallet.address, dest, amount));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo armar el permiso");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function pay() {
+    if (mode === "online") {
+      void sendOnline();
       return;
     }
-    setTo(dest);
-    setError(null);
-    setEnvelope(null);
-    setDraft(draftFromForm(wallet.address, dest, amount));
+    if (envelope) return;
+    if (draft) void signOffline();
+    else void prepareOffline();
   }
 
   async function signOffline() {
@@ -211,6 +258,22 @@ export function SendFlow() {
 
   const amount = exactUsdt ?? (arsAmount.trim() ? fiatToUsdt(arsAmount, fx.perUsdt) : "");
   const hasBalance = Boolean(usdt && Number(usdt) > 0);
+  const canPay = Boolean(wallet && !busy && to && amount && Number(amount) > 0 && !(mode === "offline" && envelope));
+  const payLabel =
+    busy && mode === "online"
+      ? "Enviando…"
+      : busy && mode === "offline" && draft && !envelope
+        ? "Firmando…"
+        : busy
+          ? "Armando…"
+          : mode === "offline" && draft && !envelope
+            ? "Firmar"
+            : (
+                <span className="inline-flex items-center gap-2">
+                  Enviar
+                  <UsdtLogo className="size-4" />
+                </span>
+              );
 
   function setFromUsdt(value: string) {
     setExactUsdt(value);
@@ -220,19 +283,7 @@ export function SendFlow() {
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
     <div className="space-y-3 pb-2 md:space-y-4">
-      <Tabs value={tab} onValueChange={setTab}>
-        <SectionBar>
-          <TabsList>
-            <TabsTrigger value="online" className="cursor-pointer">
-              Online
-            </TabsTrigger>
-            <TabsTrigger value="offline" className="cursor-pointer">
-              QR
-            </TabsTrigger>
-          </TabsList>
-        </SectionBar>
-
-        <div className="mt-4 space-y-3">
+        <div className="space-y-3">
           <div className="space-y-1.5">
             <span className="text-sm text-muted-foreground">Para</span>
             <ContactPicker selected={to} onPick={(contact) => setTo(contact.address)} />
@@ -338,7 +389,7 @@ export function SendFlow() {
             <QvacHint
               task="send"
               owner={wallet.address}
-              placeholder="mandale 10 USDT a 0x…"
+              placeholder="mandale 10 USDT a 0x… o lulox.eth"
               onFill={(intent) => {
                 if (intent.to) setTo(intent.to);
                 if (intent.amount) setFromUsdt(intent.amount);
@@ -347,30 +398,33 @@ export function SendFlow() {
           ) : null}
         </div>
 
-        <TabsContent value="online" className="mt-4 space-y-3">
+        <div className="space-y-3">
           {!connected ? (
             <div className="[&_button]:cursor-pointer">
               <ConnectButton label="Conectar wallet" />
             </div>
           ) : null}
-          {needsSwitch ? (
+          {mode === "online" && needsSwitch ? (
             <p className="text-xs text-muted-foreground">Al enviar te va a pedir cambiar a Ethereum.</p>
           ) : null}
-          <Button
-            type="button"
-            className="h-11 w-full"
-            disabled={!wallet || busy || !to || !amount || Number(amount) <= 0}
-            onClick={() => void sendOnline()}
-          >
-            {busy ? (
-              "Enviando…"
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                Enviar
-                <UsdtLogo className="size-4" />
-              </span>
-            )}
-          </Button>
+          {mode === "offline" ? (
+            <p className="text-xs text-muted-foreground">Firmás ahora y lo pasás por QR, sonido o luz.</p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button type="button" className="h-11 min-w-0 flex-1" disabled={!canPay} onClick={() => pay()}>
+              {payLabel}
+            </Button>
+            <select
+              className="h-11 w-[6.8rem] shrink-0 cursor-pointer rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30 disabled:cursor-not-allowed disabled:opacity-50"
+              value={mode}
+              disabled={busy}
+              aria-label="Online u offline"
+              onChange={(event) => applyMode(event.target.value === "offline" ? "offline" : "online")}
+            >
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
           {hash ? (
             <div className="space-y-1">
               <p className="break-all font-mono text-[11px] text-muted-foreground">Tx {hash}</p>
@@ -378,18 +432,7 @@ export function SendFlow() {
             </div>
           ) : null}
           {savedTo ? <SaveContact address={savedTo} /> : null}
-        </TabsContent>
-
-        <TabsContent value="offline" className="mt-4 space-y-3">
-          <Button
-            type="button"
-            className="h-11 w-full"
-            disabled={!wallet || !to || !amount || Number(amount) <= 0}
-            onClick={() => prepareOffline()}
-          >
-            Armar permiso offline
-          </Button>
-          {draft ? (
+          {mode === "offline" && draft ? (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
               <PermitCard
                 kind={draft.kind}
@@ -425,23 +468,16 @@ export function SendFlow() {
               >
                 Primera vez: aprobar Permit2
               </Button>
-              {hash ? <EtherscanTxLink hash={hash} className="text-xs" /> : null}
-              {!envelope ? (
-                <Button type="button" className="h-11 w-full" disabled={busy} onClick={() => void signOffline()}>
-                  {busy ? "Firmando…" : "Firmar y generar QR"}
-                </Button>
-              ) : null}
             </motion.div>
           ) : null}
-          {envelope ? (
+          {mode === "offline" && envelope ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Mostrale este QR al otro</p>
+              <p className="text-sm font-medium">Pasale el permiso al otro</p>
               <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
               {sent ? <p className="text-xs text-primary">Guardado en actividad.</p> : null}
             </div>
           ) : null}
-        </TabsContent>
-      </Tabs>
+        </div>
 
       {walletError ? (
         <Alert>
