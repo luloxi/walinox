@@ -20,7 +20,7 @@ export function HomeScreen() {
       <Guide />
       <div className="flex h-full min-h-0 flex-col gap-4 md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-8">
       <div className="flex min-h-0 flex-col gap-3">
-      <WalletCard actions />
+      <WalletCard />
       <div className="grid grid-cols-2 gap-2">
         <Link
           href="/contacts"

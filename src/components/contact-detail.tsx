@@ -66,7 +66,7 @@ export function ContactDetail() {
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button asChild className="h-11">
-          <Link href={`/send?to=${address}`}>Enviar</Link>
+          <Link href={`/?to=${address}`}>Enviar</Link>
         </Button>
         <Button
           type="button"

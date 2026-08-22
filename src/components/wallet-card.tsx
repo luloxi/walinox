@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Check, Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { shortAddress } from "@/lib/format";
 import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
@@ -10,7 +9,7 @@ import { UsdtLogo } from "@/components/usdt-logo";
 import { Hint } from "@/components/hint";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-export function WalletCard({ actions = false }: { actions?: boolean }) {
+export function WalletCard() {
   const { wallet, connected } = useWallet();
   const [copied, setCopied] = useState(false);
   const { usdt } = useUsdtBalance(wallet?.address);
@@ -31,7 +30,7 @@ export function WalletCard({ actions = false }: { actions?: boolean }) {
   }
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-8">
+    <div className="flex flex-col rounded-3xl bg-gradient-to-br from-teal-400/25 via-zinc-900 to-zinc-950 p-5 shadow-lg ring-1 ring-white/10 md:p-6">
       <div>
         <p className="text-[11px] font-medium tracking-[0.18em] text-teal-200/80 uppercase">
           Saldo
@@ -57,24 +56,6 @@ export function WalletCard({ actions = false }: { actions?: boolean }) {
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </button>
       </div>
-      {actions ? (
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Link
-            href="/send"
-            className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-teal-400 text-sm font-semibold text-zinc-950"
-          >
-            <ArrowUpRight className="size-5" />
-            Enviar
-          </Link>
-          <Link
-            href="/receive"
-            className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold ring-1 ring-white/10"
-          >
-            <ArrowDownLeft className="size-5" />
-            Recibir
-          </Link>
-        </div>
-      ) : null}
     </div>
   );
 }

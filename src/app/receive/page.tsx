@@ -1,5 +1,5 @@
-import { ReceiveFlow } from "@/components/receive-flow";
+import { redirect } from "next/navigation";
 
-export default function ReceivePage() {
-  return <ReceiveFlow />;
+export default function ReceiveRedirect() {
+  redirect("/?tab=recibir");
 }

@@ -1,5 +1,10 @@
-import { HomeScreen } from "@/components/home-screen";
+import { Suspense } from "react";
+import { WalletScreen } from "@/components/wallet-screen";
 
 export default function HomePage() {
-  return <HomeScreen />;
+  return (
+    <Suspense>
+      <WalletScreen />
+    </Suspense>
+  );
 }

@@ -3,22 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { ArrowDownLeft, ArrowUpRight, History, Store, Users, Wallet } from "lucide-react";
+import { History, Store, Users, Wallet } from "lucide-react";
 import { Brand } from "@/components/brand";
 
-const DESKTOP = [
-  { href: "/", label: "Inicio", icon: Wallet },
-  { href: "/send", label: "Enviar", icon: ArrowUpRight },
-  { href: "/receive", label: "Recibir", icon: ArrowDownLeft },
+const NAV = [
+  { href: "/", label: "Billetera", icon: Wallet },
   { href: "/contacts", label: "Contactos", icon: Users },
   { href: "/tienda", label: "Tienda", icon: Store },
   { href: "/summary", label: "Actividad", icon: History },
 ] as const;
 
-const MOBILE = DESKTOP;
-
 function active(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+  if (href === "/") return pathname === "/" || pathname.startsWith("/send") || pathname.startsWith("/receive");
   if (href === "/tienda") {
     return (
       pathname.startsWith("/tienda") ||
@@ -77,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="hidden w-56 shrink-0 flex-col border-r border-white/10 px-4 py-6 md:flex">
         <Brand className="px-2" />
         <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {DESKTOP.map((item) => (
+          {NAV.map((item) => (
             <NavLink key={item.href} {...item} pathname={pathname} />
           ))}
         </nav>
@@ -99,8 +95,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0c1110]/92 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-6 px-1 py-2">
-          {MOBILE.map((item) => (
+        <div className="mx-auto grid max-w-lg grid-cols-4 px-1 py-2">
+          {NAV.map((item) => (
             <NavLink key={item.href} {...item} pathname={pathname} mobile />
           ))}
         </div>
