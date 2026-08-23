@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDisconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDisplay } from "@/components/display-provider";
 import { useTheme } from "@/components/theme-provider";
 import { useFx } from "@/components/use-fx";
 import { useWallet } from "@/components/wallet-provider";
+import {
+  biometricEnabled,
+  disableBiometric,
+  enableBiometric,
+  platformAuthenticatorAvailable,
+} from "@/lib/biometric";
 import { FIATS, fiatMeta, isFiatId } from "@/lib/display";
 import { formatFiat } from "@/lib/fx";
 import { shortAddress } from "@/lib/format";
@@ -35,9 +42,19 @@ export function SettingsView() {
   const { disconnect } = useDisconnect();
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [alerts, setAlerts] = useState<"on" | "off" | "denied" | "unsupported">("off");
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioOn, setBioOn] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+  const [bioPin, setBioPin] = useState("");
+  const [bioAskPin, setBioAskPin] = useState(false);
+  const [bioError, setBioError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setAlerts(notifyStatus()), 0);
+    const timer = window.setTimeout(() => {
+      setAlerts(notifyStatus());
+      setBioOn(biometricEnabled());
+      void platformAuthenticatorAvailable().then(setBioAvailable);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -72,6 +89,29 @@ export function SettingsView() {
     } finally {
       setNotifyBusy(false);
     }
+  }
+
+  async function confirmBio() {
+    setBioBusy(true);
+    setBioError(null);
+    try {
+      await enableBiometric(bioPin);
+      setBioOn(true);
+      setBioAskPin(false);
+      setBioPin("");
+    } catch (err) {
+      setBioError(err instanceof Error ? err.message : "No se pudo activar");
+    } finally {
+      setBioBusy(false);
+    }
+  }
+
+  function turnOffBio() {
+    disableBiometric();
+    setBioOn(false);
+    setBioAskPin(false);
+    setBioPin("");
+    setBioError(null);
   }
 
   function disconnectWallet() {
@@ -141,6 +181,54 @@ export function SettingsView() {
           Desconectar
         </Button>
       </section>
+
+      {source === "local" ? (
+        <section className="mt-6 space-y-2">
+          <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
+            Biometría
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Desbloqueo con huella o Face ID en este dispositivo. El PIN sigue siendo la llave de la seed.
+          </p>
+          {!bioAvailable ? (
+            <p className="text-sm text-muted-foreground">Este dispositivo no ofrece biometría en el navegador.</p>
+          ) : bioOn ? (
+            <Button type="button" variant="outline" className="h-11 w-full" onClick={turnOffBio}>
+              Desactivar biometría
+            </Button>
+          ) : bioAskPin ? (
+            <div className="space-y-2">
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={bioPin}
+                onChange={(event) => setBioPin(event.target.value)}
+                placeholder="PIN actual"
+                className="h-11"
+                autoFocus
+              />
+              {bioError ? <p className="text-xs text-destructive">{bioError}</p> : null}
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" className="h-11" onClick={() => setBioAskPin(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  className="h-11"
+                  disabled={bioBusy || bioPin.length < 6}
+                  onClick={() => void confirmBio()}
+                >
+                  {bioBusy ? "…" : "Activar"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button type="button" className="h-11 w-full" onClick={() => setBioAskPin(true)}>
+              Activar biometría
+            </Button>
+          )}
+        </section>
+      ) : null}
 
       <section className="mt-6 space-y-2">
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
