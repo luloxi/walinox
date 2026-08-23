@@ -2,6 +2,7 @@
 
 export const SEED_PLAIN_KEY = "walinox.seed";
 export const SEED_VAULT_KEY = "walinox.seed.v2";
+export const SEED_BACKUP_ACK_KEY = "walinox.seed.backupAck";
 
 const PBKDF2_ITERS = 310_000;
 
@@ -59,6 +60,16 @@ export function hasLegacyPlainSeed(): boolean {
   return Boolean(localStorage.getItem(SEED_PLAIN_KEY));
 }
 
+export function seedBackupAcked(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(SEED_BACKUP_ACK_KEY) === "1";
+}
+
+export function markSeedBackupAcked(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(SEED_BACKUP_ACK_KEY, "1");
+}
+
 export function assertPin(pin: string): void {
   if (pin.length < 6) throw new Error("El PIN debe tener al menos 6 caracteres");
 }
@@ -109,7 +120,6 @@ export async function decryptSeed(pin: string): Promise<string> {
   }
 }
 
-/** Decrypt with current PIN and re-encrypt under the new PIN. */
 export async function changePin(currentPin: string, nextPin: string): Promise<void> {
   assertPin(nextPin);
   if (currentPin === nextPin) throw new Error("El nuevo PIN debe ser distinto");
@@ -121,12 +131,23 @@ export async function changePin(currentPin: string, nextPin: string): Promise<vo
 export async function unlockOrCreateSeed(
   pin: string,
   createSeed: () => string,
-): Promise<string> {
+): Promise<{ seed: string; created: boolean }> {
   assertPin(pin);
-  if (hasVault()) return decryptSeed(pin);
+  if (hasVault()) {
+    return { seed: await decryptSeed(pin), created: false };
+  }
 
   const legacy = typeof localStorage !== "undefined" ? localStorage.getItem(SEED_PLAIN_KEY) : null;
-  const seed = legacy && legacy.trim() ? legacy.trim() : createSeed();
+  if (legacy && legacy.trim()) {
+    const seed = legacy.trim();
+    await encryptSeed(seed, pin);
+    return { seed, created: false };
+  }
+
+  const seed = createSeed();
   await encryptSeed(seed, pin);
-  return seed;
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(SEED_BACKUP_ACK_KEY);
+  }
+  return { seed, created: true };
 }
