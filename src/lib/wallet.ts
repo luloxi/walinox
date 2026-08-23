@@ -3,8 +3,7 @@ import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
 import { MaxUint256 } from "ethers";
 import { RPC_URL } from "@/lib/balance";
 import type { Eip712Domain, PermitTypedData } from "@/lib/permit";
-
-export const SEED_STORAGE_KEY = "walinox.seed";
+import { unlockOrCreateSeed } from "@/lib/seed-crypto";
 
 export type Signable = {
   domain: Eip712Domain;
@@ -136,15 +135,6 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
   };
 }
 
-export function readStoredSeed(): string | null {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(SEED_STORAGE_KEY);
-}
-
-export function persistSeed(seedPhrase: string): void {
-  localStorage.setItem(SEED_STORAGE_KEY, seedPhrase);
-}
-
 async function openGasless(seedPhrase: string): Promise<GaslessSession> {
   const WalletManagerEvm7702Gasless = (await import("@tetherto/wdk-wallet-evm-7702-gasless"))
     .default;
@@ -166,11 +156,8 @@ async function openGasless(seedPhrase: string): Promise<GaslessSession> {
   };
 }
 
-export async function loadOrCreateWallet(): Promise<LocalWallet> {
-  let seed = readStoredSeed();
-  if (!seed) {
-    seed = randomSeedPhrase();
-    persistSeed(seed);
-  }
+/** Open or create the local wallet. Seed is stored only encrypted under PIN. */
+export async function loadOrCreateWallet(pin: string): Promise<LocalWallet> {
+  const seed = await unlockOrCreateSeed(pin, randomSeedPhrase);
   return openWallet(seed);
 }
