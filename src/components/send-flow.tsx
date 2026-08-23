@@ -26,8 +26,8 @@ import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
-import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
-import { wrapForPears } from "@/lib/pears";
+import { encodeEnvelopeQr } from "@/lib/envelope-pack";
+import { type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -259,7 +259,7 @@ export function SendFlow() {
       };
       setEnvelope(next);
       setQrUrl(
-        await payloadToDataUrl(await wrapForPears(encodeEnvelope(next), next.signature)),
+        await payloadToDataUrl(encodeEnvelopeQr(next)),
       );
       setSavedTo(draft.spender);
       receiptFromPermit(

@@ -1,3 +1,4 @@
+import { tryDecodeCompactQr } from "@/lib/envelope-pack";
 import { buildPermit, type Eip712Domain } from "@/lib/permit";
 import { buildPermit2 } from "@/lib/permit2";
 import type { PermitKind } from "@/lib/tokens";
@@ -41,6 +42,8 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export function decodeEnvelope(raw: string): SignedEnvelope {
+  const compact = tryDecodeCompactQr(raw);
+  if (compact) return compact;
   const { body } = unwrapPears(raw);
   const parsed = asRecord(JSON.parse(body));
   if (parsed.v !== PAYLOAD_VERSION) {

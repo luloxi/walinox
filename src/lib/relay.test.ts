@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { encodeEnvelopeQr } from "@/lib/envelope-pack";
 import { decodeEnvelope, encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
-import { roundTripQrPayload } from "@/lib/qr";
+import { payloadToMatrix, roundTripQrPayload } from "@/lib/qr";
 import { buildPermit } from "@/lib/permit";
 import { buildPermit2 } from "@/lib/permit2";
 import {
@@ -69,6 +70,14 @@ describe("offline relay codec, QR, receipts", () => {
     expect(decodeEnvelope(roundTripQrPayload(encodeEnvelope(permit2Envelope))).kind).toBe(
       "permit2",
     );
+
+    const compact = encodeEnvelopeQr(permit2Envelope);
+    expect(compact.length).toBeLessThan(400);
+    expect(payloadToMatrix(compact).length).toBeLessThan(payloadToMatrix(encodeEnvelope(permit2Envelope)).length);
+    const fromCompact = decodeEnvelope(roundTripQrPayload(compact));
+    expect(fromCompact.kind).toBe("permit2");
+    expect(fromCompact.value).toBe("50000000");
+    expect(fromCompact.spender).toBe(permit2Envelope.spender);
   });
 
   it("stores a receipt with the channel and folds a monthly summary", () => {

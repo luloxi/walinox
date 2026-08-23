@@ -9,8 +9,8 @@ import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import type { Channel } from "@/lib/channels";
 import type { ChargeRequest } from "@/lib/charge";
-import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
-import { wrapForPears } from "@/lib/pears";
+import { encodeEnvelopeQr } from "@/lib/envelope-pack";
+import { type SignedEnvelope } from "@/lib/payload";
 import { buildPermit2, ensurePermit2Allowance } from "@/lib/permit2";
 import { payloadToDataUrl } from "@/lib/qr";
 import { USDT } from "@/lib/tokens";
@@ -59,7 +59,7 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
       };
       setEnvelope(next);
       setQrUrl(
-        await payloadToDataUrl(await wrapForPears(encodeEnvelope(next), next.signature)),
+        await payloadToDataUrl(encodeEnvelopeQr(next)),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo firmar");

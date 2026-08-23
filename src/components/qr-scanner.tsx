@@ -4,17 +4,37 @@ import { useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { createOpticalAssembler, unpackAir } from "@/lib/air";
 
+function scanJs(data: Uint8ClampedArray, width: number, height: number): string | null {
+  return jsQR(data, width, height, { inversionAttempts: "attemptBoth" })?.data ?? null;
+}
+
+const downCanvas = typeof document !== "undefined" ? document.createElement("canvas") : null;
+
 function scanFrame(ctx: CanvasRenderingContext2D, image: ImageData): string | null {
-  const opts = { inversionAttempts: "attemptBoth" as const };
-  const full = jsQR(image.data, image.width, image.height, opts);
-  if (full?.data) return full.data;
+  const full = scanJs(image.data, image.width, image.height);
+  if (full) return full;
   const side = Math.min(image.width, image.height);
-  if (side < 80) return null;
-  const x = Math.floor((image.width - side) / 2);
-  const y = Math.floor((image.height - side) / 2);
-  const crop = ctx.getImageData(x, y, side, side);
-  const center = jsQR(crop.data, crop.width, crop.height, opts);
-  return center?.data ?? null;
+  if (side >= 80) {
+    const x = Math.floor((image.width - side) / 2);
+    const y = Math.floor((image.height - side) / 2);
+    const crop = ctx.getImageData(x, y, side, side);
+    const center = scanJs(crop.data, crop.width, crop.height);
+    if (center) return center;
+  }
+  if (downCanvas && image.width > 640) {
+    const w = 640;
+    const h = Math.max(1, Math.round((image.height * w) / image.width));
+    downCanvas.width = w;
+    downCanvas.height = h;
+    const sctx = downCanvas.getContext("2d");
+    if (sctx) {
+      sctx.drawImage(ctx.canvas, 0, 0, w, h);
+      const scaled = sctx.getImageData(0, 0, w, h);
+      const hit = scanJs(scaled.data, w, h);
+      if (hit) return hit;
+    }
+  }
+  return null;
 }
 
 export function QrScanner({
