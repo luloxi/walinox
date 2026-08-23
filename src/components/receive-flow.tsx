@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ import { EtherscanTxLink } from "@/components/etherscan-link";
 import { listenSound, readBluetooth } from "@/lib/air-io";
 import { SaveContact } from "@/components/save-contact";
 import type { Channel } from "@/lib/channels";
+import { cn } from "@/lib/utils";
 
 const QrScanner = dynamic(() => import("@/components/qr-scanner").then((m) => m.QrScanner), {
   ssr: false,
@@ -99,8 +101,9 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
   const [addressQr, setAddressQr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pasted, setPasted] = useState("");
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(focus === "scan");
   const [listening, setListening] = useState(false);
+  const [more, setMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listenAbort = useRef<AbortController | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -223,12 +226,12 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
 
           <TabsContent value="me" className="mt-4 space-y-3">
             {addressQr ? (
-              <div className="overflow-hidden rounded-3xl bg-white p-3">
+              <div className="overflow-hidden rounded-3xl bg-white p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={addressQr} alt="Tu address" className="mx-auto h-40 w-40 md:h-44 md:w-44" />
+                <img src={addressQr} alt="Tu address" className="mx-auto h-44 w-44 md:h-48 md:w-48" />
               </div>
             ) : (
-              <div className="flex h-40 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-44">
+              <div className="flex h-44 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-48">
                 Generando QR…
               </div>
             )}
@@ -247,7 +250,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                 });
               }}
             >
-              {copied ? "Address copiada" : "Copiar address"}
+              {copied ? "Copiada" : "Copiar address"}
             </Button>
           </TabsContent>
 
@@ -256,7 +259,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
               <div className="space-y-3">
                 <button
                   type="button"
-                  className="cursor-pointer text-xs text-primary"
+                  className="h-9 cursor-pointer text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setAskCharge(null);
                     setAskQr(null);
@@ -264,7 +267,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                 >
                   Cambiar monto
                 </button>
-                <div className="rounded-2xl border border-border px-3 py-2">
+                <div className="rounded-2xl border border-border px-4 py-3">
                   <p className="text-[11px] text-muted-foreground">{askCharge.store}</p>
                   <Price usdt={askCharge.amount} size="lg" />
                 </div>
@@ -325,7 +328,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
               />
             ) : result && envelope ? (
               <div className="space-y-3">
-                <p className={result.valid ? "text-sm text-primary" : "text-sm text-red-400"}>
+                <p className={result.valid ? "text-sm font-medium text-primary" : "text-sm font-medium text-destructive"}>
                   {result.valid
                     ? `Firma válida · ${shortAddress(envelope.owner)}`
                     : `Firma inválida${result.reason ? `: ${result.reason}` : ""}`}
@@ -427,10 +430,19 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                 wallet?.address.toLowerCase() !== envelope.owner.toLowerCase() ? (
                   <SaveContact address={envelope.owner} hint="Te mandó este permiso" />
                 ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full"
+                  onClick={() => {
+                    setResult(null);
+                    setTx(null);
+                  }}
+                >
+                  Escanear otro
+                </Button>
               </div>
-            ) : null}
-
-            {charge ? null : (
+            ) : (
               <>
                 <QrScanner
                   active={scanning}
@@ -442,7 +454,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                 />
                 <Button
                   type="button"
-                  className="h-11 w-full"
+                  className="h-12 w-full"
                   onClick={() => {
                     listenAbort.current?.abort();
                     setScanning((value) => !value);
@@ -450,67 +462,81 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                 >
                   {scanning ? "Parar cámara" : "Escanear QR"}
                 </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
-                    {listening ? "Parar" : "Escuchar"}
-                  </Button>
-                  <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
-                    Bluetooth
-                  </Button>
-                </div>
-                <Textarea
-                  value={pasted}
-                  onChange={(event) => setPasted(event.target.value)}
-                  rows={3}
-                  placeholder="Pegá el JSON"
-                  className="font-mono text-xs"
-                />
-                <Button
+
+                <button
                   type="button"
-                  variant="outline"
-                  className="h-11 w-full"
-                  onClick={() => {
-                    try {
-                      const nextCharge = decodeCharge(pasted);
-                      if (nextCharge) {
-                        setCharge(nextCharge);
-                        setResult(null);
-                      } else {
-                        setCharge(null);
-                        setResult(ingest(pasted, "copy"));
-                      }
-                      setError(null);
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : "JSON inválido");
-                    }
-                  }}
+                  className="flex h-9 w-full cursor-pointer items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setMore((value) => !value)}
                 >
-                  Validar
-                </Button>
-                <Input
-                  type="file"
-                  accept="application/json,.json"
-                  className="cursor-pointer"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    void file.text().then((text) => {
-                      try {
-                        const nextCharge = decodeCharge(text);
-                        if (nextCharge) {
-                          setCharge(nextCharge);
-                          setResult(null);
-                        } else {
-                          setCharge(null);
-                          setResult(ingest(text, "file"));
+                  Más canales
+                  <ChevronDown className={cn("size-3.5 transition-transform", more && "rotate-180")} />
+                </button>
+
+                {more ? (
+                  <div className="space-y-2 rounded-2xl border border-border p-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
+                        {listening ? "Parar" : "Escuchar"}
+                      </Button>
+                      <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
+                        Bluetooth
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={pasted}
+                      onChange={(event) => setPasted(event.target.value)}
+                      rows={2}
+                      placeholder="Pegá el JSON"
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full"
+                      onClick={() => {
+                        try {
+                          const nextCharge = decodeCharge(pasted);
+                          if (nextCharge) {
+                            setCharge(nextCharge);
+                            setResult(null);
+                          } else {
+                            setCharge(null);
+                            setResult(ingest(pasted, "copy"));
+                          }
+                          setError(null);
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "JSON inválido");
                         }
-                        setError(null);
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : "Archivo inválido");
-                      }
-                    });
-                  }}
-                />
+                      }}
+                    >
+                      Validar texto
+                    </Button>
+                    <Input
+                      type="file"
+                      accept="application/json,.json"
+                      className="cursor-pointer text-xs"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        void file.text().then((text) => {
+                          try {
+                            const nextCharge = decodeCharge(text);
+                            if (nextCharge) {
+                              setCharge(nextCharge);
+                              setResult(null);
+                            } else {
+                              setCharge(null);
+                              setResult(ingest(text, "file"));
+                            }
+                            setError(null);
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : "Archivo inválido");
+                          }
+                        });
+                      }}
+                    />
+                  </div>
+                ) : null}
               </>
             )}
           </TabsContent>
