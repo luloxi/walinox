@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { isAddress } from "ethers";
+import { Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +17,7 @@ import {
   type Contact,
   type SuggestedContact,
 } from "@/lib/contacts";
+import { EmptyState, SectionLabel } from "@/components/empty-state";
 import { SaveContact } from "@/components/save-contact";
 import { useWallet } from "@/components/wallet-provider";
 import { parsePaymentAddress } from "@/lib/payment-address";
@@ -102,11 +104,9 @@ export function ContactsView() {
       </div>
 
       {suggestions.length > 0 && !query.trim() ? (
-        <section className="mt-5 space-y-2">
-          <div>
-            <p className="text-sm font-medium">Sugeridos</p>
-            <p className="text-xs text-muted-foreground">De tus movimientos recientes</p>
-          </div>
+        <section className="mt-6 space-y-2">
+          <SectionLabel>Sugeridos</SectionLabel>
+          <p className="text-xs text-muted-foreground">De tus movimientos recientes</p>
           <ul className="space-y-2">
             {suggestions.map((item) => (
               <li key={item.address}>
@@ -122,7 +122,7 @@ export function ContactsView() {
       ) : null}
 
       {contacts.length > 0 && suggestions.length > 0 && !query.trim() ? (
-        <p className="mt-6 text-sm font-medium">Agenda</p>
+        <SectionLabel className="mt-6">Agenda</SectionLabel>
       ) : null}
 
       {visible.length > 0 ? (
@@ -135,7 +135,7 @@ export function ContactsView() {
             <li key={contact.address}>
               <Link
                 href={`/contacts/${contact.address}`}
-                className="flex h-full cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 hover:bg-muted"
+                className="flex h-full cursor-pointer items-center justify-between rounded-2xl border border-border bg-card px-3 py-3 transition-colors hover:bg-muted"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">{contactLabel(contact)}</span>
@@ -149,9 +149,24 @@ export function ContactsView() {
           ))}
         </ul>
       ) : contacts.length === 0 && suggestions.length === 0 ? (
-        <p className="mt-5 text-sm text-muted-foreground">Todavía no hay contactos.</p>
+        <EmptyState
+          className="mt-6"
+          icon={Users}
+          title="Todavía no hay contactos"
+          body="Guardá gente con la que mandás o cobrás para encontrarlos rápido."
+          action={
+            <Button type="button" className="h-11" onClick={() => setOpen(true)}>
+              Nuevo contacto
+            </Button>
+          }
+        />
       ) : query.trim() ? (
-        <p className="mt-5 text-sm text-muted-foreground">No hay contactos con eso.</p>
+        <EmptyState
+          className="mt-6"
+          icon={Search}
+          title="Sin resultados"
+          body="Probá otro nombre, ENS o address."
+        />
       ) : null}
 
       {open
@@ -174,14 +189,14 @@ export function ContactsView() {
                 <p id={titleId} className="text-base font-semibold">
                   Nuevo contacto
                 </p>
-                <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" className="h-10" />
+                <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" className="h-11" />
                 <Input
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
                   placeholder="0x… o lulox.eth"
-                  className="h-10 font-mono"
+                  className="h-11 font-mono"
                 />
-                {error ? <p className="text-xs text-red-400">{error}</p> : null}
+                {error ? <p className="text-xs text-destructive">{error}</p> : null}
                 <QvacHint
                   task="contact"
                   placeholder="guardá a María 0x… o lulox.eth"
@@ -192,10 +207,10 @@ export function ContactsView() {
                   }}
                 />
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" className="h-10 flex-1" onClick={() => setOpen(false)}>
+                  <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => setOpen(false)}>
                     Cerrar
                   </Button>
-                  <Button type="submit" className="h-10 flex-1" disabled={busy}>
+                  <Button type="submit" className="h-11 flex-1" disabled={busy}>
                     {busy ? "Guardando…" : "Guardar"}
                   </Button>
                 </div>
