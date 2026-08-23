@@ -1,6 +1,6 @@
 # Cómo entra un usuario a Walinox
 
-Walinox es **auto-custodia**: la app no guarda tu plata ni firma por vos en un servidor. Para **mandar, cobrar o comprar** hace falta una billetera Ethereum que firme. Para **mirar una tienda** (el link que comparte un local) no hace falta.
+Walinox es **auto-custodia**: la app no guarda tu plata ni firma por vos en un servidor. Para **mandar, cobrar o pagar** hace falta una billetera Ethereum que firme.
 
 Hay **dos formas** de tener esa billetera. Las dos son una cuenta on-chain de verdad, con USDT en Ethereum.
 
@@ -33,7 +33,7 @@ En código (`src/lib/wallet.ts` / `seed-crypto.ts`):
 4. Primera cuenta Ethereum = address del usuario.
 5. Opcional: `@tetherto/wdk-wallet-evm-7702-gasless` para gas en USDT; si falla, EOA con ETH.
 
-Al **crear** una cuenta nueva, la UI muestra la frase de 12 palabras y pide confirmar que se respaldó. En **Ajustes → Seguridad** se puede volver a ver con el PIN.
+Al **crear** una cuenta nueva, la UI muestra la frase de 12 palabras y pide confirmar que se respaldó. En **Ajustes → Seguridad** se puede volver a ver con el PIN. Tras ~5 minutos de inactividad se vuelve a pedir PIN o biometría.
 
 ### Qué implica para el usuario
 
@@ -49,39 +49,28 @@ WDK corre en el cliente. Tether no custodia la seed.
 
 ---
 
-## Qué se puede hacer sin billetera
-
-- Abrir un link de tienda.
-- Ver productos y precios en moneda local.
-- Iniciar sesión desde esa misma pantalla para comprar.
-
-Sin billetera no hay saldo, envíos, caja, actividad ni ajustes.
-
----
-
 ## Flujo al entrar
 
 ```
-Mirar tienda (público)
-        │
-        ▼
+Landing
+   │
+   ▼
 ¿Tenés wallet?
-   no ──► WDK crea/reabre seed local     sí ──► RainbowKit
-        │                                         │
-        └──────────────┬──────────────────────────┘
-                       ▼
-              Firma de términos (EIP-712, una vez)
-                       ▼
-              App: billetera, contactos, tienda, actividad, ajustes
+   no ──► WDK crea/reabre seed local + PIN     sí ──► RainbowKit
+        │                                              │
+        └──────────────────┬───────────────────────────┘
+                           ▼
+                  Firma de términos (EIP-712, una vez)
+                           ▼
+                      App (Billetera)
 ```
 
-Firmar no mueve USDT. El token se mueve cuando esa firma se publica on-chain.
+## Qué podés hacer después
 
----
+- **Billetera:** Ingresar (on-ramp), Recibir, Enviar, Pagar.
+- **Tienda:** Cobrar (caja/POS) y Catálogo de productos propios.
+- **Contactos, Avisos, Actividad, Ajustes.**
 
-## Tether en esta app
+Sin billetera no hay saldo, envíos, caja, actividad ni ajustes.
 
-- **WDK** — crear cuenta, firmar EIP-712, transfer.
-- **WDK 7702 gasless** — bundler en USDT cuando está disponible.
-- **USDT** — settlement; UI con cotización de mercado a moneda local.
-- **QVAC** — completa formularios con una frase.
+La vitrina pública por link de tienda quedó **fuera del MVP** (ver `docs/roadmap.md`). El núcleo B2C es cobrar en el mostrador con el comprador firmando offline.
