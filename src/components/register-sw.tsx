@@ -44,7 +44,7 @@ export function RegisterServiceWorker() {
         .then((registration) => {
           if (cancelled) return;
           track(registration);
-          void registration.update().catch(() => undefined);
+          if (navigator.onLine) void registration.update().catch(() => undefined);
         })
         .catch(() => undefined);
     };
@@ -58,7 +58,7 @@ export function RegisterServiceWorker() {
     }
 
     const interval = window.setInterval(() => {
-      void reg?.update();
+      if (navigator.onLine) void reg?.update();
     }, 60_000);
 
     return () => {
