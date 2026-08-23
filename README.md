@@ -6,6 +6,14 @@ The payer signs on their phone offline. The merchant settles on Ethereum when th
 
 [Live demo](https://walinox-nu.vercel.app) · [Wallet](docs/wallet.md) · [Env](docs/env.md) · [Cloud backup](database.md) · [Roadmap](docs/roadmap.md)
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=7m5QNwshjWs">
+    <img src="https://img.youtube.com/vi/7m5QNwshjWs/maxresdefault.jpg" alt="Watch the Walinox demo on YouTube" width="720" />
+  </a>
+  <br />
+  <a href="https://www.youtube.com/watch?v=7m5QNwshjWs"><strong>Watch the demo on YouTube →</strong></a>
+</p>
+
 ---
 
 ## What it is
