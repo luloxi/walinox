@@ -12,12 +12,12 @@ function QvacMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-[10px] font-bold tracking-wide text-primary",
+        "inline-flex h-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 px-1.5 text-[10px] font-bold tracking-wide text-primary",
         className,
       )}
       aria-hidden
     >
-      QV
+      QVAC
     </span>
   );
 }
