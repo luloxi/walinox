@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UsdtLogo } from "@/components/usdt-logo";
 import { useDisplay } from "@/components/display-provider";
 import { useTheme } from "@/components/theme-provider";
 import { useFx } from "@/components/use-fx";
@@ -54,7 +55,7 @@ function SectionTitle({
 }) {
   return (
     <p className="flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-      <Icon className="size-3.5" strokeWidth={2.25} aria-hidden />
+      <Icon className="size-4.5" strokeWidth={2.25} aria-hidden />
       {children}
     </p>
   );
@@ -216,23 +217,28 @@ export function SettingsView() {
           ))}
         </select>
         <p className="text-[11px] text-muted-foreground">
-          {local.flag} {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
+          <span className="text-base leading-none">{local.flag}</span>{" "}
+          {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
         </p>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant={prefs.primary === "fiat" ? "default" : "outline"}
-            className="h-11"
+            className="h-11 gap-2"
             onClick={() => setPrefs({ ...prefs, primary: "fiat" })}
           >
-            {local.flag} {local.id}
+            <span className="text-lg leading-none" aria-hidden>
+              {local.flag}
+            </span>
+            {local.id}
           </Button>
           <Button
             type="button"
             variant={prefs.primary === "usdt" ? "default" : "outline"}
-            className="h-11"
+            className="h-11 gap-2"
             onClick={() => setPrefs({ ...prefs, primary: "usdt" })}
           >
+            <UsdtLogo className="size-5 shrink-0" />
             USDT
           </Button>
         </div>
@@ -250,13 +256,13 @@ export function SettingsView() {
                 onClick={() => void copyAddress()}
                 aria-label={copied ? "Copiado" : "Copiar address"}
               >
-                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
               </button>
             </div>
             {etherscanUrl ? (
               <Button type="button" variant="outline" className="h-11 w-full gap-2" asChild>
                 <a href={etherscanUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="size-4" />
+                  <ExternalLink className="size-5" />
                   Etherscan
                 </a>
               </Button>
@@ -336,14 +342,14 @@ export function SettingsView() {
               className="h-11 w-full gap-2"
               onClick={() => setPinOpen(true)}
             >
-              <KeyRound className="size-4" />
+              <KeyRound className="size-5" />
               Cambiar PIN
             </Button>
           )}
 
           {!bioAvailable ? null : bioOn ? (
             <Button type="button" variant="outline" className="h-11 w-full gap-2" onClick={turnOffBio}>
-              <Fingerprint className="size-4" />
+              <Fingerprint className="size-5" />
               Desactivar biometría
             </Button>
           ) : bioAskPin ? (
@@ -374,7 +380,7 @@ export function SettingsView() {
             </div>
           ) : (
             <Button type="button" className="h-11 w-full gap-2" onClick={() => setBioAskPin(true)}>
-              <Fingerprint className="size-4" />
+              <Fingerprint className="size-5" />
               Activar biometría
             </Button>
           )}
@@ -395,7 +401,7 @@ export function SettingsView() {
             disabled={notifyBusy}
             onClick={() => void disableAlerts()}
           >
-            <Bell className="size-4" />
+            <Bell className="size-5" />
             Silenciar
           </Button>
         ) : (
@@ -405,7 +411,7 @@ export function SettingsView() {
             disabled={notifyBusy || !wallet}
             onClick={() => void enableAlerts()}
           >
-            <Bell className="size-4" />
+            <Bell className="size-5" />
             {notifyBusy ? "…" : "Activar push"}
           </Button>
         )}
@@ -420,7 +426,7 @@ export function SettingsView() {
             className="h-11 gap-2"
             onClick={() => setTheme("dark")}
           >
-            <Moon className="size-4" />
+            <Moon className="size-5" />
             Oscuro
           </Button>
           <Button
@@ -429,7 +435,7 @@ export function SettingsView() {
             className="h-11 gap-2"
             onClick={() => setTheme("light")}
           >
-            <Sun className="size-4" />
+            <Sun className="size-5" />
             Claro
           </Button>
         </div>
