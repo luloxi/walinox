@@ -5,6 +5,7 @@ import { useDisconnect } from "wagmi";
 import {
   Bell,
   Check,
+  CircleDollarSign,
   Copy,
   ExternalLink,
   Fingerprint,
@@ -198,9 +199,7 @@ export function SettingsView() {
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
       <section className="space-y-2">
-        <SectionTitle icon={Wallet}>{/* currency */}
-          Moneda
-        </SectionTitle>
+        <SectionTitle icon={CircleDollarSign}>Moneda</SectionTitle>
         <select
           className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm"
           value={prefs.fiat}
