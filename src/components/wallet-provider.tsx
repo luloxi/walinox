@@ -16,7 +16,6 @@ import { loadOrCreateWallet, type LocalWallet } from "@/lib/wallet";
 import {
   TERMS_VERSION,
   hasSignedTos,
-  isLocalUnlocked,
   saveTos,
   setLocalUnlocked,
   termsTypedData,
@@ -32,7 +31,7 @@ type WalletState = {
   hydrating: boolean;
   needsTos: boolean;
   source: "injected" | "local" | null;
-  unlockLocal: () => Promise<void>;
+  unlockLocal: (pin: string) => Promise<void>;
   lockLocal: () => void;
   signTos: () => Promise<void>;
 };
@@ -61,32 +60,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setReceiptStore(localStorageStore());
-    const timer = window.setTimeout(() => {
-      setWantLocal(isLocalUnlocked());
-      setLocalChecked(true);
-    }, 0);
+    const timer = window.setTimeout(() => setLocalChecked(true), 0);
     return () => window.clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!wantLocal) {
-      const timer = window.setTimeout(() => setLocal(null), 0);
-      return () => window.clearTimeout(timer);
-    }
-    let active = true;
-    loadOrCreateWallet()
-      .then((wallet) => {
-        if (active) setLocal(wallet);
-      })
-      .catch((err: unknown) => {
-        if (active) {
-          setError(err instanceof Error ? err.message : "Wallet failed to open");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [wantLocal]);
 
   const injected = Boolean(isConnected && address && walletClient);
 
@@ -110,7 +86,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     !localChecked || status === "connecting" || status === "reconnecting";
   const ready = Boolean(wallet && tosOk);
 
-  const unlockLocal = useCallback(async () => {
+  const unlockLocal = useCallback(async (pin: string) => {
+    setError(null);
+    const next = await loadOrCreateWallet(pin);
+    setLocal((current) => {
+      current?.dispose();
+      return next;
+    });
     setLocalUnlocked(true);
     setWantLocal(true);
   }, []);
