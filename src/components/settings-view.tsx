@@ -17,6 +17,7 @@ import {
 } from "@/lib/biometric";
 import { FIATS, fiatMeta, isFiatId } from "@/lib/display";
 import { formatFiat } from "@/lib/fx";
+import { changePin } from "@/lib/seed-crypto";
 import {
   BANNER_KEY,
   NOTIFY_OFF_KEY,
@@ -48,6 +49,13 @@ export function SettingsView() {
   const [bioAskPin, setBioAskPin] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pinCurrent, setPinCurrent] = useState("");
+  const [pinNext, setPinNext] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinOk, setPinOk] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -112,6 +120,34 @@ export function SettingsView() {
     setBioAskPin(false);
     setBioPin("");
     setBioError(null);
+  }
+
+  async function submitChangePin() {
+    setPinBusy(true);
+    setPinError(null);
+    setPinOk(false);
+    try {
+      if (pinNext !== pinConfirm) throw new Error("Los PIN nuevos no coinciden");
+      await changePin(pinCurrent, pinNext);
+      if (biometricEnabled()) {
+        try {
+          await enableBiometric(pinNext);
+        } catch {
+          disableBiometric();
+          setBioOn(false);
+        }
+      }
+      setPinCurrent("");
+      setPinNext("");
+      setPinConfirm("");
+      setPinOpen(false);
+      setPinOk(true);
+      window.setTimeout(() => setPinOk(false), 2500);
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : "No se pudo cambiar el PIN");
+    } finally {
+      setPinBusy(false);
+    }
   }
 
   function disconnectWallet() {
@@ -214,50 +250,119 @@ export function SettingsView() {
       </section>
 
       {source === "local" ? (
-        <section className="mt-6 space-y-2">
+        <section className="mt-6 space-y-3">
           <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            Biometría
+            Seguridad
           </p>
           <p className="text-xs text-muted-foreground">
-            Desbloqueo con huella o Face ID en este dispositivo. El PIN sigue siendo la llave de la seed.
+            PIN y biometría protegen la seed en este dispositivo.
           </p>
-          {!bioAvailable ? (
-            <p className="text-sm text-muted-foreground">Este dispositivo no ofrece biometría en el navegador.</p>
-          ) : bioOn ? (
-            <Button type="button" variant="outline" className="h-11 w-full" onClick={turnOffBio}>
-              Desactivar biometría
-            </Button>
-          ) : bioAskPin ? (
-            <div className="space-y-2">
+
+          {pinOk ? <p className="text-sm text-primary">PIN actualizado</p> : null}
+
+          {pinOpen ? (
+            <div className="space-y-2 rounded-2xl border border-border p-3">
+              <p className="text-sm font-medium">Cambiar PIN</p>
               <Input
                 type="password"
                 inputMode="numeric"
-                value={bioPin}
-                onChange={(event) => setBioPin(event.target.value)}
+                value={pinCurrent}
+                onChange={(event) => setPinCurrent(event.target.value)}
                 placeholder="PIN actual"
                 className="h-11"
                 autoFocus
               />
-              {bioError ? <p className="text-xs text-destructive">{bioError}</p> : null}
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={pinNext}
+                onChange={(event) => setPinNext(event.target.value)}
+                placeholder="PIN nuevo (mín. 6)"
+                className="h-11"
+              />
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={pinConfirm}
+                onChange={(event) => setPinConfirm(event.target.value)}
+                placeholder="Repetir PIN nuevo"
+                className="h-11"
+              />
+              {pinError ? <p className="text-xs text-destructive">{pinError}</p> : null}
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" className="h-11" onClick={() => setBioAskPin(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => {
+                    setPinOpen(false);
+                    setPinError(null);
+                    setPinCurrent("");
+                    setPinNext("");
+                    setPinConfirm("");
+                  }}
+                >
                   Cancelar
                 </Button>
                 <Button
                   type="button"
                   className="h-11"
-                  disabled={bioBusy || bioPin.length < 6}
-                  onClick={() => void confirmBio()}
+                  disabled={pinBusy || pinCurrent.length < 6 || pinNext.length < 6}
+                  onClick={() => void submitChangePin()}
                 >
-                  {bioBusy ? "…" : "Activar"}
+                  {pinBusy ? "…" : "Guardar"}
                 </Button>
               </div>
             </div>
           ) : (
-            <Button type="button" className="h-11 w-full" onClick={() => setBioAskPin(true)}>
-              Activar biometría
+            <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setPinOpen(true)}>
+              Cambiar PIN
             </Button>
           )}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Biometría</p>
+            <p className="text-xs text-muted-foreground">
+              Huella o Face ID en este dispositivo. El PIN sigue siendo la llave de la seed.
+            </p>
+            {!bioAvailable ? (
+              <p className="text-sm text-muted-foreground">Este dispositivo no ofrece biometría en el navegador.</p>
+            ) : bioOn ? (
+              <Button type="button" variant="outline" className="h-11 w-full" onClick={turnOffBio}>
+                Desactivar biometría
+              </Button>
+            ) : bioAskPin ? (
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  value={bioPin}
+                  onChange={(event) => setBioPin(event.target.value)}
+                  placeholder="PIN actual"
+                  className="h-11"
+                  autoFocus
+                />
+                {bioError ? <p className="text-xs text-destructive">{bioError}</p> : null}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" className="h-11" onClick={() => setBioAskPin(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-11"
+                    disabled={bioBusy || bioPin.length < 6}
+                    onClick={() => void confirmBio()}
+                  >
+                    {bioBusy ? "…" : "Activar"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" className="h-11 w-full" onClick={() => setBioAskPin(true)}>
+                Activar biometría
+              </Button>
+            )}
+          </div>
         </section>
       ) : null}
 
