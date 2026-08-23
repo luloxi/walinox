@@ -285,3 +285,22 @@
     opacity: 1;
   }
 }
+
+@keyframes walinox-loader-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.walinox-loader-ping {
+  animation: walinox-loader-ping 1.35s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
