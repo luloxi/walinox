@@ -6,21 +6,13 @@ import { Button } from "@/components/ui/button";
 import { useWallet } from "@/components/wallet-provider";
 import {
   applyCloudPayload,
-  collectCloudPayload,
+  CLOUD_BACKUP_EVENT,
+  formatBackupAge,
   lastCloudBackupAt,
-  parsePayload,
-  payloadDigest,
+  pullCloudBackup,
+  pushCloudBackup,
   rememberCloudBackupAt,
 } from "@/lib/backup";
-import { pushAuthTypedData } from "@/lib/push-auth";
-
-function formatAt(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
 
 export function CloudBackup() {
   const { wallet } = useWallet();
@@ -32,47 +24,39 @@ export function CloudBackup() {
   const [lastAt, setLastAt] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setLastAt(lastCloudBackupAt()), 0);
+    function refresh() {
+      setLastAt(lastCloudBackupAt());
+    }
+    const timer = window.setTimeout(refresh, 0);
     const on = () => setOnline(true);
     const off = () => setOnline(false);
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
+    window.addEventListener(CLOUD_BACKUP_EVENT, refresh);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
+      window.removeEventListener(CLOUD_BACKUP_EVENT, refresh);
     };
   }, []);
 
-  async function signed(action: "backup" | "restore", extra: string) {
-    if (!wallet) throw new Error("Conectá una wallet");
-    const ts = Date.now();
-    const signature = await wallet.signTypedData(pushAuthTypedData(wallet.address, action, ts, extra));
-    return { address: wallet.address, ts, signature, extra, action };
-  }
-
-  async function saveCopy() {
+  async function saveNow() {
     if (!wallet) return;
     setBusy("save");
     setNote(null);
     try {
-      // Same normalize path as the API so keccak(extra) matches server-side parsePayload.
-      const payload = parsePayload(collectCloudPayload(wallet.address));
-      if (!payload) throw new Error("Copia inválida");
-      const extra = payloadDigest(payload);
-      const auth = await signed("backup", extra);
-      const res = await fetch("/api/backup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...auth, payload }),
-      });
-      const data = (await res.json()) as { error?: string; updatedAt?: string };
-      if (res.status === 503) throw new Error("La nube no está lista en este entorno");
-      if (!res.ok) throw new Error(data.error || "No se pudo guardar");
-      if (data.updatedAt) {
-        rememberCloudBackupAt(data.updatedAt);
-        setLastAt(data.updatedAt);
+      const result = await pushCloudBackup(wallet.address);
+      if (!result.ok) {
+        throw new Error(
+          result.error === "sin base"
+            ? "La nube no está lista en este entorno"
+            : result.error === "sin internet"
+              ? "Sin internet"
+              : "No se pudo guardar",
+        );
       }
+      setLastAt(result.updatedAt);
       setNote("Copia guardada");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "No se pudo guardar");
@@ -83,31 +67,28 @@ export function CloudBackup() {
 
   async function restoreCopy() {
     if (!wallet) return;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("¿Restaurar la copia de la nube? Reemplaza productos y contactos de este dispositivo.")
+    ) {
+      return;
+    }
     setBusy("restore");
     setNote(null);
     try {
-      const auth = await signed("restore", "");
-      const res = await fetch("/api/backup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(auth),
-      });
-      const data = (await res.json()) as {
-        error?: string;
-        empty?: boolean;
-        payload?: unknown;
-        updatedAt?: string;
-      };
-      if (res.status === 503) throw new Error("La nube no está lista en este entorno");
-      if (!res.ok) throw new Error(data.error || "No se pudo restaurar");
-      if (data.empty) throw new Error("No hay copia para esta wallet");
-      const payload = parsePayload(data.payload);
-      if (!payload) throw new Error("Copia inválida");
-      applyCloudPayload(wallet.address, payload);
-      if (data.updatedAt) {
-        rememberCloudBackupAt(data.updatedAt);
-        setLastAt(data.updatedAt);
+      const result = await pullCloudBackup(wallet.address);
+      if (!result.ok) {
+        throw new Error(
+          result.empty
+            ? "No hay copia para esta wallet"
+            : result.error === "sin base"
+              ? "La nube no está lista en este entorno"
+              : "No se pudo restaurar",
+        );
       }
+      applyCloudPayload(wallet.address, result.payload);
+      rememberCloudBackupAt(result.updatedAt);
+      setLastAt(result.updatedAt);
       setNote("Restaurada");
       window.setTimeout(() => window.location.reload(), 600);
     } catch (err) {
@@ -126,11 +107,12 @@ export function CloudBackup() {
         Copia en la nube
       </p>
       <p className="text-sm text-muted-foreground">
-        Snapshot firmado de productos, contactos y actividad. La seed no sale de este dispositivo.
+        Se guarda sola con internet. La seed no sale de este dispositivo.
       </p>
+      <p className="text-xs text-muted-foreground">{formatBackupAge(lastAt)}</p>
       <div className="grid grid-cols-2 gap-2">
-        <Button type="button" className="h-11" disabled={blocked} onClick={() => void saveCopy()}>
-          {busy === "save" ? "…" : "Guardar"}
+        <Button type="button" className="h-11" disabled={blocked} onClick={() => void saveNow()}>
+          {busy === "save" ? "…" : "Guardar ahora"}
         </Button>
         <Button
           type="button"
@@ -143,7 +125,6 @@ export function CloudBackup() {
         </Button>
       </div>
       {!online ? <p className="text-xs text-muted-foreground">Sin internet</p> : null}
-      {lastAt ? <p className="text-xs text-muted-foreground">Última copia · {formatAt(lastAt)}</p> : null}
       {note ? <p className="text-xs text-primary">{note}</p> : null}
     </section>
   );
