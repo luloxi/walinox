@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Package, PackageSearch } from "lucide-react";
+import { Cloud, Package, PackageSearch } from "lucide-react";
 import { ActivityList } from "@/components/activity-list";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,12 @@ import { ProductFilters } from "@/components/product-filters";
 import { ProductForm } from "@/components/product-form";
 import { useWallet } from "@/components/wallet-provider";
 import { Price } from "@/components/price";
+import {
+  CLOUD_BACKUP_EVENT,
+  formatBackupAge,
+  lastCloudBackupAt,
+  pushCloudBackup,
+} from "@/lib/backup";
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { productsByIssuer, removeProduct } from "@/lib/catalog";
 import { listReceipts, type Receipt } from "@/lib/receipts";
@@ -26,6 +32,8 @@ export function TiendaView() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState<ProductSort>("categoria");
+  const [backupAt, setBackupAt] = useState<string | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
 
   function refresh() {
     seedLivedIn(wallet?.address);
@@ -38,13 +46,52 @@ export function TiendaView() {
     return () => window.clearTimeout(timer);
   }, [wallet?.address]);
 
+  useEffect(() => {
+    function syncBackup() {
+      setBackupAt(lastCloudBackupAt());
+    }
+    const timer = window.setTimeout(syncBackup, 0);
+    window.addEventListener(CLOUD_BACKUP_EVENT, syncBackup);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(CLOUD_BACKUP_EVENT, syncBackup);
+    };
+  }, []);
+
   const mined = useMemo(
     () => browseProducts(mine, { query, category, sort }),
     [mine, query, category, sort],
   );
 
+  async function backupNow() {
+    if (!wallet?.address || backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const result = await pushCloudBackup(wallet.address);
+      if (result.ok) setBackupAt(result.updatedAt);
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
   return (
     <div className="flex w-full flex-col pb-6">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <SectionLabel>Tienda</SectionLabel>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 max-w-[min(100%,14rem)] gap-1.5 px-2.5 text-xs"
+          disabled={!wallet || backupBusy}
+          onClick={() => void backupNow()}
+          title="Guardar copia en la nube"
+        >
+          <Cloud className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+          <span className="truncate">{backupBusy ? "Guardando…" : formatBackupAge(backupAt)}</span>
+        </Button>
+      </div>
+
       <Tabs defaultValue="cobrar" className="w-full gap-4">
         <TabsList className="w-full">
           <TabsTrigger value="cobrar">Cobrar</TabsTrigger>
@@ -87,7 +134,6 @@ export function TiendaView() {
 
           <section>
             <SectionLabel>Catálogo</SectionLabel>
-            <p className="mt-1 mb-3 text-xs text-muted-foreground">Ordená por categoría para la caja.</p>
             {mine.length === 0 ? (
               <EmptyState
                 icon={Package}
@@ -100,7 +146,7 @@ export function TiendaView() {
                 }
               />
             ) : (
-              <div className="space-y-4">
+              <div className="mt-3 space-y-4">
                 <ProductFilters
                   query={query}
                   onQuery={setQuery}
