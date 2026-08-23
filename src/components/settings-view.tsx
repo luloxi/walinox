@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDisconnect } from "wagmi";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDisplay } from "@/components/display-provider";
@@ -17,7 +17,6 @@ import {
 } from "@/lib/biometric";
 import { FIATS, fiatMeta, isFiatId } from "@/lib/display";
 import { formatFiat } from "@/lib/fx";
-import { shortAddress } from "@/lib/format";
 import {
   BANNER_KEY,
   NOTIFY_OFF_KEY,
@@ -48,6 +47,7 @@ export function SettingsView() {
   const [bioPin, setBioPin] = useState("");
   const [bioAskPin, setBioAskPin] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -122,7 +122,17 @@ export function SettingsView() {
     }
   }
 
+  async function copyAddress() {
+    if (!wallet?.address) return;
+    await navigator.clipboard.writeText(wallet.address);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  }
+
   const local = fiatMeta(prefs.fiat);
+  const etherscanUrl = wallet?.address
+    ? `https://etherscan.io/address/${wallet.address}`
+    : null;
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
@@ -168,15 +178,36 @@ export function SettingsView() {
 
       <section className="mt-6 space-y-2">
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
-        <p className="font-mono text-sm">{wallet ? shortAddress(wallet.address) : "—"}</p>
-        <p className="text-xs text-muted-foreground">
-          {source === "local"
-            ? "Billetera local · firmás cada operación"
-            : "Wallet conectada · Walinox es intermediario, firmás en tu app"}
-        </p>
-        <div className="[&_button]:cursor-pointer">
-          <ConnectButton chainStatus="none" showBalance={false} accountStatus="full" label="Conectar billetera" />
-        </div>
+        {wallet?.address ? (
+          <>
+            <div className="flex items-start gap-2 rounded-xl bg-muted/60 p-3 ring-1 ring-border">
+              <p className="min-w-0 flex-1 break-all font-mono text-sm leading-relaxed">{wallet.address}</p>
+              <button
+                type="button"
+                className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                onClick={() => void copyAddress()}
+                aria-label={copied ? "Copiado" : "Copiar address"}
+              >
+                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {source === "local"
+                ? "Billetera local · firmás cada operación"
+                : "Wallet conectada · Walinox es intermediario, firmás en tu app"}
+            </p>
+            {etherscanUrl ? (
+              <Button type="button" variant="outline" className="h-11 w-full gap-2" asChild>
+                <a href={etherscanUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-4" />
+                  Ver en Etherscan
+                </a>
+              </Button>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Sin wallet conectada.</p>
+        )}
         <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
           Desconectar
         </Button>
