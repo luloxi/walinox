@@ -23,21 +23,20 @@ import { Hint } from "@/components/hint";
 
 O sueltos: `<Hint text="…" />`.
 
-## Textos que había
+## Textos alineados al MVP actual
 
 | Dónde | Texto |
 | --- | --- |
-| Billetera / saldo | El saldo se muestra en moneda local con cotización USDT de mercado. En localhost es de prueba. El asiento on-chain es USDT. |
-| Contactos | Guardá una address con nombre. El historial se arma solo. |
-| Enviar | Online: la wallet conectada firma y manda USDT. Sin internet: firmás un permiso y lo pasás por QR. |
-| Depositar | Mostrá tu address o escaneá un permiso firmado offline. |
-| Actividad | Ingresos y gastos de este período. Tienda es compra/venta de vales; personal es envío entre wallets. |
-| Billetera / últimos movimientos | Los últimos cinco. Tocá Ver todos para el historial completo. |
-| Tienda | En el local el vendedor arma el pedido y lo cobra. El cliente firma sin internet. El local confirma on-chain. |
-| Publicar producto | Lo publicás. El cliente paga. Le das el vale. Cuando viene, lo canjeás. |
-| Detalle de producto | `Retiro: ${redemptionPlace}` |
-| Detalle (dar vale) | El cliente ya pagó. Poné su address y se arma el vale. |
-| Página de tienda | Lugar del local, o: Catálogo de este local. Pagás en USDT; el precio se ve en moneda local. |
-| Ajustes | Tema, firma, avisos y la wallet. Nada de esto mueve fondos por sí solo. |
+| Billetera / saldo | El saldo se muestra en moneda local con cotización USDT de mercado. El asiento on-chain es USDT. |
+| Contactos | Guardá una address con nombre. |
+| Enviar | Online: la wallet firma y manda USDT. Sin internet: firmás un permiso Permit2 y lo pasás por QR u otro canal. |
+| Recibir | Mostrá tu address o pedí fondos. También podés tomar una firma offline de alguien. |
+| Pagar | Escaneá un pedido de la tienda (o un cobro) y firmá. La tienda asienta on-chain después. |
+| Ingresar | On-ramp fiat → USDT (MoonPay si hay API key). |
+| Actividad | Ingresos y gastos registrados en este dispositivo. |
+| Billetera / últimos movimientos | Los últimos movimientos. Tocá Ver todos para el historial. |
+| Tienda | El vendedor arma el pedido en caja y cobra. El cliente firma sin internet. El local confirma on-chain. |
+| Publicar producto | Nombre, precio (USDT o moneda local) y listo para la caja. |
+| Ajustes | Moneda, tema, seguridad (PIN/biometría), avisos push. Nada de esto mueve fondos por sí solo. |
 
-No es lo mismo que `QvacHint` (“¿en una frase?”): eso completa formularios, no es un tooltip.
+No es lo mismo que `QvacHint` (“En una frase”): eso completa formularios, no es un tooltip.
