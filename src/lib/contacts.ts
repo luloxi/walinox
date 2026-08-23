@@ -1,3 +1,4 @@
+import { markCloudDirty } from "@/lib/backup";
 import { getAddress, isAddress } from "ethers";
 import { listReceipts, type Receipt } from "@/lib/receipts";
 
@@ -48,6 +49,7 @@ export function localStorageContactStore(key = STORAGE_KEY): ContactStore {
     },
     save(contacts) {
       localStorage.setItem(key, JSON.stringify(contacts));
+      markCloudDirty();
     },
   };
 }
