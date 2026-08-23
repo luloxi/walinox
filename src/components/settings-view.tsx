@@ -62,11 +62,7 @@ export function SettingsView() {
       }
       localStorage.removeItem(NOTIFY_OFF_KEY);
       localStorage.setItem(BANNER_KEY, "1");
-      await subscribePush(wallet.address, (message) => wallet.signTypedData({
-        domain: { name: "Walinox", version: "1", chainId: 1, verifyingContract: "0x0000000000000000000000000000000000000001" },
-        types: { Auth: [{ name: "message", type: "string" }] },
-        message: { message },
-      }));
+      await subscribePush(wallet.address, (typed) => wallet.signTypedData(typed));
       setAlerts("on");
     } finally {
       setNotifyBusy(false);
