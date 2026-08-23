@@ -82,6 +82,7 @@ Siempre las prácticas **actuales** de Tether, no las de entrenamiento.
 - WDK es no-custodial y corre en el cliente. La seed queda en el dispositivo; nunca en servidor.
 - USDT mainnet **no** tiene ERC-2612 `permit()`. Gastos firmados = Uniswap Permit2. Transfer on-chain = ERC-20. Gas online = `@tetherto/wdk-wallet-evm-7702-gasless` (el bundler se paga en USDT); si falla, EOA (esa pide ETH).
 - QVAC rellena campos (“¿en una frase?”). No es chat ni la billetera.
+- La **decisión de modelo QVAC** (cuál y por qué no el default del SDK) va en **`README.md`**. Si cambia el modelo, actualizá el README.
 - No copies convenciones internas de los repos WDK (copyright, JSDoc para `.d.ts`) a esta app.
 
 Más contexto: `docs/billetera.md`, `docs/mentores.md`, `docs/roadmap.md`, `database.md`.

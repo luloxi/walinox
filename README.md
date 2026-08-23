@@ -15,7 +15,7 @@ Diferido (vitrina pública, vales, reporte mensual): [`docs/roadmap.md`](docs/ro
 
 - **Login** — RainbowKit o billetera local WDK + términos EIP-712.
 - **Billetera** — saldo, Ingresar / Recibir / Enviar / Pagar.
-- **Local** — productos del vendedor, caja (POS), cobro con todos los canales offline.
+- **Tienda** — productos del vendedor, caja (POS), cobro con todos los canales offline.
 - **Contactos** — agenda mínima.
 - **Actividad** — historial local (sin reportes automáticos).
 - **Ajustes** — moneda, wallet, seguridad (PIN/biometría), avisos push, tema.
@@ -40,9 +40,13 @@ El objeto que viaja es un JSON firmado (`SignedEnvelope`) o un pedido (`ChargeRe
 
 Después del primer load (PWA) el QR puede usarse en modo avión del comprador.
 
-## Gas (WDK 7702)
+## WDK, QVAC y Pears
 
-`@tetherto/wdk-wallet-evm-7702-gasless` paga al bundler en **USDT**. Si falla, fallback EOA (pide ETH).
+**WDK** — billetera local no-custodial (`@tetherto/wdk` + `wdk-wallet-evm`). La seed queda en el dispositivo. Envíos online: `@tetherto/wdk-wallet-evm-7702-gasless` paga el bundler en **USDT**; si falla, EOA (esa pide ETH). En el browser, `sodium-native` se aliasa a `sodium-javascript`.
+
+**QVAC** — atajo “¿en una frase?” (enviar, contactos, publicar). No es chat ni la billetera. Modelo: **Qwen3 0.6B Instruct Q4** (`QWEN3_600M_INST_Q4` en `qvac.config.json`). Cabe en celular, habla español y el job es JSON corto. El default del SDK (Llama 3.2 1B) parsea peor “mandale / guardá”. Corre en `qvac serve` → `/api/agent`. Si no hay QVAC, heurística (monto + `0x` / ENS / Basename).
+
+**Pears** — no hay runtime Pear/Hyperswarm en la PWA. Los envelopes offline se envuelven con un invite + topic de 32 bytes (el tamaño de `Hyperswarm.join`) para QR/aire y, más adelante, una sala P2P. Al recibir, si no es wrap, se trata como envelope plano.
 
 ## Install
 
