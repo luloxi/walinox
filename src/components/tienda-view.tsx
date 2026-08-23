@@ -93,9 +93,6 @@ export function TiendaView() {
               ) : (
                 <div>
                   <p className="mb-2 text-sm font-medium">Pagar en el local</p>
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Escaneá el pedido. Firmás sin red. El local publica el pago.
-                  </p>
                   <Button type="button" className="h-11 w-full" onClick={() => setPayScan((value) => !value)}>
                     {payScan ? "Cerrar cámara" : "Escanear pedido"}
                   </Button>
@@ -120,115 +117,118 @@ export function TiendaView() {
 
         <TabsContent value="vendedor" className="mt-4">
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start lg:gap-10">
-          <div className="space-y-6 lg:sticky lg:top-2">
-          <PosView products={mine} />
-          <section>
-            <p className="mb-3 text-sm font-medium">Escanear vale del cliente</p>
-            <RedeemView embedded />
-          </section>
+            <div className="space-y-6 lg:sticky lg:top-2">
+              <PosView products={mine} />
+              <section>
+                <p className="mb-3 text-sm font-medium">Escanear vale del cliente</p>
+                <RedeemView embedded />
+              </section>
 
-          {wallet ? <StoreShare storeId={wallet.address} /> : null}
+              {wallet ? <StoreShare storeId={wallet.address} /> : null}
 
-          <section>
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">Publicar</p>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8"
-                onClick={() => setPublishing((value) => !value)}
-              >
-                {publishing ? "Cerrar" : "Nuevo producto"}
-              </Button>
-            </div>
-            {publishing ? (
-              <div className="rounded-2xl border border-border p-3">
-                <ProductForm
-                  embedded
-                  onPublished={() => {
-                    setPublishing(false);
-                    refresh();
-                  }}
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Publicá un producto para venderlo en tu local.</p>
-            )}
-          </section>
-          </div>
-
-          <section>
-            <p className="mb-3 text-sm font-medium">Publicados</p>
-            {mine.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Todavía no publicaste nada.</p>
-            ) : (
-              <div className="space-y-3">
-                <ProductFilters
-                  query={query}
-                  onQuery={setQuery}
-                  category={category}
-                  onCategory={setCategory}
-                  sort={sort}
-                  onSort={setSort}
-                />
-                {mined.items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No hay productos con eso.</p>
+              <section>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">Publicar</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setPublishing((value) => !value)}
+                  >
+                    {publishing ? "Cerrar" : "Nuevo producto"}
+                  </Button>
+                </div>
+                {publishing ? (
+                  <div className="rounded-2xl border border-border p-3">
+                    <ProductForm
+                      embedded
+                      onPublished={() => {
+                        setPublishing(false);
+                        refresh();
+                      }}
+                    />
+                  </div>
                 ) : (
-                  (mined.groups ?? [{ id: "all", label: "", products: mined.items }]).map((group) => (
-                    <div key={group.id} className="space-y-2">
-                      {group.label ? (
-                        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                          {group.label}
-                        </p>
-                      ) : null}
-                      <ul className="space-y-2">
-                        {group.products.map((product) => (
-                          <li
-                            key={product.id}
-                            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-2"
-                          >
-                            <Link
-                              href={`/products/${encodeURIComponent(product.id)}`}
-                              className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
-                            >
-                              {product.image ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={product.image} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
-                              ) : (
-                                <span className="size-14 shrink-0 rounded-xl bg-muted" />
-                              )}
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-medium">{product.title}</span>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {categoryLabel(product.category)} · {product.sold}/{product.supply} · {product.redemptionPlace}
-                                </span>
-                                <span className="mt-0.5 block">
-                                  <Price usdt={product.price} size="sm" />
-                                </span>
-                              </span>
-                            </Link>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 shrink-0 text-muted-foreground"
-                              onClick={() => {
-                                if (!wallet) return;
-                                removeProduct(product.id, wallet.address);
-                                refresh();
-                              }}
-                            >
-                              Quitar
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))
+                  <p className="text-sm text-muted-foreground">Publicá un producto para venderlo en tu local.</p>
                 )}
-              </div>
-            )}
-          </section>
+              </section>
+            </div>
+
+            <section>
+              <p className="mb-1 text-sm font-medium">Tu catálogo</p>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Ordená y filtrá por categoría. Cada producto lleva su categoría al publicarlo.
+              </p>
+              {mine.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todavía no publicaste nada.</p>
+              ) : (
+                <div className="space-y-4">
+                  <ProductFilters
+                    query={query}
+                    onQuery={setQuery}
+                    category={category}
+                    onCategory={setCategory}
+                    sort={sort}
+                    onSort={setSort}
+                  />
+                  {mined.items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay productos con eso.</p>
+                  ) : (
+                    (mined.groups ?? [{ id: "all", label: "", products: mined.items }]).map((group) => (
+                      <div key={group.id} className="space-y-2">
+                        {group.label ? (
+                          <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                            {group.label}
+                          </p>
+                        ) : null}
+                        <ul className="space-y-2">
+                          {group.products.map((product) => (
+                            <li
+                              key={product.id}
+                              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-2"
+                            >
+                              <Link
+                                href={`/products/${encodeURIComponent(product.id)}`}
+                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+                              >
+                                {product.image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={product.image} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
+                                ) : (
+                                  <span className="size-14 shrink-0 rounded-xl bg-muted" />
+                                )}
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-medium">{product.title}</span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {categoryLabel(product.category)} · {product.sold}/{product.supply}
+                                  </span>
+                                  <span className="mt-0.5 block">
+                                    <Price usdt={product.price} size="sm" />
+                                  </span>
+                                </span>
+                              </Link>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 shrink-0 text-muted-foreground"
+                                onClick={() => {
+                                  if (!wallet) return;
+                                  removeProduct(product.id, wallet.address);
+                                  refresh();
+                                }}
+                              >
+                                Quitar
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </section>
           </div>
         </TabsContent>
       </Tabs>
