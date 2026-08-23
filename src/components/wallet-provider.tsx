@@ -12,7 +12,7 @@ import {
 import { useAccount, useWalletClient } from "wagmi";
 import { fromConnected } from "@/lib/connected-wallet";
 import { localStorageStore, setReceiptStore } from "@/lib/receipts";
-import { loadOrCreateWallet, type LocalWallet } from "@/lib/wallet";
+import { loadOrCreateWallet, openWallet, type LocalWallet } from "@/lib/wallet";
 import {
   TERMS_VERSION,
   hasSignedTos,
@@ -22,6 +22,30 @@ import {
 } from "@/lib/session";
 import { isLocalHost } from "@/lib/dev";
 import { seedLivedIn } from "@/lib/seed";
+import { unlockOrCreateSeed } from "@/lib/seed-crypto";
+import { randomSeedPhrase } from "@/lib/wallet";
+
+const SESSION_SEED_KEY = "walinox.session.seed";
+
+function readSessionSeed(): string | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const seed = sessionStorage.getItem(SESSION_SEED_KEY);
+    return seed && seed.trim() ? seed.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionSeed(seed: string | null): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    if (seed) sessionStorage.setItem(SESSION_SEED_KEY, seed);
+    else sessionStorage.removeItem(SESSION_SEED_KEY);
+  } catch {
+    /* quota / private mode */
+  }
+}
 
 type WalletState = {
   wallet: LocalWallet | null;
@@ -60,17 +84,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setReceiptStore(localStorageStore());
-    const timer = window.setTimeout(() => setLocalChecked(true), 0);
-    return () => window.clearTimeout(timer);
+    let cancelled = false;
+    void (async () => {
+      const seed = readSessionSeed();
+      if (seed) {
+        try {
+          const next = await openWallet(seed);
+          if (cancelled) {
+            next.dispose();
+            return;
+          }
+          setLocal(next);
+          setWantLocal(true);
+          setLocalUnlocked(true);
+        } catch {
+          writeSessionSeed(null);
+          setLocalUnlocked(false);
+        }
+      }
+      if (!cancelled) setLocalChecked(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const injected = Boolean(isConnected && address && walletClient);
 
   const wallet = useMemo(() => {
+    if (wantLocal && local) return local;
     if (injected && address && walletClient) {
       return fromConnected(address, walletClient);
     }
-    if (wantLocal) return local;
     return null;
   }, [injected, address, walletClient, wantLocal, local]);
 
@@ -80,7 +125,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [wallet?.address]);
 
-  const source: "injected" | "local" | null = injected ? "injected" : wallet ? "local" : null;
+  const source: "injected" | "local" | null =
+    wantLocal && local ? "local" : injected ? "injected" : wallet ? "local" : null;
   const tosOk = Boolean(wallet && hasSignedTos(wallet.address));
   const hydrating =
     !localChecked || status === "connecting" || status === "reconnecting";
@@ -88,7 +134,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const unlockLocal = useCallback(async (pin: string) => {
     setError(null);
-    const next = await loadOrCreateWallet(pin);
+    const seed = await unlockOrCreateSeed(pin, randomSeedPhrase);
+    const next = await openWallet(seed);
+    writeSessionSeed(seed);
     setLocal((current) => {
       current?.dispose();
       return next;
@@ -98,6 +146,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const lockLocal = useCallback(() => {
+    writeSessionSeed(null);
     setLocalUnlocked(false);
     setWantLocal(false);
     setLocal((current) => {
