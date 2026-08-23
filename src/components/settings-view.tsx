@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDisconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
-import { InboxList } from "@/components/inbox-list";
 import { useDisplay } from "@/components/display-provider";
 import { useTheme } from "@/components/theme-provider";
 import { useFx } from "@/components/use-fx";
@@ -144,23 +143,36 @@ export function SettingsView() {
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Avisos</p>
+        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
+          Notificaciones push
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Solo el interruptor. La bandeja de avisos está en Avisos del menú.
+        </p>
         {alerts === "unsupported" ? (
           <p className="text-sm text-muted-foreground">Este navegador no permite avisos.</p>
         ) : alerts === "denied" ? (
           <p className="text-sm text-muted-foreground">Bloqueados en el navegador.</p>
         ) : alerts === "on" ? (
-          <Button type="button" variant="outline" className="h-11 w-full" disabled={notifyBusy} onClick={() => void disableAlerts()}>
-            Silenciar
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            disabled={notifyBusy}
+            onClick={() => void disableAlerts()}
+          >
+            Silenciar push
           </Button>
         ) : (
-          <Button type="button" className="h-11 w-full" disabled={notifyBusy || !wallet} onClick={() => void enableAlerts()}>
-            {notifyBusy ? "Activando…" : "Activar avisos"}
+          <Button
+            type="button"
+            className="h-11 w-full"
+            disabled={notifyBusy || !wallet}
+            onClick={() => void enableAlerts()}
+          >
+            {notifyBusy ? "Activando…" : "Activar notificaciones push"}
           </Button>
         )}
-        <div className="pt-2">
-          <InboxList />
-        </div>
       </section>
 
       <section className="mt-6 space-y-2">
