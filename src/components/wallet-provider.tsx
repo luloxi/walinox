@@ -56,7 +56,7 @@ type WalletState = {
   hydrating: boolean;
   needsTos: boolean;
   source: "injected" | "local" | null;
-  unlockLocal: (pin: string) => Promise<void>;
+  unlockLocal: (pin: string) => Promise<{ created: boolean; seed: string }>;
   lockLocal: () => void;
   signTos: () => Promise<void>;
 };
@@ -69,7 +69,7 @@ const WalletContext = createContext<WalletState>({
   hydrating: true,
   needsTos: false,
   source: null,
-  unlockLocal: async () => {},
+  unlockLocal: async () => ({ created: false, seed: "" }),
   lockLocal: () => {},
   signTos: async () => {},
 });
@@ -140,7 +140,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const unlockLocal = useCallback(async (pin: string) => {
     setError(null);
-    const seed = await unlockOrCreateSeed(pin, randomSeedPhrase);
+    const { seed, created } = await unlockOrCreateSeed(pin, randomSeedPhrase);
     const next = await openWallet(seed);
     writeSessionSeed(seed);
     setLocal((current) => {
@@ -150,6 +150,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setLocalUnlocked(true);
     setWantLocal(true);
     lastActive.current = Date.now();
+    return { created, seed };
   }, []);
 
   const lockLocal = useCallback(() => {
