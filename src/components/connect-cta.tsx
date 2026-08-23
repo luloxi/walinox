@@ -13,7 +13,7 @@ import {
   platformAuthenticatorAvailable,
   unlockWithBiometric,
 } from "@/lib/biometric";
-import { hasLegacyPlainSeed, hasVault } from "@/lib/seed-crypto";
+import { hasLegacyPlainSeed, hasVault, markSeedBackupAcked } from "@/lib/seed-crypto";
 import { cn } from "@/lib/utils";
 
 export function ConnectCta({
@@ -32,7 +32,9 @@ export function ConnectCta({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"unlock" | "create" | "suggest-bio">("unlock");
+  const [mode, setMode] = useState<"unlock" | "create" | "backup-seed" | "suggest-bio">("unlock");
+  const [seedWords, setSeedWords] = useState<string | null>(null);
+  const [seedCopied, setSeedCopied] = useState(false);
   const [bioOk, setBioOk] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const titleId = useId();
@@ -43,13 +45,15 @@ export function ConnectCta({
     setPin("");
     setConfirm("");
     setError(null);
+    setSeedWords(null);
+    setSeedCopied(false);
     setOpen(true);
   }
 
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape" && mode !== "suggest-bio") setOpen(false);
+      if (event.key === "Escape" && mode !== "suggest-bio" && mode !== "backup-seed") setOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -78,7 +82,7 @@ export function ConnectCta({
         await unlockLocal(recovered);
         setOpen(false);
       } catch {
-        /* user cancelled or failed — fall back to PIN */
+        /* fall back to PIN */
       } finally {
         if (!cancelled) setBusy(false);
       }
@@ -97,7 +101,12 @@ export function ConnectCta({
         setError("Los PIN no coinciden");
         return;
       }
-      await unlockLocal(pin);
+      const result = await unlockLocal(pin);
+      if (result.created) {
+        setSeedWords(result.seed);
+        setMode("backup-seed");
+        return;
+      }
       if (mode === "create" && bioOk && !biometricEnabled()) {
         setMode("suggest-bio");
         return;
@@ -138,13 +147,23 @@ export function ConnectCta({
     }
   }
 
+  function finishBackup() {
+    markSeedBackupAcked();
+    setSeedWords(null);
+    if (bioOk && !biometricEnabled()) {
+      setMode("suggest-bio");
+      return;
+    }
+    setOpen(false);
+  }
+
   const dialog =
     open && typeof document !== "undefined"
       ? createPortal(
           <div
             className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4"
             onClick={() => {
-              if (mode !== "suggest-bio") setOpen(false);
+              if (mode !== "suggest-bio" && mode !== "backup-seed") setOpen(false);
             }}
           >
             <form
@@ -155,7 +174,37 @@ export function ConnectCta({
               onClick={(event) => event.stopPropagation()}
               onSubmit={(event) => void submit(event)}
             >
-              {mode === "suggest-bio" ? (
+              {mode === "backup-seed" ? (
+                <>
+                  <p id={titleId} className="text-base font-semibold">
+                    Guardá tu frase de recuperación
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Anotala en papel y guardala en un lugar seguro. Es la única forma de recuperar esta billetera local
+                    si perdés el dispositivo.
+                  </p>
+                  <p className="rounded-2xl border border-border bg-muted/40 p-3 font-mono text-sm leading-relaxed break-words">
+                    {seedWords}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full"
+                    onClick={() => {
+                      if (!seedWords) return;
+                      void navigator.clipboard.writeText(seedWords).then(() => {
+                        setSeedCopied(true);
+                        window.setTimeout(() => setSeedCopied(false), 1500);
+                      });
+                    }}
+                  >
+                    {seedCopied ? "Copiada" : "Copiar frase"}
+                  </Button>
+                  <Button type="button" className="h-11 w-full" onClick={finishBackup}>
+                    Ya la guardé
+                  </Button>
+                </>
+              ) : mode === "suggest-bio" ? (
                 <>
                   <p id={titleId} className="text-base font-semibold">
                     ¿Desbloquear con biometría?
@@ -165,16 +214,15 @@ export function ConnectCta({
                   </p>
                   {error ? <p className="text-xs text-destructive">{error}</p> : null}
                   <div className="flex gap-2 pt-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-11 flex-1"
-                      disabled={busy}
-                      onClick={() => setOpen(false)}
-                    >
+                    <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => setOpen(false)}>
                       Ahora no
                     </Button>
-                    <Button type="button" className="h-11 flex-1" disabled={busy} onClick={() => void acceptBio()}>
+                    <Button
+                      type="button"
+                      className="h-11 flex-1"
+                      disabled={busy}
+                      onClick={() => void acceptBio()}
+                    >
                       {busy ? "…" : "Activar"}
                     </Button>
                   </div>
@@ -182,59 +230,49 @@ export function ConnectCta({
               ) : (
                 <>
                   <p id={titleId} className="text-base font-semibold">
-                    {mode === "create" ? "Crear PIN de la billetera" : "PIN de la billetera"}
+                    {mode === "create" ? "Crear billetera local" : "Desbloquear"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {mode === "create"
-                      ? "La seed se cifra en este dispositivo. Mínimo 6 caracteres."
-                      : hasLegacyPlainSeed() && !hasVault()
-                        ? "Vas a cifrar la seed que ya tenías con este PIN."
-                        : "Desbloqueá la seed cifrada de este dispositivo."}
+                      ? "Elegí un PIN de al menos 6 caracteres. La frase de recuperación se muestra después."
+                      : "Ingresá el PIN de esta billetera local."}
                   </p>
-                  {mode === "unlock" && bioOn ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="h-11 w-full gap-2"
-                      disabled={busy}
-                      onClick={() => void tryBio()}
-                    >
-                      <Fingerprint className="size-4" />
-                      {busy ? "…" : "Usar biometría"}
-                    </Button>
-                  ) : null}
                   <Input
                     type="password"
                     inputMode="numeric"
-                    autoComplete="current-password"
-                    enterKeyHint="done"
+                    autoComplete="one-time-code"
                     value={pin}
                     onChange={(event) => setPin(event.target.value)}
                     placeholder="PIN"
-                    className="h-12 text-base"
+                    className="h-11"
                     autoFocus
                   />
                   {mode === "create" ? (
                     <Input
                       type="password"
                       inputMode="numeric"
-                      autoComplete="new-password"
-                      enterKeyHint="done"
                       value={confirm}
                       onChange={(event) => setConfirm(event.target.value)}
                       placeholder="Repetir PIN"
-                      className="h-12 text-base"
+                      className="h-11"
                     />
                   ) : null}
                   {error ? <p className="text-xs text-destructive">{error}</p> : null}
-                  <div className="flex gap-2 pt-1">
-                    <Button type="button" variant="outline" className="h-12 flex-1" onClick={() => setOpen(false)}>
-                      Cancelar
+                  <Button type="submit" className="h-11 w-full" disabled={busy || pin.length < 6}>
+                    {busy ? "…" : mode === "create" ? "Crear" : "Entrar"}
+                  </Button>
+                  {mode === "unlock" && bioOk && bioOn ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full gap-2"
+                      disabled={busy}
+                      onClick={() => void tryBio()}
+                    >
+                      <Fingerprint className="size-4" />
+                      Biometría
                     </Button>
-                    <Button type="submit" className="h-12 flex-1" disabled={busy || pin.length < 6}>
-                      {busy ? "…" : mode === "create" ? "Crear" : "Entrar"}
-                    </Button>
-                  </div>
+                  ) : null}
                 </>
               )}
             </form>
@@ -243,44 +281,17 @@ export function ConnectCta({
         )
       : null;
 
-  if (stacked) {
-    return (
-      <div className={cn("flex w-full flex-col items-stretch", className)}>
-        <Button
-          type="button"
-          className="h-12 w-full"
-          onClick={() => openConnectModal?.()}
-          disabled={!openConnectModal}
-        >
+  return (
+    <>
+      <div className={cn(stacked ? "flex w-full flex-col gap-2" : "flex flex-wrap gap-2", className)}>
+        <Button type="button" className={cn("h-11", stacked && "w-full")} onClick={() => openConnectModal?.()}>
           {label}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="mt-2 h-11 w-full text-muted-foreground"
-          onClick={startLocal}
-        >
-          Usar billetera local
+        <Button type="button" variant="outline" className={cn("h-11", stacked && "w-full")} onClick={startLocal}>
+          Billetera local
         </Button>
-        {dialog}
       </div>
-    );
-  }
-
-  return (
-    <div className={cn("flex shrink-0 items-center gap-1.5", className)}>
-      <Button
-        type="button"
-        className="h-10"
-        onClick={() => openConnectModal?.()}
-        disabled={!openConnectModal}
-      >
-        {label}
-      </Button>
-      <Button type="button" variant="ghost" className="h-10 px-2 text-muted-foreground" onClick={startLocal}>
-        Local
-      </Button>
       {dialog}
-    </div>
+    </>
   );
 }
