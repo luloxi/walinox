@@ -1,8 +1,8 @@
 import { fiatMeta, type FiatId } from "@/lib/display";
 
-/** Local units per 1 USDT when the API is down. ARS is dólar blue. */
+/** Local units per 1 USDT when market APIs are down (approx USDT book). */
 export const FALLBACK_PER_USDT: Record<FiatId, number> = {
-  ARS: 1550,
+  ARS: 1450,
   VES: 910,
   BRL: 5.14,
   CLP: 915,
@@ -85,16 +85,16 @@ export function formatUsdt(value: string | number, fractionDigits = 2): string {
 
 const FX_CACHE_KEY = "walinox.fx";
 
-/** Blue venta by month when a receipt has no stamped rate. */
-const BLUE_MONTH: Record<string, number> = {
-  "2026-01": 1470,
-  "2026-02": 1475,
-  "2026-03": 1485,
-  "2026-04": 1495,
-  "2026-05": 1510,
-  "2026-06": 1525,
-  "2026-07": 1540,
-  "2026-08": 1550,
+/** Approximate monthly ARS/USDT when a receipt has no stamped rate. */
+const RATE_MONTH: Record<string, number> = {
+  "2026-01": 1400,
+  "2026-02": 1410,
+  "2026-03": 1420,
+  "2026-04": 1430,
+  "2026-05": 1440,
+  "2026-06": 1450,
+  "2026-07": 1450,
+  "2026-08": 1450,
 };
 
 export function cacheFxQuote(quote: FxQuote): void {
@@ -122,15 +122,19 @@ export function cachedArsPerUsdt(): number {
   return cachedPerUsdt("ARS");
 }
 
-export function blueAt(iso: string, live = FALLBACK_ARS_PER_USDT): number {
+/** Historical helper for receipts without a stamped rate. */
+export function rateAt(iso: string, live = FALLBACK_ARS_PER_USDT): number {
   const month = iso.slice(0, 7);
-  return BLUE_MONTH[month] ?? live;
+  return RATE_MONTH[month] ?? live;
 }
+
+/** @deprecated Use rateAt */
+export const blueAt = rateAt;
 
 export function receiptRate(
   receipt: { arsPerUsdt?: number; at: string },
   live = FALLBACK_ARS_PER_USDT,
 ): number {
   if (receipt.arsPerUsdt && receipt.arsPerUsdt > 0) return receipt.arsPerUsdt;
-  return blueAt(receipt.at, live);
+  return rateAt(receipt.at, live);
 }
