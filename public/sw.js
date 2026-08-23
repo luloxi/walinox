@@ -1,4 +1,4 @@
-const CACHE = "walinox-v5";
+const CACHE = "walinox-v6";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 const PRECACHE = [
