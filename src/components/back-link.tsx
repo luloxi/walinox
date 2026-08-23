@@ -29,5 +29,8 @@ export function nestedBack(pathname: string): { href: string; label: string } | 
   if (pathname.startsWith("/contacts/") && pathname !== "/contacts") {
     return { href: "/contacts", label: "Contactos" };
   }
+  if (pathname.startsWith("/products")) {
+    return { href: "/tienda", label: "Local" };
+  }
   return null;
 }
