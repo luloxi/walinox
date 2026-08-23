@@ -30,19 +30,13 @@ export function ProductForm({
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<ProductCategory>("almacen");
   const [price, setPrice] = useState("");
-  const [place, setPlace] = useState("");
   const [image, setImage] = useState<string | undefined>();
-  const [ok, setOk] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function publish() {
     if (!wallet) return;
-    if (!title.trim() || !price || !place.trim()) {
-      setError("Completá qué vendés, el precio y dónde se retira");
-      return;
-    }
-    if (!ok) {
-      setError("Confirmá que lo vas a entregar");
+    if (!title.trim() || !price) {
+      setError("Completá qué vendés y el precio");
       return;
     }
     const usdt = parsePriceField(price, fx.perUsdt, prefs.fiat);
@@ -51,7 +45,6 @@ export function ProductForm({
       return;
     }
     const createdAt = new Date().toISOString();
-    const name = "Mi local";
     const product: Product = {
       id: productIdFor(wallet.address, title, createdAt),
       storeId: wallet.address.toLowerCase(),
@@ -62,8 +55,8 @@ export function ProductForm({
       supply: 99,
       sold: 0,
       terms: DEFAULT_TERMS,
-      issuerName: name,
-      redemptionPlace: place.trim(),
+      issuerName: "Mi local",
+      redemptionPlace: "",
       issuer: wallet.address,
       createdAt,
       category,
@@ -72,9 +65,7 @@ export function ProductForm({
     setTitle("");
     setCategory("almacen");
     setPrice("");
-    setPlace("");
     setImage(undefined);
-    setOk(false);
     setError(null);
     onPublished?.();
     if (!onPublished) router.push(`/tienda/${wallet.address.toLowerCase()}`);
@@ -143,17 +134,11 @@ export function ProductForm({
           Precio en {local.name.toLowerCase()}. Se cobra en USDT ({local.source}: {formatFiat(fx.perUsdt, prefs.fiat)}).
         </p>
       )}
-      <Input
-        value={place}
-        onChange={(event) => setPlace(event.target.value)}
-        placeholder="Dónde se retira"
-        className="h-11"
-      />
       {wallet ? (
         <QvacHint
           task="product"
           owner={wallet.address}
-          placeholder="vendo café a 14000 pesos, retiro en San Martín 100"
+          placeholder="vendo café a 14000 pesos"
           onFill={(intent) => {
             if (intent.title) setTitle(intent.title);
             if (intent.price) {
@@ -164,19 +149,9 @@ export function ProductForm({
                   : intent.price,
               );
             }
-            if (intent.place) setPlace(intent.place);
           }}
         />
       ) : null}
-      <label className="flex cursor-pointer items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={ok}
-          onChange={(event) => setOk(event.target.checked)}
-          className="size-4 cursor-pointer accent-primary"
-        />
-        Lo voy a entregar
-      </label>
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
       <Button type="button" className="h-12 w-full" disabled={!wallet} onClick={publish}>
         Publicar
