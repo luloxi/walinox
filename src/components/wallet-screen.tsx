@@ -8,15 +8,24 @@ import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, ScanLine, Store } f
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
 import { listReceipts, type Receipt } from "@/lib/receipts";
+import { cn } from "@/lib/utils";
 
 const SendFlow = dynamic(() => import("@/components/send-flow").then((m) => m.SendFlow), {
   ssr: false,
-  loading: () => <p className="text-sm text-muted-foreground">Cargando…</p>,
+  loading: () => (
+    <div className="flex h-40 items-center justify-center">
+      <p className="text-sm text-muted-foreground">Cargando…</p>
+    </div>
+  ),
 });
 
 const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) => m.ReceiveFlow), {
   ssr: false,
-  loading: () => <p className="text-sm text-muted-foreground">Cargando…</p>,
+  loading: () => (
+    <div className="flex h-40 items-center justify-center">
+      <p className="text-sm text-muted-foreground">Cargando…</p>
+    </div>
+  ),
 });
 
 const ACTIONS = [
@@ -53,11 +62,11 @@ export function WalletScreen() {
         <div className="shrink-0">
           <button
             type="button"
-            className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-primary hover:text-primary"
+            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => go("")}
           >
             <ArrowLeft className="size-4" />
-            Saldo
+            Billetera
           </button>
         </div>
         <div className="min-h-0 flex-1">
@@ -74,7 +83,7 @@ export function WalletScreen() {
   return (
     <div className="flex min-h-full flex-col gap-6">
       <WalletCard>
-        <div className="mt-5 flex justify-center gap-3 md:mt-6 md:gap-4">
+        <div className="mt-5 flex justify-center gap-4 md:mt-6 md:gap-5">
           {ACTIONS.map((item) => {
             const Icon = item.icon;
             const on = tab === item.id;
@@ -82,17 +91,21 @@ export function WalletScreen() {
               <button
                 key={item.id}
                 type="button"
-                className={`flex w-16 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground ${
-                  on ? "text-primary" : "text-muted-foreground"
-                }`}
+                className={cn(
+                  "flex w-[4.25rem] cursor-pointer flex-col items-center gap-1.5 transition-colors active:scale-95",
+                  on ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                )}
                 onClick={() => go(tab === item.id ? "" : item.id)}
               >
                 <span
-                  className={`flex size-12 items-center justify-center rounded-2xl ${
-                    on ? "bg-primary text-primary-foreground" : "bg-muted ring-1 ring-border"
-                  }`}
+                  className={cn(
+                    "flex size-12 items-center justify-center rounded-2xl transition-colors",
+                    on
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted ring-1 ring-border",
+                  )}
                 >
-                  <Icon className="size-6" />
+                  <Icon className="size-5" />
                 </span>
                 <span className="text-[11px] font-medium">{item.label}</span>
               </button>
@@ -103,11 +116,13 @@ export function WalletScreen() {
 
       <Link
         href="/tienda"
-        className="flex h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-xl bg-muted px-3 text-sm hover:bg-muted/80"
+        className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 text-sm transition-colors hover:bg-muted/60 active:scale-[0.99]"
       >
-        <span className="inline-flex items-center gap-2">
-          <Store className="size-4 text-primary" />
-          Tienda
+        <span className="inline-flex items-center gap-2.5">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Store className="size-4" />
+          </span>
+          <span className="font-medium">Ir a la tienda</span>
         </span>
         <ArrowRight className="size-4 text-muted-foreground" />
       </Link>
