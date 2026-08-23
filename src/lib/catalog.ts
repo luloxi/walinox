@@ -1,6 +1,7 @@
 import { getAddress, isAddress } from "ethers";
 import { MOCK_PRODUCTS, MOCK_STORES, type Store } from "@/lib/stores";
 import { matchesStore } from "@/lib/store-link";
+import { markCloudDirty } from "@/lib/backup";
 import type { Product, RedeemRecord, ValeEnvelope } from "@/lib/vale";
 
 type CatalogStore = {
@@ -64,6 +65,7 @@ function load(): CatalogStore {
 function save(next: CatalogStore): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  markCloudDirty();
 }
 
 export function listProducts(): Product[] {
