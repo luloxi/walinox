@@ -1,5 +1,7 @@
 # Walinox — brief para mentores
 
+> **MVP actual (agosto 2026):** pagos **sin internet del comprador** (B2B + B2C caja/POS). Vitrina pública, vales/canje y reporte mensual automatizado están **fuera del MVP** — ver `docs/roadmap.md`. Guion para grabar: **`docs/demo.md`**.
+
 Repo: `luloxi/walinox` · Demo: `walinox-nu.vercel.app` · Stack: Next.js PWA, Tether WDK, QVAC, USDT en Ethereum.
 
 ---
@@ -16,17 +18,17 @@ En un kiosco, una feria o un barrio con mal señal:
 
 - Una wallet normal (MetaMask, exchange) **necesita red** para mandar USDT.
 - “Stablecoin para el día a día” choca con gas en ETH, `permit()` que USDT **no tiene**, y UX de hex.
-- Un comercio chico no quiere desplegar un ERC-721 ni un POS cripto pesado. Quiere: cobré, le di un ticket, entregué el pan.
+- Un comercio chico no quiere un POS cripto pesado. Quiere cobrar aunque el cliente no tenga datos.
 
 ### Qué hace Walinox
 
 | Pieza | Para quién | Qué resuelve |
 | --- | --- | --- |
-| **Billetera** | Particular | Saldo USDT, depositar (QR de address), enviar online o por permiso QR |
-| **Contactos** | Particular / comercio | Agenda + historial por persona |
-| **Tienda** | Comprador / vendedor | Productos con foto; el pago es USDT; el título es un **vale firmado** (no un NFT en un contrato) |
-| **Actividad** | Los dos | Ingresos/gastos por mes, trimestre, año; tienda vs envíos personales; link a Etherscan |
-| **Avisos** | Los dos | Push PWA cuando te mandan USDT, un vale o un ping |
+| **Billetera** | Particular | Saldo USDT, ingresar/recibir/enviar/pagar online u offline |
+| **Contactos** | Particular / comercio | Agenda mínima |
+| **Tienda** | Vendedor (B2C) | Catálogo + caja (POS); el cliente firma offline; el local asienta USDT |
+| **Actividad** | Los dos | Movimientos locales; link a Etherscan cuando hay tx |
+| **Avisos** | Los dos | Inbox in-app y push PWA (si hay VAPID) |
 
 No es un exchange, no custodia fondos, no emite USDT. Las claves las tiene el usuario (RainbowKit / MetaMask / Rabby, o una seed WDK local).
 
@@ -42,64 +44,50 @@ Gas en USDT (WDK 7702          El receptor, cuando tenga internet,
                                permitTransferFrom. Ahí sí se mueve el USDT.
 ```
 
-Eso es el núcleo de la tesis: **separar “autorizar” de “asentar en la cadena”**.
+Núcleo de la tesis: **separar “autorizar” de “asentar en la cadena”**.
 
 ### Demo que se puede mostrar
 
-1. Login → conectar wallet → firmar términos (una vez).
-2. Enviar 10 USDT online a un contacto (o `lulox.eth`).
-3. Modo avión: armar permiso QR → el otro celular escanea en Depositar → Submit Permit2.
-4. Tienda: comprar un café de demo → vale QR → el vendedor canjea.
-5. Actividad: ver gastos vs ingresos, cuánto vino de tienda.
+1. Login → billetera local o RainbowKit → términos (una vez).
+2. Enviar online a un contacto (opcional).
+3. **Tienda (dispositivo B):** armar caja → QR de cargo.
+4. **Pagar (dispositivo A, sin red del comprador):** escanear → firmar Permit2 → devolver firma por QR.
+5. **B confirma** on-chain cuando hay red.
 
-Localhost usa saldo y catálogo de prueba para que 25/50/75/MAX y la tienda se puedan mostrar sin mainnet.
+Guion detallado para grabar: **`docs/demo.md`**.
 
-### Con quién habla el stack (Tether)
+### Stack Tether
 
-- **WDK**: firma EIP-712 en el dispositivo.
-- **WDK 7702-gasless**: el envío online paga gas en **USDT**, no en ETH.
-- **QVAC**: ayudante local (“¿en una frase?”) para completar formularios. No es un chatbot.
+- **WDK**: firma EIP-712 en el dispositivo; seed local cifrada con PIN.
+- **WDK 7702-gasless**: envío online intenta gas en **USDT**.
+- **QVAC**: “En una frase” para completar formularios. No es un chatbot.
 
 ---
 
 ## 2. Cómo se cuenta en 6 slides
 
-1. **Gancho.** USDT es lo que la gente quiere gastar. Ethereum no es un POS. ¿Y si el kiosco no tiene Wi‑Fi?
+1. **Gancho.** USDT es lo que la gente quiere gastar. ¿Y si el kiosco o el cliente no tienen Wi‑Fi?
 2. **Idea.** Firmar ahora, asentar después. El QR es un cheque, no un wire.
 3. **Por qué no ERC-2612.** USDT mainnet no tiene `permit()`. Permit2 es el estándar que ya usa Uniswap.
-4. **Producto.** Billetera + contactos + tienda de vales físicos + actividad.
-5. **Compliance.** El “NFT” es un vale de un bien, no un instrumento financiero. El canje lo confirma el emisor.
-6. **Qué pedimos.** Feedback de tesis (¿el cheque offline es entendible?), de riesgo (Permit2 infinite approve), de go-to-market (comercio de barrio vs P2P).
+4. **Producto.** Billetera + contactos + tienda/POS offline + actividad.
+5. **Compliance.** Settlement en USDT; sin custodia; el local confirma on-chain.
+6. **Qué pedimos.** Feedback de tesis, riesgo (Permit2 approve) y go-to-market (comercio de barrio vs P2P).
 
 ---
 
 ## 3. Insights al construir
 
-### 3.1 USDT no tiene `permit()` — y eso cambia el producto
+### 3.1 USDT no tiene `permit()`
 
-**Lo que creíamos al arrancar.** ERC-2612 (`permit`): el dueño firma EIP-712, el spender llama `permit()` + `transferFrom`. Muchos tutoriales y USDC funcionan así.
+USDT mainnet (`0xdAC17F958D2ee523a2206206994597C13D831ec7`) no implementa ERC-2612. Usamos **Uniswap Permit2**:
 
-**Lo que es USDT en Ethereum mainnet** (`0xdAC17F958D2ee523a2206206994597C13D831ec7`):
-
-- No implementa `permit()`.
-- El `approve` clásico es un tx on-chain (y el USDT viejo además tiene el quirk de tener que poner allowance en 0 antes de cambiarlo).
-- No se puede “inventar” un `permit()` de Tether. Sería una firma que **ningún contrato va a honrar**.
-
-**Workaround que usamos: Uniswap Permit2**
-
-Contrato canónico: `0x000000000022D473030F116dDEE9F6B43aC78BA3`.
-
-1. El usuario hace **una vez** `USDT.approve(Permit2, max)` (gas en USDT vía 7702).
-2. Cada gasto offline es un EIP-712 `PermitTransferFrom` (token, amount, spender, nonce, deadline).
-3. El receptor llama `permitTransferFrom` en Permit2. Permit2 debita el USDT.
+1. Una vez: `USDT.approve(Permit2, max)`.
+2. Cada gasto offline: EIP-712 `PermitTransferFrom`.
+3. El receptor llama `permitTransferFrom`. Ahí se mueve el token.
 
 La firma viaja en un JSON (`SignedEnvelope`). Verificarla es `verifyTypedData` en el teléfono, sin RPC.
 
-**Implicancia de producto.** El usuario ve “firmar un envío”. En realidad firma “X puede sacar N USDT hasta tal fecha”. Hay que decirlo en castellano (los `?` del UI). El approve-una-vez a Permit2 es el paso más friccional y el que hay que explicar a mentores: es el mismo patrón que Uniswap, no un backdoor nuestro.
-
 ### 3.2 Firmar ≠ mover tokens
-
-El error conceptual más fácil de cometer (y de vender mal):
 
 | Momento | Qué pasa | Internet |
 | --- | --- | --- |
@@ -107,153 +95,59 @@ El error conceptual más fácil de cometer (y de vender mal):
 | Pase QR / archivo / tag | El otro tiene el cheque | No |
 | `permitTransferFrom` | El USDT cambia de dueño | Sí (el que ejecuta) |
 
-Si el receptor nunca sube la firma, el dinero no salió. Si la firma vence (`deadline`, default 30 días), el cheque caduca. Eso es una feature (límite de riesgo), no un bug.
+Si el receptor nunca sube la firma, el dinero no salió. El `deadline` caduca el cheque.
 
-### 3.3 “Gasless” no es “Tether te lo regala”
+### 3.3 Gasless
 
-Una EOA clásica paga gas en ETH. Tether **no** tiene un programa “nosotros pagamos tu gas”.
+Módulo `@tetherto/wdk-wallet-evm-7702-gasless` + paymaster Candide (rate-limited). Hace falta un poco más de USDT aparte del monto. Si falla el bundler, cae a EOA con ETH.
 
-Lo que sí hay es el módulo oficial `@tetherto/wdk-wallet-evm-7702-gasless`:
-
-1. **EIP-7702**: la EOA se delega a una smart account (`0xe6Cae83B…`).
-2. **ERC-4337**: el envío sale como UserOperation.
-3. **Paymaster en USDT** (Candide público, sin API key, rate-limited).
-
-Hace falta **un poco más de USDT** aparte del monto. Si el bundler falla, caemos a tx EOA (esa sí pide ETH).  
-“Sponsored” (gas a cero) existe en el mismo módulo pero pide policy + API key de dashboard. No lo usamos: el demo no debe depender de una key.
-
-### 3.4 Canales sin internet: la arquitectura vs lo que hay hoy
-
-**Arquitectura (lo que queremos poder decir):** el sobre firmado es un blob JSON. Cualquier tubo que lleve bytes de un celular al otro sirve: QR, Bluetooth, NFC, sonido, luz, archivo, copy.
-
-**Estado real en el código (importante ser honestos con mentores):**
+### 3.4 Canales offline (honestos)
 
 | Canal | ¿Pasa el payload? | Notas |
 | --- | --- | --- |
-| **QR** | Sí | Camino demo. El receptor escanea en Depositar. Funciona en avión después del primer load (PWA). |
-| **Copy** | Sí | Portapapeles. |
-| **Archivo** | Sí | `.json` para WhatsApp / AirDrop / pendrive. |
-| **Sonido** | Sí | FSK 1200/2000 Hz, 400 baud. Compacta el Permit2 a ~210 bytes. El otro toca **Escuchar**. |
-| **Luz** | Sí | Grilla 6×6 de color (esquinas fiduciales). La cámara en Depositar decodifica además del QR. |
-| **Bluetooth** | Parcial | Hoja de compartir (Nearby / AirDrop / Bluetooth clásico) manda el `.json`. GATT escribe al UUID Walinox si hay un periférico. **Dos Chromes no se ven**: el browser no es GATT peripheral. |
-| **NFC** | Parcial | Escribe el JSON en un **tag NDEF**. No es “dos celulares que se tocan” (Android Beam ya no existe). Web NFC ≈ Chrome Android. |
+| **QR** | Sí | Camino demo. Avión OK después del primer load (PWA). |
+| **Copy / archivo** | Sí | Siempre. |
+| **Sonido / luz** | Sí | Transportan bytes en la PWA. |
+| **Bluetooth** | Parcial | Share sheet; GATT entre dos Chromes no. |
+| **NFC** | Parcial | Tag NDEF; no P2P tipo Beam. |
 
-QR, sonido y luz cierran el loop celular ↔ celular en la PWA. Bluetooth cierra el loop si el OS comparte el archivo. GATT pide un peer que anuncie el servicio.
+### 3.5 QVAC
 
-**Por qué cuesta tanto en una PWA**
+Atajo de formulario (“En una frase”), no el producto. Sin QVAC, heurística local.
 
-- **Web Bluetooth**: el otro dispositivo tiene que anunciar un servicio. Un Chrome no es un peripheral GATT out of the box; hace falta un diseño (uno como central, uno como peripheral, o un “bridge”). iOS Safari no tiene Web Bluetooth.
-- **Web NFC**: pensado para **tags**, no para P2P. iOS no lo da a páginas.
-- **Audio**: hay librerías (ggwave, chirp). Hay que modular el payload, calibrar volumen, lidiar con micrófono y permisos. Un beep no alcanza.
-- **iOS**: PWA + sensors es el peor caso. QR + archivo (Share sheet) es lo que realmente vive en iPhone.
+### 3.6 Límites conocidos
 
-**Qué hay que decir en la charla**
-
-El objeto de valor es la firma; el canal es intercambiable. Producción: QR. Extra que ahora sí transportan bytes: sonido y luz. Bluetooth de PWA a PWA es el share sheet, no GATT, porque Chrome no se anuncia.
-
-Lo que sigue siendo difícil en web: NFC P2P (solo tag) y BLE peripheral.
-
-### 3.5 El vale “NFT” no es un ERC-721
-
-Un comercio no va a pagar deploy + gas de colección. El vale es **EIP-712** (tokenId, producto, holder, precio, vencimiento, hash de términos). Quien tiene el JSON firmado tiene el título. El canje es el emisor escaneando y marcándolo.
-
-El **pago** sí es on-chain (USDT). El **título** no.  
-Compliance que pedimos al publicar: es un vale de un bien físico, no un instrumento financiero; hay lugar y plazo; el emisor entrega; emisión y canje quedan registrados.
-
-Aprendizaje: “NFT de producto” vende mal y asusta regulación. “Ticket firmado, como una entrada” se entiende.
-
-### 3.6 QVAC no es el producto, es un atajo de formulario
-
-Tentación: una tab de chat con historial y pines. Eso duplica Actividad y Contactos y pone al modelo en el centro.
-
-Lo que quedó: un destello **¿En una frase?** en enviar / contactos / publicar. Completa campos y se cierra.
-
-Modelo default **Qwen3 0.6B Instruct Q4** (~382 MB): entra en celulares, habla español, el job es JSON corto. Llama 3.2 1B es el default del SDK y va peor en “mandale / guardá”. Si QVAC no está, un parser heurístico alcanza para “10 USDT + 0x…” **o un ENS / Basename** (`mandale 10 a lulox.eth`). El campo de envío ya resolvía nombres; el atajo de frase no, y pedía un “spender address”. No es una limitación de Tether: Permit2 quiere un `0x…`, el formulario resuelve el nombre antes de firmar.
-
-QVAC **no corre en el browser** (worker Bare). La PWA llama `/api/agent` o se cae al heurístico offline.
-
-### 3.7 PWA, notificaciones y serverless no se llevan bien
-
-Push de verdad (el otro celular apagó la app) pide VAPID + suscripción guardada por address. En Vercel las functions no tienen disco durable: las suscripciones mueren en un cold start. Local (archivo `.data/`) sí. Inbox local + poll cubren el resto.
-
-iPhone: avisos solo si la PWA está en Inicio, iOS 16.4+.
-
-### 3.8 Login, saldo fantasma y “modo OpenSea”
-
-Sin wallet conectada **no puede haber saldo**. Un WDK local que se creaba solo + mock `1284.50` en localhost hacía ver plata que no era de nadie.
-
-Flujo: conectar → firmar términos (EIP-712, una vez por address) → elegir **firmar cada envío** (default) o **modo rápido de sesión** (ERC-7715 `wallet_grantPermissions`, 24 h). MetaMask clásico / Rabby muchas veces **no** implementan 7715; entonces se firma cada tx y no se miente. La seed local sí puede ser silenciosa.
-
-### 3.9 Otras piedras del camino
-
-- **RainbowKit + Coinbase / x402**: el conector de Coinbase tiraba el build por `@x402/*`. Lo sacamos y stubbeamos. Menos wallets, app que compile.
-- **USDT vs USDC en la UI**: USDC tiene `permit()`; mostrar los dos confundía. Producto = USDT.
-- **ENS / Basenames**: el campo de envío resuelve `vitalik.eth` y `alice.base.eth`; si no hay avatar, identicon `blo` (Scaffold-ETH). QVAC / el heurístico rellenan el mismo campo con el nombre; la resolución on-chain es al enviar, no al parsear la frase.
-- **QR de address ajenas**: hay que parsear EIP-681, deep links de MetaMask/Trust, JSON de Rabby/Binance, CAIP-10, `usdt:` / `tether:`. El usuario no pega “un 0x limpio”.
-- **Serwist / service worker**: el SW de Next no convivía bien con Turbopack. SW a mano en `public/sw.js` (cache + push).
-- **sodium-native**: WDK en browser → alias a `sodium-javascript`.
-- **Actividad ≠ saldo**: el dashboard de movimientos no lleva el balance; lleva períodos y Etherscan.
+- Push durable en Vercel sin store durable.
+- Seed cifrada en el dispositivo (no recovery cloud de la frase).
+- Código legacy de vales/vitrina puede existir en el repo; **no es el pitch del MVP** (`docs/roadmap.md`).
 
 ---
 
 ## 4. Preguntas para mentores
 
-**Tesis / producto**
-
-- ¿“Cheque firmado, cobro después” es entendible para alguien que usa Mercado Pago, o hay que disfrazarlo de “envío” y el asentamiento es detalle?
-- ¿El kiosco es el usuario, o el P2P entre conocidos es más realista al inicio?
-- ¿El vale-ticket alcanza, o sin un contrato on-chain de canje no hay confianza comercial?
-
-**Riesgo**
-
-- Approve infinito a Permit2: ¿lo bancan, o hay que limitar allowance al monto de cada sesión?
-- Deadline de 30 días: ¿muy largo (robo del teléfono) o muy corto (feria de fin de semana)?
-- Seed WDK en `localStorage`: inaceptable en producción; ¿passkeys / MPC / solo wallets inyectadas?
-
-**Técnica**
-
-- ¿Vale la pena invertir en BLE/audio reales en web, o el offline “de verdad” es app nativa (o WalletConnect + QR nomas)?
-- Paymaster público Candide: ¿ok para demo, o hay que una policy propia antes de mostrar a Tether?
-- EIP-7702 en wallets de consumo: ¿el usuario entiende la delegación?
-
-**Go-to-market / narrativa Tether**
-
-- ¿Esto es un case de WDK + QVAC, o un case de “USDT en la calle”?
-- ¿Tiene sentido testnet / una chain más barata, o el punto es mainnet USDT aunque el gas duela?
+- ¿“Cheque firmado, cobro después” se entiende frente a Mercado Pago?
+- ¿El primer usuario real es el kiosco o el P2P entre conocidos?
+- Approve a Permit2: ¿max o acotado por sesión?
+- Offline “de verdad” en web vs companion nativo.
+- Narrativa: case WDK/QVAC o “USDT en la calle”.
 
 ---
 
-## 5. Qué está listo vs qué es próximo
+## 5. Listo vs no listo
 
-**Listo para mostrar**
+**Listo para mostrar:** login, billetera, envío online/offline, QR ida y vuelta, contactos, tienda POS + catálogo, actividad, avisos, QVAC/heurística. Guion: `docs/demo.md`.
 
-- Login, términos, billetera, envío online, permiso QR (ida y vuelta), contactos, tienda comprador/vendedor, vales, actividad con gráficos, avisos PWA, QVAC/heurística, gas en USDT.
+**No vender como listo:** BLE GATT entre PWAs, NFC P2P, push durable en Vercel, off-ramp ARS.
 
-**No listo (y no venderlo como listo)**
-
-- Bluetooth GATT entre dos PWAs (Chrome no es periférico). El share sheet sí manda el archivo.
-- NFC como tap entre dos teléfonos (sí como tag).
-- Push durable en Vercel.
-- Modo rápido en cualquier EOA.
-
-**Próximo si la tesis aguanta**
-
-1. Calibrar sonido/luz en feria (volumen, luz de día, dos Androids).
-2. Companion nativo si se quiere BLE P2P de verdad.
-3. Allowance Permit2 acotado al monto.
-4. Sacar la seed de `localStorage`.
+**Próximo:** calibrar canales en feria, allowance Permit2 acotado, on/off-ramp ARS, sacar seed de solo-dispositivo con mejor recovery.
 
 ---
 
-## 6. Glosario rápido
+## 6. Glosario
 
 | Término | En criollo |
 | --- | --- |
-| EIP-712 | Mensaje estructurado que la wallet muestra y firmás. |
-| ERC-2612 `permit()` | “Esta firma es un approve”, lo tiene USDC, **no** USDT mainnet. |
-| Permit2 | Contrato de Uniswap que sí acepta firmas de gasto sobre USDT. |
-| EIP-7702 | Tu address 0x se comporta un rato como smart account. |
-| ERC-4337 | El “correo” con el que el bundler manda esa cuenta. |
-| Paymaster | Quién paga el gas; acá se cobra en USDT. |
-| Vale | Ticket firmado de un bien físico; no un NFT deployado. |
-| Envelope | El JSON con typed data + signature que viaja por QR. |
+| EIP-712 | Mensaje estructurado que firmás. |
+| Permit2 | Contrato Uniswap que honra firmas de gasto sobre USDT. |
+| Envelope | JSON con typed data + signature (viaja por QR). |
+| ChargeRequest | Pedido de cobro que arma la tienda antes de la firma. |
