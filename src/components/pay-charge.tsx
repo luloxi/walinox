@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChannelPanel } from "@/components/channel-panel";
 import { Price } from "@/components/price";
@@ -68,21 +69,28 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
 
   return (
     <div className="space-y-3">
-      <button type="button" className="cursor-pointer text-xs text-primary" onClick={onBack}>
+      <button
+        type="button"
+        className="inline-flex h-9 cursor-pointer items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        onClick={onBack}
+      >
+        <ArrowLeft className="size-4" />
         Volver
       </button>
-      <p className="text-sm font-medium">{charge.store}</p>
-      <ul className="space-y-1 text-sm">
-        {charge.items.map((item) => (
-          <li key={item.productId} className="flex items-center justify-between gap-2">
-            <span>
-              {item.qty} × {item.title}
-            </span>
-            <Price usdt={Number(item.price) * item.qty} size="sm" className="items-end" />
-          </li>
-        ))}
-      </ul>
-      <div className="rounded-2xl border border-border px-3 py-2">
+      <div>
+        <p className="text-sm font-medium">{charge.store}</p>
+        <ul className="mt-2 space-y-1 text-sm">
+          {charge.items.map((item) => (
+            <li key={item.productId} className="flex items-center justify-between gap-2 text-muted-foreground">
+              <span>
+                {item.qty} × {item.title}
+              </span>
+              <Price usdt={Number(item.price) * item.qty} size="sm" className="items-end" />
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="rounded-2xl border border-border bg-card px-4 py-3">
         <p className="text-[11px] text-muted-foreground">Total</p>
         <Price usdt={charge.amount} size="lg" />
       </div>
@@ -92,7 +100,7 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
         </Button>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm">Pasale la firma al local. Ellos publican el pago.</p>
+          <p className="text-sm text-muted-foreground">Pasale la firma al local. Ellos publican el pago.</p>
           <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
           {sent ? <p className="text-xs text-primary">Listo. El local confirma con internet.</p> : null}
         </div>
