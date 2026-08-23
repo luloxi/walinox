@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Package, PackageSearch } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionBar } from "@/components/section-bar";
 import { Button } from "@/components/ui/button";
+import { EmptyState, SectionLabel } from "@/components/empty-state";
 import { PayCharge } from "@/components/pay-charge";
 import { PosView } from "@/components/pos-view";
 import { StoreShare } from "@/components/store-share";
@@ -92,13 +94,13 @@ export function TiendaView() {
 
         <TabsContent value="comprador" className="mt-4">
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10">
-            <ProductBrowser products={products} stores={stores} empty="No hay productos con eso." />
+            <ProductBrowser products={products} stores={stores} empty="No hay productos con eso" />
             <section className="space-y-5 lg:sticky lg:top-2">
               {charge ? (
                 <PayCharge charge={charge} onBack={() => setCharge(null)} />
               ) : (
                 <div>
-                  <p className="mb-2 text-sm font-medium">Pagar en el local</p>
+                  <SectionLabel className="mb-2">Pagar en el local</SectionLabel>
                   <Button type="button" className="h-11 w-full" onClick={() => setPayScan((value) => !value)}>
                     {payScan ? "Cerrar cámara" : "Escanear pedido"}
                   </Button>
@@ -114,7 +116,7 @@ export function TiendaView() {
                 </div>
               )}
               <div>
-                <p className="mb-3 text-sm font-medium">Tus vales</p>
+                <SectionLabel className="mb-3">Tus vales</SectionLabel>
                 <ValesView embedded />
               </div>
             </section>
@@ -126,7 +128,7 @@ export function TiendaView() {
             <div className="space-y-6 lg:sticky lg:top-2">
               <PosView products={mine} />
               <section>
-                <p className="mb-3 text-sm font-medium">Escanear vale del cliente</p>
+                <SectionLabel className="mb-3">Escanear vale del cliente</SectionLabel>
                 <RedeemView embedded />
               </section>
 
@@ -134,7 +136,7 @@ export function TiendaView() {
 
               <section>
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">Publicar</p>
+                  <SectionLabel>Publicar</SectionLabel>
                   <Button
                     type="button"
                     size="sm"
@@ -161,12 +163,21 @@ export function TiendaView() {
             </div>
 
             <section>
-              <p className="mb-1 text-sm font-medium">Tu catálogo</p>
-              <p className="mb-3 text-xs text-muted-foreground">
+              <SectionLabel>Tu catálogo</SectionLabel>
+              <p className="mt-1 mb-3 text-xs text-muted-foreground">
                 Ordená y filtrá por categoría. Cada producto lleva su categoría al publicarlo.
               </p>
               {mine.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Todavía no publicaste nada.</p>
+                <EmptyState
+                  icon={Package}
+                  title="Todavía no publicaste nada"
+                  body="Creá un producto y aparece acá para el POS y el link de la tienda."
+                  action={
+                    <Button type="button" className="h-11" onClick={() => setPublishing(true)}>
+                      Nuevo producto
+                    </Button>
+                  }
+                />
               ) : (
                 <div className="space-y-4">
                   <ProductFilters
@@ -178,15 +189,15 @@ export function TiendaView() {
                     onSort={setSort}
                   />
                   {mined.items.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay productos con eso.</p>
+                    <EmptyState
+                      icon={PackageSearch}
+                      title="No hay productos con eso"
+                      body="Probá otra categoría o búsqueda."
+                    />
                   ) : (
                     (mined.groups ?? [{ id: "all", label: "", products: mined.items }]).map((group) => (
                       <div key={group.id} className="space-y-2">
-                        {group.label ? (
-                          <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                            {group.label}
-                          </p>
-                        ) : null}
+                        {group.label ? <SectionLabel>{group.label}</SectionLabel> : null}
                         <ul className="space-y-2">
                           {group.products.map((product) => (
                             <li
