@@ -456,7 +456,7 @@ export function SendFlow() {
         </div>
 
         <div className="space-y-3">
-          {!connected ? (
+          {!wallet && !connected ? (
             <div className="[&_button]:cursor-pointer">
               <ConnectButton label="Conectar wallet" />
             </div>
