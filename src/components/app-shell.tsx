@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Bell, History, ScanLine, Settings, Store, Users, Wallet } from "lucide-react";
 import { BackLink, nestedBack } from "@/components/back-link";
 import { Brand } from "@/components/brand";
@@ -22,10 +22,7 @@ const NAV_DESKTOP = [
 
 function active(pathname: string, href: string): boolean {
   if (href === "/") {
-    return (
-      (pathname === "/" || pathname.startsWith("/send") || pathname.startsWith("/receive")) &&
-      !pathname.includes("tab=pagar")
-    );
+    return pathname === "/" || pathname.startsWith("/send") || pathname.startsWith("/receive");
   }
   if (href === "/tienda") {
     return pathname.startsWith("/tienda") || pathname.startsWith("/products");
@@ -118,15 +115,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <LoginScreen />;
   }
 
-  const payOn = pathname === "/" && typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("tab") === "pagar"
-    : false;
-  // SSR-safe: also treat search from pathname is empty; client re-renders
-  const payActive =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("tab") === "pagar"
-      : false;
-
   return (
     <div className="flex h-dvh flex-col md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
@@ -159,9 +147,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function MobileNav({ unread }: { unread: number }) {
   const pathname = usePathname();
-  const search =
-    typeof window !== "undefined" ? window.location.search : "";
-  const payOn = pathname === "/" && new URLSearchParams(search).get("tab") === "pagar";
+  const search = useSearchParams();
+  const payOn = pathname === "/" && search.get("tab") === "pagar";
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md md:hidden pb-[env(safe-area-inset-bottom)]">
@@ -183,18 +170,16 @@ function MobileNav({ unread }: { unread: number }) {
           >
             <ScanLine className="size-6" strokeWidth={2.25} />
           </span>
-          <span className={cn("text-[11px] font-medium", payOn ? "text-primary" : "text-emerald-600 dark:text-emerald-400")}>
+          <span
+            className={cn(
+              "text-[11px] font-medium",
+              payOn ? "text-primary" : "text-emerald-600 dark:text-emerald-400",
+            )}
+          >
             Pagar
           </span>
         </Link>
-        <NavLink
-          href="/inbox"
-          label="Avisos"
-          icon={Bell}
-          pathname={pathname}
-          mobile
-          badge={unread}
-        />
+        <NavLink href="/inbox" label="Avisos" icon={Bell} pathname={pathname} mobile badge={unread} />
         <NavLink href="/tienda" label="Local" icon={Store} pathname={pathname} mobile />
       </div>
     </nav>
