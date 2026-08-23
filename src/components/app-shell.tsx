@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, Settings, Users, Wallet } from "lucide-react";
+import { History, Settings, Store, Users, Wallet } from "lucide-react";
 import { BackLink, nestedBack } from "@/components/back-link";
 import { Brand } from "@/components/brand";
 import { LoginScreen } from "@/components/login-screen";
@@ -12,12 +12,16 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Billetera", icon: Wallet },
   { href: "/contacts", label: "Contactos", icon: Users },
+  { href: "/tienda", label: "Local", icon: Store },
   { href: "/summary", label: "Actividad", icon: History },
   { href: "/settings", label: "Ajustes", icon: Settings },
 ] as const;
 
 function active(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/" || pathname.startsWith("/send") || pathname.startsWith("/receive");
+  if (href === "/tienda") {
+    return pathname.startsWith("/tienda") || pathname.startsWith("/products");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -97,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md md:hidden pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto grid max-w-lg grid-cols-4 px-1 py-1.5">
+        <div className="mx-auto grid max-w-lg grid-cols-5 px-1 py-1.5">
           {NAV.map((item) => (
             <NavLink key={item.href} {...item} pathname={pathname} mobile />
           ))}
