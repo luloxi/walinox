@@ -1,24 +1,81 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export function RegisterServiceWorker() {
+  const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    let reg: ServiceWorkerRegistration | undefined;
+    let cancelled = false;
+
+    function track(registration: ServiceWorkerRegistration) {
+      reg = registration;
+      if (registration.waiting) setWaiting(registration.waiting);
+
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            setWaiting(registration.waiting);
+          }
+        });
+      });
+    }
+
+    const onController = () => {
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onController);
+
     const register = () => {
       void navigator.serviceWorker.register("/sw.js").then((registration) => {
+        if (cancelled) return;
+        track(registration);
         void registration.update();
       });
     };
 
+    let idleId: number | undefined;
+    let timer: number | undefined;
     if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(register, { timeout: 2500 });
-      return () => window.cancelIdleCallback(id);
+      idleId = window.requestIdleCallback(register, { timeout: 2500 });
+    } else {
+      timer = window.setTimeout(register, 1);
     }
 
-    const timer = window.setTimeout(register, 1);
-    return () => window.clearTimeout(timer);
+    const interval = window.setInterval(() => {
+      void reg?.update();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      if (idleId != null) window.cancelIdleCallback(idleId);
+      if (timer != null) window.clearTimeout(timer);
+      window.clearInterval(interval);
+      navigator.serviceWorker.removeEventListener("controllerchange", onController);
+    };
   }, []);
-  return null;
+
+  function applyUpdate() {
+    if (!waiting) return;
+    waiting.postMessage({ type: "SKIP_WAITING" });
+  }
+
+  if (!waiting) return null;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[90] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="flex w-full max-w-lg items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg ring-1 ring-black/5">
+        <p className="min-w-0 flex-1 text-sm">Hay una versión nueva de Walinox.</p>
+        <Button type="button" className="h-10 shrink-0" onClick={applyUpdate}>
+          Actualizar
+        </Button>
+      </div>
+    </div>
+  );
 }
