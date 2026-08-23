@@ -1,4 +1,4 @@
-const CACHE = "walinox-v4";
+const CACHE = "walinox-v5";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 const PRECACHE = [
@@ -42,14 +42,11 @@ async function fromCache(request) {
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    (LOCAL
+    LOCAL
       ? Promise.resolve()
       : caches.open(CACHE).then((cache) =>
-          Promise.all(
-            PRECACHE.map((path) => cache.add(path).catch(() => undefined)),
-          ),
-        )
-    ).then(() => self.skipWaiting()),
+          Promise.all(PRECACHE.map((path) => cache.add(path).catch(() => undefined))),
+        ),
   );
 });
 
@@ -169,7 +166,12 @@ self.addEventListener("notificationclick", (event) => {
 
 self.addEventListener("message", (event) => {
   const data = event.data;
-  if (!data || data.type !== "SHOW_NOTIFICATION") return;
+  if (!data) return;
+  if (data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
+  if (data.type !== "SHOW_NOTIFICATION") return;
   event.waitUntil(
     self.registration.showNotification(data.title || "Walinox", {
       body: data.body || "",
