@@ -6,7 +6,7 @@ El comprador firma en el celular sin internet. El que cobra asienta on-chain cua
 
 Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app)
 
-Guion para grabar: [`docs/demo.md`](docs/demo.md) · Roadmap: [`docs/roadmap.md`](docs/roadmap.md)
+Roadmap: [`docs/roadmap.md`](docs/roadmap.md)
 
 ---
 
@@ -90,5 +90,3 @@ Variables: [`docs/env.md`](docs/env.md). Entrada de usuario: [`docs/billetera.md
 - Push durable en Vercel necesita store durable en producción.
 - Candide público está rate-limited.
 - On-ramp MoonPay necesita `NEXT_PUBLIC_MOONPAY_API_KEY`; el off-ramp ARS es roadmap.
-
-Más contexto para mentores: [`docs/mentores.md`](docs/mentores.md).

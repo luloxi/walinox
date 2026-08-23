@@ -62,7 +62,7 @@ Prácticas actuales de los paquetes instalados y [docs.wdk.tether.io](https://do
 - QVAC completa formularios con lenguaje natural (`README.md` tiene el modelo elegido).
 - No copies convenciones internas de repos WDK (copyright, JSDoc `.d.ts`) a esta app.
 
-Más: `docs/billetera.md`, `docs/mentores.md`, `docs/roadmap.md`, `database.md`.
+Más: `docs/billetera.md`, `docs/roadmap.md`, `database.md`.
 
 ## Roadmap
 
