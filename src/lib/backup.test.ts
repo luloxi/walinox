@@ -23,7 +23,15 @@ function sample(): CloudPayload {
         createdAt: "2026-08-01T00:00:00.000Z",
       },
     ],
-    contacts: [{ address: PEER, name: "Maru", note: "", createdAt: "2026-08-01T00:00:00.000Z", lastSeenAt: "2026-08-01T00:00:00.000Z" }],
+    contacts: [
+      {
+        address: PEER,
+        name: "Maru",
+        note: "",
+        createdAt: "2026-08-01T00:00:00.000Z",
+        lastSeenAt: "2026-08-01T00:00:00.000Z",
+      },
+    ],
     display: DEFAULT_DISPLAY,
     theme: "dark",
     receipts: [],
@@ -52,5 +60,14 @@ describe("cloud backup payload", () => {
     const a = sample();
     const b = { ...a, products: [] };
     expect(payloadDigest(a)).not.toBe(payloadDigest(b));
+  });
+
+  it("digest matches after the same normalize the API uses", () => {
+    const raw = sample();
+    const once = parsePayload(raw);
+    const twice = parsePayload(once);
+    expect(once).not.toBeNull();
+    expect(twice).not.toBeNull();
+    expect(payloadDigest(once!)).toBe(payloadDigest(twice!));
   });
 });
