@@ -24,7 +24,11 @@ import { seedLivedIn } from "@/lib/seed";
 import type { Store } from "@/lib/stores";
 import type { Product } from "@/lib/vale";
 
+/** Buyer tab is hidden in the app chrome. Keep the JSX; flip this to restore it. */
+export const SHOW_STORE_BUYER = false;
+
 function buyerTab(raw: string | null): "comprador" | "vendedor" {
+  if (!SHOW_STORE_BUYER) return "vendedor";
   if (raw === "vender" || raw === "vendedor") return "vendedor";
   return "comprador";
 }
@@ -73,16 +77,18 @@ export function TiendaView() {
   return (
     <div className="flex w-full flex-col pb-6">
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-0">
-        <SectionBar>
-          <TabsList>
-            <TabsTrigger value="comprador" className="cursor-pointer">
-              Comprador
-            </TabsTrigger>
-            <TabsTrigger value="vendedor" className="cursor-pointer">
-              Vendedor
-            </TabsTrigger>
-          </TabsList>
-        </SectionBar>
+        {SHOW_STORE_BUYER ? (
+          <SectionBar>
+            <TabsList>
+              <TabsTrigger value="comprador" className="cursor-pointer">
+                Comprador
+              </TabsTrigger>
+              <TabsTrigger value="vendedor" className="cursor-pointer">
+                Vendedor
+              </TabsTrigger>
+            </TabsList>
+          </SectionBar>
+        ) : null}
 
         <TabsContent value="comprador" className="mt-4">
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10">

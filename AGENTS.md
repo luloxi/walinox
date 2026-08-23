@@ -42,6 +42,12 @@ Siempre las prácticas **actuales** de Tether, no las de entrenamiento.
 
 Más contexto: `docs/billetera.md`, `docs/mentores.md`.
 
+## Oculto: no borrar
+
+Hay pantallas apagadas a propósito. **No las elimines** “para limpiar”; se van a reactivar.
+
+- **Tienda / comprador.** En `src/components/tienda-view.tsx`, `SHOW_STORE_BUYER` está en `false`. `/tienda` es solo vendedor (catálogo propio, POS, publicar, canjear). El tab Comprador (ProductBrowser, escanear pedido, vales del comprador) sigue en el JSX. Los links públicos `/tienda/[id]` y el detalle de producto **siguen**. Para volver a mostrar Comprador/Vendedor: `SHOW_STORE_BUYER = true`.
+
 ## Comentarios
 
 - No escribas comentarios de más. El código tiene que leerse solo.
