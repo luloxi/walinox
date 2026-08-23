@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Plus, ScanLine } from "lucide-react";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
+import { OnrampPanel } from "@/components/onramp-panel";
 import { SectionLabel } from "@/components/empty-state";
 import { listReceipts, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const ACTIONS = [
   { id: "recibir", label: "Recibir", icon: ArrowDownLeft },
   { id: "pagar", label: "Pagar", icon: ScanLine },
   { id: "enviar", label: "Enviar", icon: ArrowUpRight },
+  { id: "ingresar", label: "Ingresar", icon: Plus },
 ] as const;
 
 export function WalletScreen() {
@@ -55,7 +57,7 @@ export function WalletScreen() {
     router.replace(qs ? `/?${qs}` : "/");
   }
 
-  const inFlow = tab === "enviar" || tab === "recibir" || tab === "pagar";
+  const inFlow = tab === "enviar" || tab === "recibir" || tab === "pagar" || tab === "ingresar";
 
   if (inFlow) {
     return (
@@ -73,6 +75,8 @@ export function WalletScreen() {
         <div className="min-h-0 flex-1">
           {tab === "enviar" ? (
             <SendFlow />
+          ) : tab === "ingresar" ? (
+            <OnrampPanel />
           ) : (
             <ReceiveFlow focus={tab === "pagar" ? "scan" : "me"} />
           )}
@@ -84,7 +88,7 @@ export function WalletScreen() {
   return (
     <div className="flex min-h-full flex-col gap-6">
       <WalletCard>
-        <div className="mt-5 flex justify-center gap-4 md:mt-6 md:gap-5">
+        <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:gap-4">
           {ACTIONS.map((item) => {
             const Icon = item.icon;
             const on = tab === item.id;
