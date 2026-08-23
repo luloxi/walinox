@@ -11,7 +11,7 @@ import type { Channel } from "@/lib/channels";
 import type { ChargeRequest } from "@/lib/charge";
 import { encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { wrapForPears } from "@/lib/pears";
-import { buildPermit2 } from "@/lib/permit2";
+import { buildPermit2, ensurePermit2Allowance } from "@/lib/permit2";
 import { payloadToDataUrl } from "@/lib/qr";
 import { USDT } from "@/lib/tokens";
 
@@ -29,6 +29,7 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
     setError(null);
     try {
       const value = toBaseUnits(charge.amount, USDT.decimals);
+      await ensurePermit2Allowance(wallet);
       const typed = buildPermit2({
         token: USDT.address,
         spender: charge.to,
@@ -96,7 +97,7 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
       </div>
       {!envelope ? (
         <Button type="button" className="h-12 w-full" disabled={!wallet || busy} onClick={() => void sign()}>
-          {busy ? "Firmando…" : "Firmar sin internet"}
+          {busy ? "Preparando…" : "Firmar sin internet"}
         </Button>
       ) : (
         <div className="space-y-2">

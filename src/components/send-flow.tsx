@@ -31,7 +31,7 @@ import { wrapForPears } from "@/lib/pears";
 import { payloadToDataUrl } from "@/lib/qr";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
-import { PERMIT2_ADDRESS, buildPermit2 } from "@/lib/permit2";
+import { PERMIT2_ADDRESS, buildPermit2, ensurePermit2Allowance } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
 import { parsePaymentAddress } from "@/lib/payment-address";
 
@@ -234,6 +234,7 @@ export function SendFlow() {
     setBusy(true);
     setError(null);
     try {
+      await ensurePermit2Allowance(wallet);
       const signature = await wallet.signTypedData({
         domain: draft.typed.domain,
         types: draft.typed.types,

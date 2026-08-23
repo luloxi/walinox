@@ -21,7 +21,7 @@ import {
 import { decodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import {
   buildPermit2,
-  encodePermit2TransferFrom,
+  settlePermit2Envelope,
   validatePermit2Signature,
 } from "@/lib/permit2";
 import { payloadToDataUrl } from "@/lib/qr";
@@ -114,19 +114,7 @@ export function PosView({ products }: { products: Product[] }) {
     setError(null);
     try {
       await ensure();
-      const { to, data } = encodePermit2TransferFrom(
-        buildPermit2({
-          token: envelope.token,
-          spender: envelope.spender,
-          amount: envelope.value,
-          nonce: String(envelope.typedData.message.nonce ?? ""),
-          deadline: String(envelope.typedData.message.deadline ?? ""),
-          chainId: envelope.typedData.domain.chainId,
-        }),
-        envelope.signature,
-        envelope.owner,
-      );
-      const tx = await wallet.sendCalldata(to, data);
+      const tx = await settlePermit2Envelope(envelope, (to, data) => wallet.sendCalldata(to, data));
       setHash(tx);
       receiptFromPermit(
         {

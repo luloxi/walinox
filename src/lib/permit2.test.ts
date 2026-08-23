@@ -4,6 +4,7 @@ import {
   PERMIT2_ADDRESS,
   buildPermit2,
   encodePermit2TransferFrom,
+  explainPermit2SettleError,
   validatePermit2Signature,
 } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
@@ -43,5 +44,13 @@ describe("Permit2 USDT path", () => {
     expect(getAddress(decoded[2])).toBe(wallet.address);
 
     wallet.dispose();
+  });
+
+  it("explains a missing Permit2 allowance", () => {
+    expect(
+      explainPermit2SettleError(
+        new Error('execution reverted: "TRANSFER_FROM_FAILED" (action="estimateGas")'),
+      ),
+    ).toMatch(/aprobar Permit2/);
   });
 });

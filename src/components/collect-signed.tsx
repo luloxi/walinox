@@ -25,7 +25,7 @@ import {
 } from "@/lib/permit";
 import {
   buildPermit2,
-  encodePermit2TransferFrom,
+  settlePermit2Envelope,
   validatePermit2Signature,
 } from "@/lib/permit2";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -170,20 +170,8 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
                 disabled={!wallet}
                 onClick={() => {
                   if (!wallet) return;
-                  const { to, data } = encodePermit2TransferFrom(
-                    buildPermit2({
-                      token: envelope.token,
-                      spender: envelope.spender,
-                      amount: envelope.value,
-                      nonce: String(envelope.typedData.message.nonce ?? ""),
-                      deadline: String(envelope.typedData.message.deadline ?? ""),
-                      chainId: envelope.typedData.domain.chainId,
-                    }),
-                    envelope.signature,
-                    envelope.owner,
-                  );
                   void ensure()
-                    .then(() => wallet.sendCalldata(to, data))
+                    .then(() => settlePermit2Envelope(envelope, (to, data) => wallet.sendCalldata(to, data)))
                     .then(setTx)
                     .catch((err: unknown) =>
                       setError(err instanceof Error ? err.message : "Falló el cobro"),

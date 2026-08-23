@@ -23,6 +23,7 @@ import {
 } from "@/lib/session";
 
 import { unlockOrCreateSeed } from "@/lib/seed-crypto";
+import { ensurePermit2Allowance } from "@/lib/permit2";
 
 const SESSION_SEED_KEY = "walinox.session.seed";
 const IDLE_MS = 5 * 60 * 1000;
@@ -130,6 +131,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     !localChecked ||
     (!hasLocalSession && (status === "connecting" || status === "reconnecting"));
   const ready = Boolean(wallet && tosOk);
+
+  useEffect(() => {
+    if (!ready || !wallet || source !== "local") return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    const key = `walinox.permit2.${wallet.address.toLowerCase()}`;
+    try {
+      if (localStorage.getItem(key) === "1") return;
+    } catch {
+      /* ignore */
+    }
+    let cancelled = false;
+    void ensurePermit2Allowance(wallet)
+      .then(() => {
+        if (!cancelled) localStorage.setItem(key, "1");
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, wallet, source]);
 
   const unlockLocal = useCallback(async (pin: string) => {
     setError(null);
