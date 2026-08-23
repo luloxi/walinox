@@ -35,7 +35,9 @@ Cada cambio busca **alegría, orden y nada de más**. La interfaz tiene que ser 
 - Si algo no aporta (texto de relleno, acciones duplicadas, código muerto, pies de manual, badges “n/a”), **sacalo o plegalo**.
 - La UI tiene que sentirse **liviana, intuitiva, simple y poderosa**. Priorizá el camino principal; lo avanzado va detrás de “Más…” o en Ajustes.
 - **Separá modos claros** cuando una pantalla mezcla trabajos distintos (ej. Local: Cobrar vs Catálogo). El default es la acción del día a día.
+- **Layout con aire**: título/brand y acción secundaria (tuerca, “Ver todos”, etc.) van en la misma fila con `justify-between` / space-around donde sea sensato. No dejes la acción primaria colgada a un costado sin balancear con el título. Headers, section labels + links, filas de lista: distribuí el espacio.
 - **Coherencia visual**: mismas alturas de controles (tabs/botones `h-11`), tabs full-width en mobile, labels en español, un solo patrón por tipo de acción.
+- **Deshacer reversible**: al borrar algo recuperable (contacto, etc.), volvé a la lista y mostrá un toast con **Deshacer** que se vaya solo (~5 s).
 - No agregues secciones, tooltips ni explicaciones “por si acaso”. Si la pantalla se explica sola, el copy sobra.
 - Al revisar una pantalla: ¿es amena? ¿se entiende sin leer un manual? ¿da alegría al usuario del día a día? Si no, cambiá o quitá.
 
