@@ -12,7 +12,7 @@ import {
 import { useAccount, useWalletClient } from "wagmi";
 import { fromConnected } from "@/lib/connected-wallet";
 import { localStorageStore, setReceiptStore } from "@/lib/receipts";
-import { loadOrCreateWallet, openWallet, type LocalWallet } from "@/lib/wallet";
+import { openWallet, randomSeedPhrase, type LocalWallet } from "@/lib/wallet";
 import {
   TERMS_VERSION,
   hasSignedTos,
@@ -23,7 +23,6 @@ import {
 import { isLocalHost } from "@/lib/dev";
 import { seedLivedIn } from "@/lib/seed";
 import { unlockOrCreateSeed } from "@/lib/seed-crypto";
-import { randomSeedPhrase } from "@/lib/wallet";
 
 const SESSION_SEED_KEY = "walinox.session.seed";
 
@@ -128,8 +127,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const source: "injected" | "local" | null =
     wantLocal && local ? "local" : injected ? "injected" : wallet ? "local" : null;
   const tosOk = Boolean(wallet && hasSignedTos(wallet.address));
+  const hasLocalSession = Boolean(wantLocal && local);
   const hydrating =
-    !localChecked || status === "connecting" || status === "reconnecting";
+    !localChecked ||
+    (!hasLocalSession && (status === "connecting" || status === "reconnecting"));
   const ready = Boolean(wallet && tosOk);
 
   const unlockLocal = useCallback(async (pin: string) => {
