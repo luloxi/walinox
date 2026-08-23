@@ -17,7 +17,7 @@ PWA de USDT auto-custodia. UI en español. Settlement siempre USDT.
 **Pagos sin internet del comprador** (B2B y B2C).
 
 - **P2P / B2B:** enviar, recibir, pedir, escanear firma.
-- **B2C / Local:** el vendedor lista productos, arma el pedido en caja y cobra con **todos los canales offline** (QR, NFC, Bluetooth, sonido, luz, archivo, copiar). El comprador firma sin red; el asiento on-chain puede esperar red del que cobra.
+- **B2C / Local:** el vendedor lista productos, arma el pedido en caja y cobra con **todos los canales offline** (QR, NFC, Bluetooth, sonido, luz, archivo, copiar). El comprador firma sin red; el asiento on-chain puede esperar red del que cobra. En Local: pestaña **Cobrar** (default) y **Catálogo**.
 
 Fuera del MVP (ver [`docs/roadmap.md`](docs/roadmap.md)): **vitrina pública** por wallet, marketplace comprador, vales/canje, resumen mensual automatizado. No los reenganches en nav salvo pedido explícito.
 
@@ -28,15 +28,16 @@ Fuera del MVP (ver [`docs/roadmap.md`](docs/roadmap.md)): **vitrina pública** p
 - No “optimices” achicando el producto: no saques scripts, dependencias, APIs, rutas ni config de `package.json` / `next.config.ts` / `tsconfig.json` / `components.json` / tools clave, salvo que el pedido lo pida.
 - No rewrites ni refactors cosméticos. Andá rápido, puntual, con buenas prácticas.
 
-## Marie Kondo
+## Marie Kondo + interfaz amena e intuitiva
 
-Cada cambio busca **alegría, orden y nada de más**.
+Cada cambio busca **alegría, orden y nada de más**. La interfaz tiene que ser **amena e intuitiva**: se entiende al primer toque, no cansa, no abruma.
 
 - Si algo no aporta (texto de relleno, acciones duplicadas, código muerto, pies de manual, badges “n/a”), **sacalo o plegalo**.
 - La UI tiene que sentirse **liviana, intuitiva, simple y poderosa**. Priorizá el camino principal; lo avanzado va detrás de “Más…” o en Ajustes.
+- **Separá modos claros** cuando una pantalla mezcla trabajos distintos (ej. Local: Cobrar vs Catálogo). El default es la acción del día a día.
 - **Coherencia visual**: mismas alturas de controles (tabs/botones `h-11`), tabs full-width en mobile, labels en español, un solo patrón por tipo de acción.
 - No agregues secciones, tooltips ni explicaciones “por si acaso”. Si la pantalla se explica sola, el copy sobra.
-- Al revisar una pantalla: ¿esto da alegría al usuario del día a día? Si no, cambiá o quitá.
+- Al revisar una pantalla: ¿es amena? ¿se entiende sin leer un manual? ¿da alegría al usuario del día a día? Si no, cambiá o quitá.
 
 ## Tether
 
