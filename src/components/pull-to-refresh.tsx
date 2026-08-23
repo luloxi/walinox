@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,71 +17,83 @@ export function PullToRefresh({
   const scrollerRef = useRef<HTMLElement | null>(null);
   const startY = useRef(0);
   const pulling = useRef(false);
+  const offsetRef = useRef(0);
+  const refreshingRef = useRef(false);
   const [offset, setOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  const setScroller = useCallback((node: HTMLElement | null) => {
-    scrollerRef.current = node;
+  useEffect(() => {
+    refreshingRef.current = refreshing;
+  }, [refreshing]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    function setPull(value: number) {
+      offsetRef.current = value;
+      setOffset(value);
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      if (refreshingRef.current) return;
+      if (el!.scrollTop > 1) {
+        pulling.current = false;
+        return;
+      }
+      startY.current = event.touches[0]?.clientY ?? 0;
+      pulling.current = true;
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      if (!pulling.current || refreshingRef.current) return;
+      if (el!.scrollTop > 1) {
+        pulling.current = false;
+        setPull(0);
+        return;
+      }
+      const y = event.touches[0]?.clientY ?? 0;
+      const delta = y - startY.current;
+      if (delta <= 0) {
+        setPull(0);
+        return;
+      }
+      const resisted = Math.min(MAX_PULL, delta * 0.45);
+      setPull(resisted);
+      if (resisted > 6) event.preventDefault();
+    }
+
+    function onTouchEnd() {
+      if (!pulling.current) return;
+      pulling.current = false;
+      if (offsetRef.current >= THRESHOLD && !refreshingRef.current) {
+        setRefreshing(true);
+        setPull(THRESHOLD * 0.7);
+        window.setTimeout(() => {
+          window.location.reload();
+        }, 280);
+        return;
+      }
+      setPull(0);
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
   }, []);
-
-  function onTouchStart(event: React.TouchEvent) {
-    if (refreshing) return;
-    const el = scrollerRef.current;
-    if (!el || el.scrollTop > 0) {
-      pulling.current = false;
-      return;
-    }
-    startY.current = event.touches[0]?.clientY ?? 0;
-    pulling.current = true;
-  }
-
-  function onTouchMove(event: React.TouchEvent) {
-    if (!pulling.current || refreshing) return;
-    const el = scrollerRef.current;
-    if (!el || el.scrollTop > 0) {
-      pulling.current = false;
-      setOffset(0);
-      return;
-    }
-    const y = event.touches[0]?.clientY ?? 0;
-    const delta = y - startY.current;
-    if (delta <= 0) {
-      setOffset(0);
-      return;
-    }
-    // Resist the pull so it feels natural
-    const resisted = Math.min(MAX_PULL, delta * 0.45);
-    setOffset(resisted);
-    if (resisted > 8) {
-      event.preventDefault();
-    }
-  }
-
-  function onTouchEnd() {
-    if (!pulling.current) return;
-    pulling.current = false;
-    if (offset >= THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setOffset(THRESHOLD * 0.7);
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 280);
-      return;
-    }
-    setOffset(0);
-  }
 
   const armed = offset >= THRESHOLD;
 
   return (
-    <main
-      ref={setScroller}
-      className={cn("relative overscroll-y-contain touch-pan-y", className)}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchEnd}
-    >
+    <main ref={scrollerRef} className={cn("relative overscroll-y-contain", className)}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center"
         style={{ height: Math.max(offset, refreshing ? 40 : 0) }}
