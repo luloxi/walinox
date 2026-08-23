@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
 import { heuristicIntent, naturalLanguageToIntent, parseAgentOutput, type AgentTask } from "@/lib/agent";
 import { qvacComplete, qvacLoadError } from "@/lib/qvac";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 const TASKS = new Set<AgentTask>(["send", "contact", "product"]);
+const MAX_PROMPT = 500;
 
 export async function POST(request: Request) {
+  const limited = rateLimit(clientKey(request, "agent"), 20, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json({ error: "rate limit" }, { status: 429 });
+  }
+
   const body = (await request.json()) as {
     prompt?: string;
     owner?: string;
     task?: string;
   };
-  const prompt = body.prompt?.trim();
+  const prompt = body.prompt?.trim().slice(0, MAX_PROMPT);
   const owner = body.owner?.trim() ?? "";
   const task: AgentTask = TASKS.has(body.task as AgentTask) ? (body.task as AgentTask) : "send";
 
