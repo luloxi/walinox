@@ -35,7 +35,7 @@ export function ChannelRow({
   onPick: (id: Exclude<Channel, "online">) => void;
 }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+    <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
       {OFFLINE_CHANNELS.map((id) => {
         const Icon = ICONS[id];
         const on = active === id;
@@ -46,7 +46,7 @@ export function ChannelRow({
             disabled={busy}
             onClick={() => onPick(id)}
             className={cn(
-              "flex h-14 w-[4.4rem] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border text-[10px] font-medium disabled:cursor-not-allowed disabled:opacity-50",
+              "flex h-14 w-[4.4rem] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border text-[10px] font-medium transition-colors active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
               on
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card hover:bg-muted",
