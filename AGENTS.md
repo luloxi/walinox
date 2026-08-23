@@ -12,6 +12,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 PWA de USDT auto-custodia. UI en español. Settlement siempre USDT.
 
+## MVP
+
+**Una cosa bien:** pagos sin internet del lado del comprador (B2B / B2C). Firmar offline → pasar la firma (QR u otro canal) → asentar on-chain cuando hay red.
+
+No reactivar en la UI principal lo que está en [`docs/roadmap.md`](docs/roadmap.md) (tienda online por wallet, resumen mensual automatizado, etc.) salvo pedido explícito.
+
 ## Cómo cambiar código
 
 - Cambios quirúrgicos: tocá el mínimo de archivos y líneas. Preferí editar lo que ya existe a agregar wrappers, capas o archivos.
@@ -40,13 +46,11 @@ Siempre las prácticas **actuales** de Tether, no las de entrenamiento.
 - QVAC rellena campos (“¿en una frase?”). No es chat ni la billetera.
 - No copies convenciones internas de los repos WDK (copyright, JSDoc para `.d.ts`) a esta app.
 
-Más contexto: `docs/billetera.md`, `docs/mentores.md`.
+Más contexto: `docs/billetera.md`, `docs/mentores.md`, `docs/roadmap.md`.
 
-## Oculto: no borrar
+## Roadmap (no borrar a ciegas)
 
-Hay pantallas apagadas a propósito. **No las elimines** “para limpiar”; se van a reactivar.
-
-- **Tienda / comprador.** En `src/components/tienda-view.tsx`, `SHOW_STORE_BUYER` está en `false`. `/tienda` es solo vendedor (catálogo propio, POS, publicar, canjear). El tab Comprador (ProductBrowser, escanear pedido, vales del comprador) sigue en el JSX. Los links públicos `/tienda/[id]` y el detalle de producto **siguen**. Para volver a mostrar Comprador/Vendedor: `SHOW_STORE_BUYER = true`.
+Features sacadas del MVP viven documentadas en **`docs/roadmap.md`**. El código de tienda/vales/reporte puede seguir en el repo; **no lo enganches de nuevo en nav ni copy** sin que el roadmap diga que vuelve al producto.
 
 ## Comentarios
 
