@@ -21,7 +21,7 @@ export function ProductsView() {
     <div className="mx-auto w-full max-w-lg pb-6">
       <h2 className="text-lg font-semibold">Productos</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Publicá un bien físico. El precio se ve en pesos (USDT al blue) y se canjea en la tienda.
+        Publicá un bien físico. El precio se ve en moneda local (USDT a cotización de mercado) y se cobra en la tienda.
       </p>
       <div className="mt-4 flex gap-2">
         <Button asChild className="h-11 flex-1">
