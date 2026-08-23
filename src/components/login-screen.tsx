@@ -8,10 +8,9 @@ import { useWallet } from "@/components/wallet-provider";
 import { TERMS_LINES } from "@/lib/session";
 
 export function LoginScreen() {
-  const { needsTos, needsMode, signTos, chooseSignMode, hydrating } = useWallet();
+  const { needsTos, signTos, hydrating } = useWallet();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionNote, setSessionNote] = useState<string | null>(null);
 
   if (hydrating) {
     return (
@@ -33,24 +32,6 @@ export function LoginScreen() {
     }
   }
 
-  async function pickMode(session: boolean) {
-    setBusy(true);
-    setError(null);
-    setSessionNote(null);
-    try {
-      if (!session) {
-        await chooseSignMode("every");
-        return;
-      }
-      const ok = await chooseSignMode("session");
-      if (!ok) setSessionNote("Tu wallet no permite enviar sin firmar. Vas a firmar cada envío.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo activar el modo");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (needsTos) {
     return (
       <Shell>
@@ -65,34 +46,6 @@ export function LoginScreen() {
         <Button type="button" className="mt-6 h-12 w-full" disabled={busy} onClick={() => void accept()}>
           {busy ? "Firmando…" : "Aceptar y firmar"}
         </Button>
-      </Shell>
-    );
-  }
-
-  if (needsMode) {
-    return (
-      <Shell>
-        <p className="text-xl font-semibold">Cómo firmás los envíos</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          El modo rápido es opcional. Si tu wallet no lo soporta, vas a firmar cada transacción.
-        </p>
-        {sessionNote ? <p className="mt-4 text-xs text-primary">{sessionNote}</p> : null}
-        {error ? <p className="mt-4 text-xs text-red-400">{error}</p> : null}
-        <Button type="button" className="mt-6 h-12 w-full" disabled={busy} onClick={() => void pickMode(false)}>
-          Firmar cada envío
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-2 h-12 w-full"
-          disabled={busy}
-          onClick={() => void pickMode(true)}
-        >
-          {busy ? "Pidiendo permiso…" : "Modo rápido · esta sesión"}
-        </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          El modo rápido pide una firma ahora. Si la wallet acepta, los envíos de USDT de las próximas 24 h no vuelven a abrir el popup.
-        </p>
       </Shell>
     );
   }
