@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { transmitChannel } from "@/lib/air-io";
 import { allChannelStatuses, type Channel } from "@/lib/channels";
+
+const PRIMARY: Channel[] = ["qr", "copy", "file"];
 
 export function OfflineSend({
   payload,
@@ -19,13 +20,16 @@ export function OfflineSend({
 }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [more, setMore] = useState(false);
   const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
+  const primary = statuses.filter((channel) => PRIMARY.includes(channel.id));
+  const extra = statuses.filter((channel) => !PRIMARY.includes(channel.id) && channel.available);
 
   async function send(channel: Channel) {
     setNote(null);
     try {
       if (channel === "qr") {
-        setNote("Mostrale este QR al otro celular.");
+        setNote("Mostrale este QR.");
         onSent?.("qr");
         return;
       }
@@ -80,25 +84,48 @@ export function OfflineSend({
           Armando QR…
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        {statuses.map((channel) => (
+      <div className="grid grid-cols-3 gap-2">
+        {primary.map((channel) => (
           <Button
             key={channel.id}
             type="button"
             variant={channel.id === "qr" ? "default" : "outline"}
-            className="h-11 justify-between"
-            disabled={busy || (!channel.available && channel.id !== "qr")}
+            className="h-11"
+            disabled={busy}
             onClick={() => void send(channel.id)}
           >
             {channel.label}
-            {!channel.available ? <Badge variant="secondary">n/a</Badge> : null}
           </Button>
         ))}
       </div>
+      {extra.length > 0 ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="cursor-pointer text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setMore((value) => !value)}
+          >
+            {more ? "Menos canales" : "Más canales"}
+          </button>
+          {more ? (
+            <div className="grid grid-cols-2 gap-2">
+              {extra.map((channel) => (
+                <Button
+                  key={channel.id}
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={busy}
+                  onClick={() => void send(channel.id)}
+                >
+                  {channel.label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        El cliente no necesita internet. QR, sonido y luz cierran el loop. Bluetooth comparte el archivo; NFC escribe un tag.
-      </p>
     </div>
   );
 }
