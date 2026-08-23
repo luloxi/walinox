@@ -56,7 +56,9 @@ export function CloudBackup() {
     setBusy("save");
     setNote(null);
     try {
-      const payload = collectCloudPayload(wallet.address);
+      // Same normalize path as the API so keccak(extra) matches server-side parsePayload.
+      const payload = parsePayload(collectCloudPayload(wallet.address));
+      if (!payload) throw new Error("Copia inválida");
       const extra = payloadDigest(payload);
       const auth = await signed("backup", extra);
       const res = await fetch("/api/backup", {
@@ -106,7 +108,7 @@ export function CloudBackup() {
         rememberCloudBackupAt(data.updatedAt);
         setLastAt(data.updatedAt);
       }
-      setNote("Restaurada. Recargá si no ves los cambios.");
+      setNote("Restaurada");
       window.setTimeout(() => window.location.reload(), 600);
     } catch (err) {
       setNote(err instanceof Error ? err.message : "No se pudo restaurar");
@@ -124,16 +126,10 @@ export function CloudBackup() {
         Copia en la nube
       </p>
       <p className="text-sm text-muted-foreground">
-        El día a día vive en este dispositivo. Con internet podés guardar o traer productos, contactos y
-        actividad. La seed no sale de acá.
+        Snapshot firmado de productos, contactos y actividad. La seed no sale de este dispositivo.
       </p>
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          type="button"
-          className="h-11"
-          disabled={blocked}
-          onClick={() => void saveCopy()}
-        >
+        <Button type="button" className="h-11" disabled={blocked} onClick={() => void saveCopy()}>
           {busy === "save" ? "…" : "Guardar"}
         </Button>
         <Button
