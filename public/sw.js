@@ -1,4 +1,4 @@
-const CACHE = "walinox-v8";
+const CACHE = "walinox-v9";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 const PRECACHE = [
@@ -7,6 +7,7 @@ const PRECACHE = [
   "/tienda",
   "/summary",
   "/settings",
+  "/inbox",
   "/manifest.webmanifest",
   "/favicon.ico",
   "/icons/icon-192.png",
@@ -32,13 +33,21 @@ function isNavigation(request) {
 async function cachePut(request, response) {
   if (!response || !response.ok) return;
   if (new URL(request.url).origin !== self.location.origin) return;
-  const copy = response.clone();
-  const cache = await caches.open(CACHE);
-  await cache.put(request, copy);
+  if (new URL(request.url).pathname.startsWith("/api/")) return;
+  try {
+    const copy = response.clone();
+    const cache = await caches.open(CACHE);
+    await cache.put(request, copy);
+  } catch {
+    /* ignore quota */
+  }
 }
 
 async function fromCache(request) {
-  return (await caches.match(request)) || (await caches.match(new URL(request.url).pathname));
+  const exact = await caches.match(request);
+  if (exact) return exact;
+  const url = new URL(request.url);
+  return caches.match(url.pathname);
 }
 
 self.addEventListener("install", (event) => {
@@ -49,6 +58,7 @@ self.addEventListener("install", (event) => {
           Promise.all(PRECACHE.map((path) => cache.add(path).catch(() => undefined))),
         ),
   );
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -75,13 +85,17 @@ self.addEventListener("fetch", (event) => {
 
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(request).then((cached) => {
+      (async () => {
+        const cached = await caches.match(request);
         if (cached) return cached;
-        return fetch(request).then((response) => {
+        try {
+          const response = await fetch(request);
           void cachePut(request, response);
           return response;
-        });
-      }),
+        } catch {
+          return (await fromCache(request)) ?? Response.error();
+        }
+      })(),
     );
     return;
   }
@@ -90,29 +104,47 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cached = await fromCache(request);
-        const network = fetch(request)
-          .then((response) => {
-            void cachePut(request, response);
-            return response;
-          })
-          .catch(() => null);
-        if (cached) {
-          void network;
-          return cached;
+        try {
+          const response = await fetch(request);
+          void cachePut(request, response);
+          return response;
+        } catch {
+          return cached ?? (await caches.match("/")) ?? Response.error();
         }
-        return (await network) ?? (await caches.match("/")) ?? Response.error();
       })(),
     );
     return;
   }
 
   event.respondWith(
-    fetch(request)
-      .then((response) => {
+    (async () => {
+      try {
+        const response = await fetch(request);
         void cachePut(request, response);
         return response;
-      })
-      .catch(async () => (await fromCache(request)) ?? (await caches.match("/")) ?? Response.error()),
+      } catch {
+        return (await fromCache(request)) ?? (await caches.match("/")) ?? Response.error();
+      }
+    })(),
+  );
+});
+
+self.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data) return;
+  if (data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
+  if (data.type !== "SHOW_NOTIFICATION") return;
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Walinox", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/" },
+      tag: data.tag || "walinox-local",
+    }),
   );
 });
 
@@ -155,31 +187,12 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if ("focus" in client) {
-          client.postMessage({ type: "NOTIFICATION_CLICK", url: target });
+        if ("focus" in client && client.url.includes(self.location.origin)) {
+          client.navigate(target);
           return client.focus();
         }
       }
-      return self.clients.openWindow(target);
-    }),
-  );
-});
-
-self.addEventListener("message", (event) => {
-  const data = event.data;
-  if (!data) return;
-  if (data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-    return;
-  }
-  if (data.type !== "SHOW_NOTIFICATION") return;
-  event.waitUntil(
-    self.registration.showNotification(data.title || "Walinox", {
-      body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      data: { url: data.url || "/" },
-      tag: data.tag || "walinox-local",
+      if (self.clients.openWindow) return self.clients.openWindow(target);
     }),
   );
 });
