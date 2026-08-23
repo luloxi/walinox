@@ -6,6 +6,7 @@ import { Brand } from "@/components/brand";
 import { Landing } from "@/components/landing";
 import { useWallet } from "@/components/wallet-provider";
 import { TERMS_LINES } from "@/lib/session";
+import { AppLoader } from "@/components/app-loader";
 
 export function LoginScreen() {
   const { needsTos, signTos, hydrating } = useWallet();
@@ -13,11 +14,7 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   if (hydrating) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Cargando…</p>
-      </div>
-    );
+    return <AppLoader full />;
   }
 
   async function accept() {
