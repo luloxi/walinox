@@ -16,6 +16,7 @@ export type ContactStore = {
 
 const STORAGE_KEY = "walinox.contacts";
 export const DEFAULT_CONTACTS_SEED_KEY = "walinox.contacts.defaults";
+export const CONTACT_UNDO_KEY = "walinox.contact.undo";
 
 export const LULOX_ADDRESS = "0xfBD9Ca40386A8C632cf0529bbb16b4BEdB59a0A0";
 
@@ -174,10 +175,13 @@ export function rememberContact(
   return created;
 }
 
-export function removeContact(address: string): void {
+export function removeContact(address: string): Contact | undefined {
   const key = normalizeAddress(address).toLowerCase();
   const current = currentStore();
-  current.save(current.load().filter((item) => item.address.toLowerCase() !== key));
+  const list = current.load();
+  const found = list.find((item) => item.address.toLowerCase() === key);
+  current.save(list.filter((item) => item.address.toLowerCase() !== key));
+  return found;
 }
 
 export function contactLabel(contact: { address: string; name: string }): string {
