@@ -7,6 +7,7 @@ import { Bell, History, ScanLine, Settings, Store, Users, Wallet } from "lucide-
 import { BackLink, nestedBack } from "@/components/back-link";
 import { Brand } from "@/components/brand";
 import { LoginScreen } from "@/components/login-screen";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { useWallet } from "@/components/wallet-provider";
 import { INBOX_EVENT, unreadCount } from "@/lib/notify";
 import { cn } from "@/lib/utils";
@@ -147,9 +148,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="size-10 shrink-0" aria-hidden />
           )}
         </header>
-        <main className="shell-scroll min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 md:px-8 md:pb-8 md:pt-6 lg:px-10">
-          <div className="min-h-full w-full max-w-none">{children}</div>
-        </main>
+        <PullToRefresh className="shell-scroll min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 md:px-8 md:pb-8 md:pt-6 lg:px-10">
+          {children}
+        </PullToRefresh>
       </div>
 
       <Suspense fallback={null}>
