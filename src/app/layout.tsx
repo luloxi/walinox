@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { AppShell } from "@/components/app-shell";
 import { NotifyProvider } from "@/components/notify-provider";
 import { RegisterServiceWorker } from "@/components/register-sw";
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Web3Provider>
           </DisplayProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
