@@ -58,7 +58,7 @@ export async function playSound(payload: string): Promise<void> {
 }
 
 export async function listenSound(opts?: { signal?: AbortSignal; timeoutMs?: number }): Promise<string> {
-  const timeoutMs = opts?.timeoutMs ?? 25000;
+  const timeoutMs = opts?.timeoutMs ?? 40000;
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
   });
@@ -74,7 +74,8 @@ export async function listenSound(opts?: { signal?: AbortSignal; timeoutMs?: num
 
   const chunks: Float32Array[] = [];
   let total = 0;
-  const max = ctx.sampleRate * 16;
+  const max = ctx.sampleRate * 12;
+  let ticks = 0;
 
   function stop(): void {
     proc.disconnect();
@@ -97,7 +98,7 @@ export async function listenSound(opts?: { signal?: AbortSignal; timeoutMs?: num
     };
 
     const timer = window.setTimeout(() => {
-      finish(new Error("No se oyó un permiso. Subí el volumen y acercá los celulares."));
+      finish(new Error("No se oyó el tono. Tocá Leer sonido primero, subí volumen y acercá los parlantes."));
     }, timeoutMs);
 
     const onAbort = () => finish(new Error("Escucha cancelada"));
@@ -114,6 +115,8 @@ export async function listenSound(opts?: { signal?: AbortSignal; timeoutMs?: num
         total -= chunks[0].length;
         chunks.shift();
       }
+      ticks += 1;
+      if (ticks % 3 !== 0) return;
       const pcm = new Float32Array(total);
       let o = 0;
       for (const chunk of chunks) {
@@ -246,20 +249,79 @@ export async function sendBluetooth(payload: string): Promise<string> {
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") throw new Error("Compartir cancelado");
   }
-  try {
-    await writeGatt(payload);
-    return "Permiso escrito por Bluetooth.";
-  } catch (err) {
-    if (err instanceof Error && (err.name === "NotFoundError" || err.name === "AbortError")) {
-      throw new Error(
-        "Chrome no puede anunciarse como periférico GATT. En Android: Compartir → Bluetooth / Nearby. Si no, usá sonido o luz.",
-      );
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title: "Walinox", text: payload });
+      return "Elegí Bluetooth, Nearby o AirDrop.";
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") throw new Error("Compartir cancelado");
     }
-    throw err instanceof Error ? err : new Error("Bluetooth falló");
   }
+  if ((navigator as Navigator & { bluetooth?: unknown }).bluetooth) {
+    try {
+      await writeGatt(payload);
+      return "Permiso escrito por Bluetooth.";
+    } catch (err) {
+      if (err instanceof Error && (err.name === "NotFoundError" || err.name === "AbortError")) {
+        /* fall through to copy */
+      } else {
+        throw err instanceof Error ? err : new Error("Bluetooth falló");
+      }
+    }
+  }
+  await navigator.clipboard.writeText(payload);
+  return "Este navegador no tiene Web Bluetooth. Copiamos el pago; en el otro: Pegar o archivo.";
+}
+
+export async function readNfc(opts?: { signal?: AbortSignal; timeoutMs?: number }): Promise<string> {
+  const NDEF = (
+    window as Window & {
+      NDEFReader?: new () => {
+        scan: () => Promise<void>;
+        addEventListener: (type: string, fn: (event: Event) => void) => void;
+      };
+    }
+  ).NDEFReader;
+  if (!NDEF) throw new Error("NFC solo anda en Chrome para Android.");
+  const ndef = new NDEF();
+  await ndef.scan();
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(
+      () => reject(new Error("Acercá el tag o el otro celular.")),
+      opts?.timeoutMs ?? 25000,
+    );
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(new Error("NFC cancelado"));
+    };
+    opts?.signal?.addEventListener("abort", onAbort, { once: true });
+    ndef.addEventListener("reading", (event: Event) => {
+      const records = (event as unknown as { message?: { records?: { recordType: string; data?: BufferSource }[] } })
+        .message?.records;
+      if (!records) return;
+      for (const rec of records) {
+        if (!rec.data) continue;
+        const text = new TextDecoder().decode(rec.data);
+        if (text) {
+          window.clearTimeout(timer);
+          resolve(text);
+          return;
+        }
+      }
+    });
+  });
 }
 
 export async function readBluetooth(): Promise<string> {
+  if (!(navigator as Navigator & { bluetooth?: unknown }).bluetooth) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) return text;
+    } catch {
+      /* ignore */
+    }
+    throw new Error("Web Bluetooth no está acá. Pegá el JSON o importá el archivo.");
+  }
   const bluetooth = bluetoothApi();
   const device = (await bluetooth.requestDevice({
     filters: [{ services: [BLE_SERVICE] }],

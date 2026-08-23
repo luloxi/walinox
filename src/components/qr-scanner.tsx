@@ -4,6 +4,19 @@ import { useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { createOpticalAssembler, unpackAir } from "@/lib/air";
 
+function scanFrame(ctx: CanvasRenderingContext2D, image: ImageData): string | null {
+  const opts = { inversionAttempts: "attemptBoth" as const };
+  const full = jsQR(image.data, image.width, image.height, opts);
+  if (full?.data) return full.data;
+  const side = Math.min(image.width, image.height);
+  if (side < 80) return null;
+  const x = Math.floor((image.width - side) / 2);
+  const y = Math.floor((image.height - side) / 2);
+  const crop = ctx.getImageData(x, y, side, side);
+  const center = jsQR(crop.data, crop.width, crop.height, opts);
+  return center?.data ?? null;
+}
+
 export function QrScanner({
   active,
   onResult,
@@ -54,10 +67,10 @@ export function QrScanner({
           canvas.height = video.videoHeight;
           ctx.drawImage(video, 0, 0);
           const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(image.data, image.width, image.height);
-          if (code?.data && code.data !== lastRef.current) {
-            lastRef.current = code.data;
-            onResultRef.current(code.data);
+          const found = scanFrame(ctx, image);
+          if (found && found !== lastRef.current) {
+            lastRef.current = found;
+            onResultRef.current(found);
             frame = requestAnimationFrame(tick);
             return;
           }

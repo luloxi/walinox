@@ -7,9 +7,9 @@ export const AIR_MAGIC = [0x57, 0x4c, 0x58, 0x31] as const;
 export const AIR_UTF8 = 0;
 export const AIR_ENVELOPE = 1;
 
-export const FSK_BAUD = 400;
-export const FSK_MARK = 2000;
-export const FSK_SPACE = 1200;
+export const FSK_BAUD = 200;
+export const FSK_MARK = 1800;
+export const FSK_SPACE = 1100;
 
 export const BLE_SERVICE = "776c6e78-0001-1000-8000-00805f9b34fb";
 export const BLE_CHAR = "776c6e78-0002-1000-8000-00805f9b34fb";
@@ -301,7 +301,7 @@ function goertzel(samples: ArrayLike<number>, start: number, len: number, freq: 
 export function modulateFsk(packet: Uint8Array, sampleRate: number): Float32Array {
   const spb = Math.max(8, Math.round(sampleRate / FSK_BAUD));
   const bits = bitsForPacket(packet);
-  const pad = Math.round(sampleRate * 0.04);
+  const pad = Math.round(sampleRate * 0.12);
   const out = new Float32Array(pad * 2 + bits.length * spb);
   let phase = 0;
   let o = pad;
@@ -309,7 +309,7 @@ export function modulateFsk(packet: Uint8Array, sampleRate: number): Float32Arra
     const freq = bit ? FSK_MARK : FSK_SPACE;
     const step = (2 * Math.PI * freq) / sampleRate;
     for (let i = 0; i < spb; i++) {
-      out[o++] = Math.sin(phase) * 0.62;
+      out[o++] = Math.sin(phase) * 0.85;
       phase += step;
     }
   }

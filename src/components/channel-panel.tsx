@@ -65,7 +65,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     setPlaying(true);
     setNote(null);
     try {
-      await playSound(await offlinePayload());
+      await playSound(encodeEnvelope(envelope));
     } catch (error) {
       setNote(error instanceof Error ? error.message : "El canal falló");
     } finally {
@@ -110,13 +110,13 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
         setBusy(true);
         setSoundOpen(true);
         setPlaying(true);
-        await playSound(await offlinePayload());
+        await playSound(encodeEnvelope(envelope));
         await markSent("ultrasonic", "Sonido enviado. El permiso está en todo el tono.");
         return;
       }
       if (channel === "ble" || channel === "optical") {
         setBusy(true);
-        const detail = await transmitChannel(channel, await offlinePayload());
+        const detail = await transmitChannel(channel, encodeEnvelope(envelope));
         await markSent(channel, detail);
         return;
       }
@@ -133,7 +133,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
       {qrUrl ? (
         <div className="overflow-hidden rounded-2xl bg-white p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="Permiso firmado" className="mx-auto h-64 w-64" />
+          <img src={qrUrl} alt="Permiso firmado" className="mx-auto w-full max-w-[22rem] aspect-square" />
         </div>
       ) : (
         <div className="flex h-64 items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">

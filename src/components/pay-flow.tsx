@@ -14,7 +14,7 @@ import { SaveContact } from "@/components/save-contact";
 import { EtherscanTxLink } from "@/components/etherscan-link";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
-import { listenSound, readBluetooth } from "@/lib/air-io";
+import { listenSound, readBluetooth, readNfc } from "@/lib/air-io";
 import type { Channel } from "@/lib/channels";
 import { decodeCharge, type ChargeRequest } from "@/lib/charge";
 import { shortAddress } from "@/lib/format";
@@ -317,12 +317,28 @@ export function PayFlow() {
             {scanning ? "Parar cámara" : "Escanear QR"}
           </Button>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
-              {listening ? "Parar sonido" : "Sonido"}
+              {listening ? "Parar" : "Sonido"}
             </Button>
             <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
               Bluetooth
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => {
+                setScanning(false);
+                listenAbort.current?.abort();
+                void readNfc()
+                  .then((raw) => takePayload(raw, "nfc"))
+                  .catch((err: unknown) =>
+                    setError(err instanceof Error ? err.message : "NFC falló"),
+                  );
+              }}
+            >
+              NFC
             </Button>
           </div>
 

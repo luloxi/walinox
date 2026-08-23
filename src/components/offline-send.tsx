@@ -98,10 +98,10 @@ export function OfflineSend({
       {qrUrl ? (
         <div className="overflow-hidden rounded-2xl bg-white p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="Payload" className="mx-auto h-52 w-52" />
+          <img src={qrUrl} alt="Payload" className="mx-auto w-full max-w-[22rem] aspect-square" />
         </div>
       ) : (
-        <div className="flex h-52 items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">
+        <div className="flex aspect-square max-h-[22rem] w-full items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">
           Armando QR…
         </div>
       )}

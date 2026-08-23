@@ -12,7 +12,7 @@ import { EtherscanTxLink } from "@/components/etherscan-link";
 import { SaveContact } from "@/components/save-contact";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
-import { listenSound, readBluetooth } from "@/lib/air-io";
+import { listenSound, readBluetooth, readNfc } from "@/lib/air-io";
 import type { Channel } from "@/lib/channels";
 import { decodeCharge } from "@/lib/charge";
 import { shortAddress } from "@/lib/format";
@@ -285,9 +285,9 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
       >
         {scanning ? "Parar cámara" : "Leer QR / luz"}
       </Button>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
-          {listening ? "Parar sonido" : "Leer sonido"}
+          {listening ? "Parar" : "Sonido"}
         </Button>
         <Button
           type="button"
@@ -304,6 +304,22 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
           }}
         >
           Bluetooth
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11"
+          onClick={() => {
+            setScanning(false);
+            listenAbort.current?.abort();
+            void readNfc()
+              .then((raw) => take(raw, "nfc"))
+              .catch((err: unknown) =>
+                setError(err instanceof Error ? err.message : "NFC falló"),
+              );
+          }}
+        >
+          NFC
         </Button>
       </div>
       <button

@@ -14,12 +14,12 @@ export type Channel = (typeof CHANNELS)[number];
 /** Primary first: QR / copy / file; advanced after. */
 export const OFFLINE_CHANNELS = [
   "qr",
-  "copy",
-  "file",
   "ultrasonic",
   "optical",
   "ble",
   "nfc",
+  "copy",
+  "file",
 ] as const satisfies readonly Exclude<Channel, "online">[];
 
 export type ChannelStatus = {

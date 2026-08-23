@@ -7,8 +7,8 @@ const QUIET = 4;
 export async function payloadToDataUrl(payload: string): Promise<string> {
   return QRCode.toDataURL(payload, {
     errorCorrectionLevel: "M",
-    margin: 2,
-    width: 320,
+    margin: 4,
+    width: 560,
     color: { dark: "#111111", light: "#ffffff" },
   });
 }
