@@ -54,7 +54,7 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
         },
         signature,
         explanation: `Pedido en ${charge.store}.`,
-        complianceNote: "USDT no tiene permit(). Se usa Permit2. El local confirma on-chain.",
+        complianceNote: "USDT no tiene permit(). Se usa Permit2. La tienda confirma on-chain.",
       };
       setEnvelope(next);
       setQrUrl(
@@ -100,9 +100,9 @@ export function PayCharge({ charge, onBack }: { charge: ChargeRequest; onBack: (
         </Button>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Pasale la firma al local. Ellos publican el pago.</p>
+          <p className="text-sm text-muted-foreground">Pasale la firma a la tienda. Ellos publican el pago.</p>
           <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
-          {sent ? <p className="text-xs text-primary">Listo. El local confirma con internet.</p> : null}
+          {sent ? <p className="text-xs text-primary">Listo. La tienda confirma con internet.</p> : null}
         </div>
       )}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}

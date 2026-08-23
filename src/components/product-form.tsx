@@ -75,7 +75,7 @@ export function ProductForm({
       supply: 99,
       sold: 0,
       terms: DEFAULT_TERMS,
-      issuerName: "Mi local",
+      issuerName: "Mi tienda",
       redemptionPlace: "",
       issuer: wallet.address,
       createdAt,
