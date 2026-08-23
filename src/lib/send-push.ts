@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { isAddress } from "ethers";
-import { VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT } from "@/lib/vapid";
+import { VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT, vapidConfigured } from "@/lib/vapid";
 import {
   addSubscription,
   listSubscriptions,
@@ -14,6 +14,9 @@ import {
 let vapidReady = false;
 
 function ensureVapid(): void {
+  if (!vapidConfigured()) {
+    throw new Error("VAPID no configurado (NEXT_PUBLIC_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY)");
+  }
   if (vapidReady) return;
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
   vapidReady = true;
@@ -32,6 +35,9 @@ export async function dispatchNotify(
 ): Promise<{ delivered: number; queued: boolean }> {
   if (!isAddress(message.to)) throw new Error("Address inválida");
   queueMessage(message);
+  if (!vapidConfigured()) {
+    return { delivered: 0, queued: true };
+  }
   ensureVapid();
   const subs = listSubscriptions(message.to);
   let delivered = 0;
