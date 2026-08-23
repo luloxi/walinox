@@ -2,28 +2,28 @@
 
 Postgres (Neon en Vercel) + Prisma. La app es **offline-first**: productos, contactos, prefs y actividad viven en **localStorage**. La seed **nunca** va a la DB.
 
-## Copia en la nube
+## Copia en la nube (automática)
 
-En Ajustes → **Copia en la nube**, con internet, la wallet firma (EIP-712, mismo patrón que el push) y guarda o restaura un snapshot scoped a `0x…`.
+Con wallet lista e internet, la app **guarda sola** un snapshot (debounce ~8 s tras cambios, y cada ~3 min). En **Tienda** hay un chip con la antigüedad de la última copia; tocarlo fuerza un guardado. En Ajustes podés **Guardar ahora** o **Restaurar** (con confirmación).
+
+No pide firma de wallet: es backup de datos de app, no de claves. Rate limit en el API. Solo se aceptan productos cuyo `issuer` sea la address dueña.
 
 | En DB | Nunca en DB |
 |---|---|
 | Productos propios, contactos, prefs, tema, recibos, inbox, vales locales | Seed / claves |
 | | Saldo USDT (on-chain) |
 
-Sin la firma de esa address no se lee ni se pisa data ajena.
-
 ## Stack
 
-- Prisma + Postgres (`POSTGRES_PRISMA_URL` pooled, `POSTGRES_URL_NON_POOLING` para migraciones)
+- Prisma + Postgres (`DATABASE_URL` / `POSTGRES_PRISMA_URL`)
 - Modelo: `CloudBackup(address, payload Json)`
-- Auth: `verifyPushAuth` con action `backup` / `restore`
+- Auth: sin firma (MVP); mitigación = rate limit + issuer check
 
-En local, sin esas env, la app corre igual y el endpoint responde 503. En Vercel las vars son **sensitive**: `vercel env pull` no trae el valor; el runtime del deploy sí las tiene. Para probar backup en `next dev`, pegá las URLs de Neon en `.env.local`.
+En local, sin esas env, la app corre igual y el endpoint responde 503.
 
 ```bash
-npx prisma migrate deploy   # schema
-npm run dev                 # localStorage-first
+npx prisma migrate deploy
+npm run dev
 ```
 
-Build en Vercel corre `prisma generate` + `prisma migrate deploy`.
+Build en Vercel: `prisma generate` + `prisma migrate deploy`.
