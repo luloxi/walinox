@@ -9,11 +9,18 @@ export const CHANNELS = [
   "file",
 ] as const;
 
-export const OFFLINE_CHANNELS = CHANNELS.filter(
-  (id): id is Exclude<Channel, "online"> => id !== "online",
-);
-
 export type Channel = (typeof CHANNELS)[number];
+
+/** Primary first: QR / copy / file; advanced after. */
+export const OFFLINE_CHANNELS = [
+  "qr",
+  "copy",
+  "file",
+  "ultrasonic",
+  "optical",
+  "ble",
+  "nfc",
+] as const satisfies readonly Exclude<Channel, "online">[];
 
 export type ChannelStatus = {
   id: Channel;
