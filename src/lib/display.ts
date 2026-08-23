@@ -1,15 +1,15 @@
 export const FIATS = [
-  { id: "ARS", name: "Peso argentino", country: "Argentina", source: "Dólar blue (P2P)", locale: "es-AR", decimals: 0 },
-  { id: "VES", name: "Bolívar", country: "Venezuela", source: "Paralelo", locale: "es-VE", decimals: 0 },
-  { id: "BRL", name: "Real", country: "Brasil", source: "Cotización USD", locale: "pt-BR", decimals: 2 },
-  { id: "CLP", name: "Peso chileno", country: "Chile", source: "Cotización USD", locale: "es-CL", decimals: 0 },
-  { id: "UYU", name: "Peso uruguayo", country: "Uruguay", source: "Cotización USD", locale: "es-UY", decimals: 0 },
-  { id: "MXN", name: "Peso mexicano", country: "México", source: "Cotización USD", locale: "es-MX", decimals: 2 },
-  { id: "COP", name: "Peso colombiano", country: "Colombia", source: "Cotización USD", locale: "es-CO", decimals: 0 },
-  { id: "BOB", name: "Boliviano", country: "Bolivia", source: "Tipo de cambio", locale: "es-BO", decimals: 2 },
-  { id: "PEN", name: "Sol", country: "Perú", source: "Tipo de cambio", locale: "es-PE", decimals: 2 },
-  { id: "USD", name: "Dólar", country: "Estados Unidos", source: "Paridad con USDT", locale: "en-US", decimals: 2 },
-  { id: "EUR", name: "Euro", country: "Zona euro", source: "Tipo de cambio", locale: "de-DE", decimals: 2 },
+  { id: "ARS", name: "Peso argentino", country: "Argentina", flag: "🇦🇷", source: "Dólar blue (P2P)", locale: "es-AR", decimals: 0 },
+  { id: "VES", name: "Bolívar", country: "Venezuela", flag: "🇻🇪", source: "Paralelo", locale: "es-VE", decimals: 0 },
+  { id: "BRL", name: "Real", country: "Brasil", flag: "🇧🇷", source: "Cotización USD", locale: "pt-BR", decimals: 2 },
+  { id: "CLP", name: "Peso chileno", country: "Chile", flag: "🇨🇱", source: "Cotización USD", locale: "es-CL", decimals: 0 },
+  { id: "UYU", name: "Peso uruguayo", country: "Uruguay", flag: "🇺🇾", source: "Cotización USD", locale: "es-UY", decimals: 0 },
+  { id: "MXN", name: "Peso mexicano", country: "México", flag: "🇲🇽", source: "Cotización USD", locale: "es-MX", decimals: 2 },
+  { id: "COP", name: "Peso colombiano", country: "Colombia", flag: "🇨🇴", source: "Cotización USD", locale: "es-CO", decimals: 0 },
+  { id: "BOB", name: "Boliviano", country: "Bolivia", flag: "🇧🇴", source: "Tipo de cambio", locale: "es-BO", decimals: 2 },
+  { id: "PEN", name: "Sol", country: "Perú", flag: "🇵🇪", source: "Tipo de cambio", locale: "es-PE", decimals: 2 },
+  { id: "USD", name: "Dólar", country: "Estados Unidos", flag: "🇺🇸", source: "Paridad con USDT", locale: "en-US", decimals: 2 },
+  { id: "EUR", name: "Euro", country: "Zona euro", flag: "🇪🇺", source: "Tipo de cambio", locale: "de-DE", decimals: 2 },
 ] as const;
 
 export type FiatId = (typeof FIATS)[number]["id"];
