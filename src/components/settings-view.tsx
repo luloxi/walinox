@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useDisconnect } from "wagmi";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Copy,
+  ExternalLink,
+  Fingerprint,
+  KeyRound,
+  Moon,
+  Sun,
+  Wallet,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDisplay } from "@/components/display-provider";
@@ -32,6 +42,21 @@ function notifyStatus(): "on" | "off" | "denied" | "unsupported" {
   if (Notification.permission !== "granted") return "off";
   if (localStorage.getItem(NOTIFY_OFF_KEY) === "1") return "off";
   return "on";
+}
+
+function SectionTitle({
+  icon: Icon,
+  children,
+}: {
+  icon: typeof Wallet;
+  children: ReactNode;
+}) {
+  return (
+    <p className="flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
+      <Icon className="size-3.5" strokeWidth={2.25} aria-hidden />
+      {children}
+    </p>
+  );
 }
 
 export function SettingsView() {
@@ -173,7 +198,9 @@ export function SettingsView() {
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
       <section className="space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Moneda</p>
+        <SectionTitle icon={Wallet}>{/* currency */}
+          Moneda
+        </SectionTitle>
         <select
           className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm"
           value={prefs.fiat}
@@ -185,12 +212,12 @@ export function SettingsView() {
         >
           {FIATS.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.country} · {item.name}
+              {item.flag} {item.country}
             </option>
           ))}
         </select>
         <p className="text-[11px] text-muted-foreground">
-          {local.source} · {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
+          {local.flag} {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
         </p>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -199,7 +226,7 @@ export function SettingsView() {
             className="h-11"
             onClick={() => setPrefs({ ...prefs, primary: "fiat" })}
           >
-            Primero {local.name}
+            {local.flag} {local.id}
           </Button>
           <Button
             type="button"
@@ -207,13 +234,13 @@ export function SettingsView() {
             className="h-11"
             onClick={() => setPrefs({ ...prefs, primary: "usdt" })}
           >
-            Primero USDT
+            USDT
           </Button>
         </div>
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
+        <SectionTitle icon={Wallet}>Wallet</SectionTitle>
         {wallet?.address ? (
           <>
             <div className="flex items-start gap-2 rounded-xl bg-muted/60 p-3 ring-1 ring-border">
@@ -227,22 +254,17 @@ export function SettingsView() {
                 {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {source === "local"
-                ? "Billetera local · firmás cada operación"
-                : "Wallet conectada · Walinox es intermediario, firmás en tu app"}
-            </p>
             {etherscanUrl ? (
               <Button type="button" variant="outline" className="h-11 w-full gap-2" asChild>
                 <a href={etherscanUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="size-4" />
-                  Ver en Etherscan
+                  Etherscan
                 </a>
               </Button>
             ) : null}
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Sin wallet conectada.</p>
+          <p className="text-sm text-muted-foreground">Sin wallet</p>
         )}
         <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
           Desconectar
@@ -250,19 +272,13 @@ export function SettingsView() {
       </section>
 
       {source === "local" ? (
-        <section className="mt-6 space-y-3">
-          <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            Seguridad
-          </p>
-          <p className="text-xs text-muted-foreground">
-            PIN y biometría protegen la seed en este dispositivo.
-          </p>
+        <section className="mt-6 space-y-2">
+          <SectionTitle icon={KeyRound}>Seguridad</SectionTitle>
 
           {pinOk ? <p className="text-sm text-primary">PIN actualizado</p> : null}
 
           {pinOpen ? (
             <div className="space-y-2 rounded-2xl border border-border p-3">
-              <p className="text-sm font-medium">Cambiar PIN</p>
               <Input
                 type="password"
                 inputMode="numeric"
@@ -277,7 +293,7 @@ export function SettingsView() {
                 inputMode="numeric"
                 value={pinNext}
                 onChange={(event) => setPinNext(event.target.value)}
-                placeholder="PIN nuevo (mín. 6)"
+                placeholder="PIN nuevo"
                 className="h-11"
               />
               <Input
@@ -285,7 +301,7 @@ export function SettingsView() {
                 inputMode="numeric"
                 value={pinConfirm}
                 onChange={(event) => setPinConfirm(event.target.value)}
-                placeholder="Repetir PIN nuevo"
+                placeholder="Repetir PIN"
                 className="h-11"
               />
               {pinError ? <p className="text-xs text-destructive">{pinError}</p> : null}
@@ -315,107 +331,106 @@ export function SettingsView() {
               </div>
             </div>
           ) : (
-            <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setPinOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full gap-2"
+              onClick={() => setPinOpen(true)}
+            >
+              <KeyRound className="size-4" />
               Cambiar PIN
             </Button>
           )}
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Biometría</p>
-            <p className="text-xs text-muted-foreground">
-              Huella o Face ID en este dispositivo. El PIN sigue siendo la llave de la seed.
-            </p>
-            {!bioAvailable ? (
-              <p className="text-sm text-muted-foreground">Este dispositivo no ofrece biometría en el navegador.</p>
-            ) : bioOn ? (
-              <Button type="button" variant="outline" className="h-11 w-full" onClick={turnOffBio}>
-                Desactivar biometría
-              </Button>
-            ) : bioAskPin ? (
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  inputMode="numeric"
-                  value={bioPin}
-                  onChange={(event) => setBioPin(event.target.value)}
-                  placeholder="PIN actual"
+          {!bioAvailable ? null : bioOn ? (
+            <Button type="button" variant="outline" className="h-11 w-full gap-2" onClick={turnOffBio}>
+              <Fingerprint className="size-4" />
+              Desactivar biometría
+            </Button>
+          ) : bioAskPin ? (
+            <div className="space-y-2">
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={bioPin}
+                onChange={(event) => setBioPin(event.target.value)}
+                placeholder="PIN actual"
+                className="h-11"
+                autoFocus
+              />
+              {bioError ? <p className="text-xs text-destructive">{bioError}</p> : null}
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" className="h-11" onClick={() => setBioAskPin(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
                   className="h-11"
-                  autoFocus
-                />
-                {bioError ? <p className="text-xs text-destructive">{bioError}</p> : null}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" className="h-11" onClick={() => setBioAskPin(false)}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    className="h-11"
-                    disabled={bioBusy || bioPin.length < 6}
-                    onClick={() => void confirmBio()}
-                  >
-                    {bioBusy ? "…" : "Activar"}
-                  </Button>
-                </div>
+                  disabled={bioBusy || bioPin.length < 6}
+                  onClick={() => void confirmBio()}
+                >
+                  {bioBusy ? "…" : "Activar"}
+                </Button>
               </div>
-            ) : (
-              <Button type="button" className="h-11 w-full" onClick={() => setBioAskPin(true)}>
-                Activar biometría
-              </Button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <Button type="button" className="h-11 w-full gap-2" onClick={() => setBioAskPin(true)}>
+              <Fingerprint className="size-4" />
+              Activar biometría
+            </Button>
+          )}
         </section>
       ) : null}
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          Notificaciones push
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Solo el interruptor. La bandeja de avisos está en Avisos del menú.
-        </p>
-        {alerts === "unsupported" ? (
-          <p className="text-sm text-muted-foreground">Este navegador no permite avisos.</p>
-        ) : alerts === "denied" ? (
-          <p className="text-sm text-muted-foreground">Bloqueados en el navegador.</p>
+        <SectionTitle icon={Bell}>Avisos</SectionTitle>
+        {alerts === "unsupported" || alerts === "denied" ? (
+          <p className="text-sm text-muted-foreground">
+            {alerts === "denied" ? "Bloqueados en el navegador" : "No disponibles"}
+          </p>
         ) : alerts === "on" ? (
           <Button
             type="button"
             variant="outline"
-            className="h-11 w-full"
+            className="h-11 w-full gap-2"
             disabled={notifyBusy}
             onClick={() => void disableAlerts()}
           >
-            Silenciar push
+            <Bell className="size-4" />
+            Silenciar
           </Button>
         ) : (
           <Button
             type="button"
-            className="h-11 w-full"
+            className="h-11 w-full gap-2"
             disabled={notifyBusy || !wallet}
             onClick={() => void enableAlerts()}
           >
-            {notifyBusy ? "Activando…" : "Activar notificaciones push"}
+            <Bell className="size-4" />
+            {notifyBusy ? "…" : "Activar push"}
           </Button>
         )}
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Apariencia</p>
+        <SectionTitle icon={theme === "dark" ? Moon : Sun}>Apariencia</SectionTitle>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant={theme === "dark" ? "default" : "outline"}
-            className="h-11"
+            className="h-11 gap-2"
             onClick={() => setTheme("dark")}
           >
+            <Moon className="size-4" />
             Oscuro
           </Button>
           <Button
             type="button"
             variant={theme === "light" ? "default" : "outline"}
-            className="h-11"
+            className="h-11 gap-2"
             onClick={() => setTheme("light")}
           >
+            <Sun className="size-4" />
             Claro
           </Button>
         </div>
