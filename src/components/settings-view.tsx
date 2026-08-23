@@ -55,7 +55,7 @@ function SectionTitle({
 }) {
   return (
     <p className="flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-      <Icon className="size-4.5" strokeWidth={2.25} aria-hidden />
+      <Icon className="size-5" strokeWidth={2.25} aria-hidden />
       {children}
     </p>
   );
