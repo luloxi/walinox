@@ -80,11 +80,11 @@ export function StoreView() {
       </div>
       {mine ? (
         <Button asChild variant="outline" className="mt-3 h-11 max-w-lg">
-          <Link href="/tienda?tab=vendedor">Publicar en esta tienda</Link>
+          <Link href="/tienda?tab=vendedor">Administrar tienda</Link>
         </Button>
       ) : null}
       <div className="mt-6">
-        <ProductBrowser products={products} empty="Esta tienda todavía no tiene productos." />
+        <ProductBrowser products={products} showStores={false} empty="Esta tienda todavía no tiene productos." />
       </div>
     </div>
   );
