@@ -94,7 +94,7 @@ export function PayFlow() {
   const [pasted, setPasted] = useState("");
   const [scanning, setScanning] = useState(true);
   const [listening, setListening] = useState(false);
-  const [more, setMore] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listenAbort = useRef<AbortController | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -163,6 +163,7 @@ export function PayFlow() {
     setTx(null);
     setError(null);
     setScanning(true);
+    setAdvanced(false);
   }
 
   const envelope = result?.envelope;
@@ -175,7 +176,7 @@ export function PayFlow() {
       <div>
         <p className="text-base font-semibold">Pagar</p>
         <p className="text-sm text-muted-foreground">
-          Escaneá un QR o usá otro canal para pagar un cobro o confirmar un permiso offline.
+          Escaneá un QR o usá sonido / Bluetooth para pagar un cobro offline.
         </p>
       </div>
 
@@ -328,14 +329,17 @@ export function PayFlow() {
           <button
             type="button"
             className="flex h-9 w-full cursor-pointer items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setMore((value) => !value)}
+            onClick={() => setAdvanced((value) => !value)}
           >
-            Más canales
-            <ChevronDown className={cn("size-3.5 transition-transform", more && "rotate-180")} />
+            Otras opciones
+            <ChevronDown className={cn("size-3.5 transition-transform", advanced && "rotate-180")} />
           </button>
 
-          {more ? (
-            <div className="space-y-2 rounded-2xl border border-border p-3">
+          {advanced ? (
+            <div className="space-y-2 rounded-2xl border border-dashed border-border p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Solo si te pasaron el cobro por texto o archivo (no es el flujo habitual).
+              </p>
               <Textarea
                 value={pasted}
                 onChange={(event) => setPasted(event.target.value)}
