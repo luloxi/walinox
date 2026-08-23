@@ -231,7 +231,6 @@ export function ContactsView() {
                 </p>
                 <QvacHint
                   task="contact"
-                  label="En una frase"
                   placeholder="guardá a María 0x… o lulox.eth"
                   onFill={(intent) => {
                     if (intent.to) setAddress(intent.to);
