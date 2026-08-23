@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { allChannelStatuses, type Channel } from "@/lib/channels";
-import { transmitChannel } from "@/lib/air-io";
+import { ChannelRow, SoundPlayback } from "@/components/channel-row";
+import { playSound, transmitChannel } from "@/lib/air-io";
+import { type Channel } from "@/lib/channels";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
 import { inviteFromSeed, wrapForPears } from "@/lib/pears";
 import { fromBaseUnits } from "@/lib/format";
@@ -16,15 +16,12 @@ type Props = {
   onSent: (channel: Channel) => void;
 };
 
-const PRIMARY: Channel[] = ["qr", "copy", "file"];
-
 export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [more, setMore] = useState(false);
-  const statuses = allChannelStatuses().filter((channel) => channel.id !== "online");
-  const primary = statuses.filter((channel) => PRIMARY.includes(channel.id));
-  const extra = statuses.filter((channel) => !PRIMARY.includes(channel.id) && channel.available);
+  const [active, setActive] = useState<Exclude<Channel, "online"> | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [soundOpen, setSoundOpen] = useState(false);
 
   async function offlinePayload() {
     return wrapForPears(encodeEnvelope(envelope), envelope.signature);
@@ -57,8 +54,22 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     });
   }
 
-  async function send(channel: Channel) {
+  async function replaySound() {
+    setPlaying(true);
     setNote(null);
+    try {
+      await playSound(await offlinePayload());
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "El canal falló");
+    } finally {
+      setPlaying(false);
+    }
+  }
+
+  async function send(channel: Exclude<Channel, "online">) {
+    setNote(null);
+    setActive(channel);
+    if (channel !== "ultrasonic") setSoundOpen(false);
     try {
       if (channel === "qr") {
         const invite = await inviteFromSeed(envelope.signature);
@@ -88,7 +99,15 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
         await markSent("nfc", "Escrito en el tag NFC.");
         return;
       }
-      if (channel === "ble" || channel === "ultrasonic" || channel === "optical") {
+      if (channel === "ultrasonic") {
+        setBusy(true);
+        setSoundOpen(true);
+        setPlaying(true);
+        await playSound(await offlinePayload());
+        await markSent("ultrasonic", "Sonido enviado. El permiso está en todo el tono.");
+        return;
+      }
+      if (channel === "ble" || channel === "optical") {
         setBusy(true);
         const detail = await transmitChannel(channel, await offlinePayload());
         await markSent(channel, detail);
@@ -98,6 +117,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
       setNote(error instanceof Error ? error.message : "El canal falló");
     } finally {
       setBusy(false);
+      setPlaying(false);
     }
   }
 
@@ -113,47 +133,8 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
           Armando QR…
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2">
-        {primary.map((channel) => (
-          <Button
-            key={channel.id}
-            type="button"
-            variant={channel.id === "qr" ? "default" : "outline"}
-            className="h-11"
-            disabled={busy}
-            onClick={() => void send(channel.id)}
-          >
-            {channel.label}
-          </Button>
-        ))}
-      </div>
-      {extra.length > 0 ? (
-        <div className="space-y-2">
-          <button
-            type="button"
-            className="cursor-pointer text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setMore((value) => !value)}
-          >
-            {more ? "Menos canales" : "Más canales"}
-          </button>
-          {more ? (
-            <div className="grid grid-cols-2 gap-2">
-              {extra.map((channel) => (
-                <Button
-                  key={channel.id}
-                  type="button"
-                  variant="outline"
-                  className="h-11"
-                  disabled={busy}
-                  onClick={() => void send(channel.id)}
-                >
-                  {channel.label}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <ChannelRow active={active} busy={busy || playing} onPick={(id) => void send(id)} />
+      {soundOpen ? <SoundPlayback playing={playing} onReplay={() => void replaySound()} /> : null}
       {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
     </div>
   );

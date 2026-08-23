@@ -1,13 +1,17 @@
 export const CHANNELS = [
   "online",
   "qr",
-  "ble",
-  "nfc",
   "ultrasonic",
   "optical",
+  "ble",
+  "nfc",
   "copy",
   "file",
 ] as const;
+
+export const OFFLINE_CHANNELS = CHANNELS.filter(
+  (id): id is Exclude<Channel, "online"> => id !== "online",
+);
 
 export type Channel = (typeof CHANNELS)[number];
 
@@ -48,14 +52,14 @@ export function channelStatus(id: Channel): ChannelStatus {
         id,
         ...meta,
         available: "bluetooth" in navigator,
-        reason: "bluetooth" in navigator ? undefined : "Web Bluetooth is not in this browser",
+        reason: "bluetooth" in navigator ? undefined : "Este navegador no tiene Bluetooth",
       };
     case "nfc":
       return {
         id,
         ...meta,
         available: "NDEFReader" in window,
-        reason: "NDEFReader" in window ? undefined : "Web NFC is not in this browser",
+        reason: "NDEFReader" in window ? undefined : "Este navegador no tiene NFC",
       };
     case "ultrasonic":
       return {
