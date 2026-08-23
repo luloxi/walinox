@@ -15,9 +15,11 @@ import {
   showLocalNotification,
   subscribePush,
 } from "@/lib/notify";
-import { maybeDeliverMonthlyReport } from "@/lib/monthly-report";
+import type { Signable } from "@/lib/wallet";
 
 const LAST_USDT_KEY = "walinox.lastUsdt.";
+
+type SignFn = (typed: Signable) => Promise<string>;
 
 export function NotifyProvider({ children }: { children: ReactNode }) {
   const { wallet } = useWallet();
@@ -40,19 +42,20 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!address || !sign) return;
     let live = true;
+    const walletAddress = address;
+    const signFn: SignFn = sign;
 
     async function sync() {
-      if (!live || !address || !sign) return;
+      if (!live) return;
       if (
         typeof Notification !== "undefined" &&
         Notification.permission === "granted" &&
         localStorage.getItem(NOTIFY_OFF_KEY) !== "1"
       ) {
-        await subscribePush(address, sign);
+        await subscribePush(walletAddress, signFn);
       }
-      const added = await pullRemoteInbox(address, sign);
+      const added = await pullRemoteInbox(walletAddress, signFn);
       if (added > 0) window.dispatchEvent(new Event(INBOX_EVENT));
-      maybeDeliverMonthlyReport(address);
     }
 
     void sync();
@@ -122,13 +125,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function NotifyBanner({
-  address,
-  sign,
-}: {
-  address?: string;
-  sign?: (typed: import("@/lib/wallet").Signable) => Promise<string>;
-}) {
+function NotifyBanner({ address, sign }: { address?: string; sign?: SignFn }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -143,11 +140,12 @@ function NotifyBanner({
 
   if (!open || !address || !sign) return null;
   const walletAddress = address;
+  const signFn: SignFn = sign;
 
   async function enable() {
     const permission = await requestNotifyPermission();
     if (permission === "granted") {
-      await subscribePush(walletAddress, sign);
+      await subscribePush(walletAddress, signFn);
     }
     localStorage.setItem(BANNER_KEY, "1");
     setOpen(false);
@@ -160,7 +158,7 @@ function NotifyBanner({
 
   return (
     <div className="fixed inset-x-3 bottom-20 z-30 rounded-2xl bg-popover p-3 ring-1 ring-border md:inset-x-auto md:right-6 md:bottom-6 md:w-96">
-      <p className="text-sm">Activá avisos para enterarte cuando te mandan USDT o un vale.</p>
+      <p className="text-sm">Activá avisos para enterarte cuando te mandan USDT.</p>
       <div className="mt-3 flex gap-2">
         <Button type="button" className="h-10 flex-1" onClick={() => void enable()}>
           Activar
