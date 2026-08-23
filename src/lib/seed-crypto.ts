@@ -109,6 +109,14 @@ export async function decryptSeed(pin: string): Promise<string> {
   }
 }
 
+/** Decrypt with current PIN and re-encrypt under the new PIN. */
+export async function changePin(currentPin: string, nextPin: string): Promise<void> {
+  assertPin(nextPin);
+  if (currentPin === nextPin) throw new Error("El nuevo PIN debe ser distinto");
+  const seed = await decryptSeed(currentPin);
+  await encryptSeed(seed, nextPin);
+}
+
 /** Migrate legacy plaintext seed into the vault, or create a new encrypted seed. */
 export async function unlockOrCreateSeed(
   pin: string,
