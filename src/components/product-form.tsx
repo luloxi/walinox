@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QvacHint } from "@/components/qvac-hint";
+import { UnitToggle } from "@/components/unit-toggle";
 import { useWallet } from "@/components/wallet-provider";
 import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
-import { fiatMeta } from "@/lib/display";
-import { formatFiat, formatUsdt, parsePriceField, usdtToFiat } from "@/lib/fx";
+import { fiatMeta, fiatPrefix } from "@/lib/display";
+import { fiatToUsdt, formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { PRODUCT_GROUPS, type ProductCategory } from "@/lib/categories";
 import { saveProduct } from "@/lib/catalog";
@@ -29,19 +30,38 @@ export function ProductForm({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<ProductCategory>("almacen");
-  const [price, setPrice] = useState("");
+  const [unit, setUnit] = useState<"fiat" | "usdt">(prefs.primary);
+  const [amountInput, setAmountInput] = useState("");
+  const [exactUsdt, setExactUsdt] = useState<string | null>(null);
   const [image, setImage] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
-  function publish() {
-    if (!wallet) return;
-    if (!title.trim() || !price) {
-      setError("Completá qué vendés y el precio");
+  const amountUsdt =
+    exactUsdt ??
+    (amountInput.trim()
+      ? unit === "usdt"
+        ? amountInput.trim()
+        : fiatToUsdt(amountInput, fx.perUsdt)
+      : "");
+
+  function switchUnit(next: "fiat" | "usdt") {
+    if (next === unit) return;
+    const current = amountUsdt;
+    setUnit(next);
+    if (!current || Number(current) <= 0) {
+      setAmountInput("");
+      setExactUsdt(null);
       return;
     }
-    const usdt = parsePriceField(price, fx.perUsdt, prefs.fiat);
-    if (!usdt) {
-      setError("Precio inválido");
+    setExactUsdt(current);
+    if (next === "usdt") setAmountInput(current);
+    else setAmountInput(String(Math.round(usdtToFiat(current, fx.perUsdt))));
+  }
+
+  function publish() {
+    if (!wallet) return;
+    if (!title.trim() || !amountUsdt || Number(amountUsdt) <= 0) {
+      setError("Completá qué vendés y el precio");
       return;
     }
     const createdAt = new Date().toISOString();
@@ -51,7 +71,7 @@ export function ProductForm({
       title: title.trim(),
       description: "",
       image,
-      price: usdt,
+      price: amountUsdt,
       supply: 99,
       sold: 0,
       terms: DEFAULT_TERMS,
@@ -64,14 +84,14 @@ export function ProductForm({
     saveProduct(product);
     setTitle("");
     setCategory("almacen");
-    setPrice("");
+    setAmountInput("");
+    setExactUsdt(null);
+    setUnit(prefs.primary);
     setImage(undefined);
     setError(null);
     onPublished?.();
     if (!onPublished) router.push(`/tienda/${wallet.address.toLowerCase()}`);
   }
-
-  const parsedUsdt = price ? parsePriceField(price, fx.perUsdt, prefs.fiat) : "";
 
   return (
     <div className={embedded ? "space-y-2" : "mx-auto w-full max-w-lg pb-6 space-y-2"}>
@@ -114,25 +134,37 @@ export function ProductForm({
           </optgroup>
         ))}
       </select>
-      <Input
-        value={price}
-        onChange={(event) => setPrice(event.target.value)}
-        placeholder={`Precio en ${local.name.toLowerCase()}`}
-        inputMode="decimal"
-        className="h-11"
-      />
-      {parsedUsdt ? (
+      <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
+        <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
+          {unit === "fiat" ? fiatPrefix(prefs.fiat) : null}
+          {unit === "usdt" ? <UsdtLogo className="size-4" /> : null}
+        </span>
+        <Input
+          value={amountInput}
+          onChange={(event) => {
+            setExactUsdt(null);
+            setAmountInput(event.target.value);
+          }}
+          placeholder="0"
+          inputMode="decimal"
+          className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
+          aria-label={unit === "usdt" ? "Precio en USDT" : `Precio en ${local.name}`}
+        />
+        <UnitToggle value={unit} fiatLabel={prefs.fiat} onChange={switchUnit} className="mr-1" />
+      </div>
+      {amountUsdt && Number(amountUsdt) > 0 ? (
         <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-          {formatUsdt(parsedUsdt, 6)}
-          <UsdtLogo className="size-3" />
-          <span>
-            {local.source} ({formatFiat(fx.perUsdt, prefs.fiat)})
-          </span>
+          {unit === "fiat" ? (
+            <>
+              {formatUsdt(amountUsdt, 6)}
+              <UsdtLogo className="size-3" />
+            </>
+          ) : (
+            formatFiat(usdtToFiat(amountUsdt, fx.perUsdt), prefs.fiat)
+          )}
         </p>
       ) : (
-        <p className="text-[11px] text-muted-foreground">
-          Precio en {local.name.toLowerCase()}. Se cobra en USDT ({local.source}: {formatFiat(fx.perUsdt, prefs.fiat)}).
-        </p>
+        <p className="text-[11px] text-muted-foreground">Se cobra en USDT. Tocá {prefs.fiat} o USDT para ingresar el precio.</p>
       )}
       {wallet ? (
         <QvacHint
@@ -143,11 +175,15 @@ export function ProductForm({
             if (intent.title) setTitle(intent.title);
             if (intent.price) {
               const n = Number(intent.price);
-              setPrice(
-                Number.isFinite(n) && n > 0 && n < 100
-                  ? String(Math.round(usdtToFiat(n, fx.perUsdt)))
-                  : intent.price,
-              );
+              if (Number.isFinite(n) && n > 0 && n < 100) {
+                setUnit("usdt");
+                setExactUsdt(String(n));
+                setAmountInput(String(n));
+              } else {
+                setUnit("fiat");
+                setExactUsdt(null);
+                setAmountInput(intent.price);
+              }
             }
           }}
         />
