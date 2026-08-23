@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PackageSearch } from "lucide-react";
+import { EmptyState, SectionLabel } from "@/components/empty-state";
 import { ProductFilters } from "@/components/product-filters";
 import { ProductTile } from "@/components/product-tile";
 import { browseProducts, type ProductSort } from "@/lib/categories";
@@ -50,14 +52,12 @@ export function ProductBrowser({
         />
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{empty}</p>
+        <EmptyState icon={PackageSearch} title={empty} body="Probá otra categoría o búsqueda." />
       ) : groups ? (
         <div className="space-y-6">
           {groups.map((group) => (
             <section key={group.id}>
-              <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {group.label}
-              </p>
+              <SectionLabel className="mb-2">{group.label}</SectionLabel>
               <ProductGrid products={group.products} />
             </section>
           ))}
