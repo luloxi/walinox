@@ -1,4 +1,4 @@
-const CACHE = "walinox-v9";
+const CACHE = "walinox-v10";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 const PRECACHE = [
@@ -13,6 +13,7 @@ const PRECACHE = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/apple-touch-icon.png",
+  "/logo.png",
 ];
 
 function isStaticAsset(url) {
@@ -22,6 +23,7 @@ function isStaticAsset(url) {
     url.pathname.startsWith("/products/") ||
     url.pathname === "/apple-touch-icon.png" ||
     url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/logo.png" ||
     /\.(?:js|css|woff2?|png|jpg|jpeg|svg|webp|ico)$/i.test(url.pathname)
   );
 }
@@ -32,22 +34,25 @@ function isNavigation(request) {
 
 async function cachePut(request, response) {
   if (!response || !response.ok) return;
-  if (new URL(request.url).origin !== self.location.origin) return;
-  if (new URL(request.url).pathname.startsWith("/api/")) return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
   try {
-    const copy = response.clone();
     const cache = await caches.open(CACHE);
-    await cache.put(request, copy);
+    await cache.put(request, response.clone());
   } catch {
-    /* ignore quota */
+    /* quota */
   }
 }
 
 async function fromCache(request) {
   const exact = await caches.match(request);
   if (exact) return exact;
-  const url = new URL(request.url);
-  return caches.match(url.pathname);
+  try {
+    return await caches.match(new URL(request.url).pathname);
+  } catch {
+    return undefined;
+  }
 }
 
 self.addEventListener("install", (event) => {
@@ -165,7 +170,7 @@ self.addEventListener("push", (event) => {
       const text = event.data?.text();
       if (text) payload.body = text;
     } catch {
-      /* keep defaults */
+      /* defaults */
     }
   }
 
