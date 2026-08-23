@@ -92,6 +92,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { ready, hydrating, needsTos } = useWallet();
   const back = nestedBack(pathname);
   const [unread, setUnread] = useState(0);
+  const showSettings = !back && pathname === "/";
 
   useEffect(() => {
     function refresh() {
@@ -132,8 +133,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center px-4 pt-[max(1rem,env(safe-area-inset-top))] md:hidden">
+        <header className="flex shrink-0 items-center justify-between gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] md:hidden">
           {back ? <BackLink href={back.href}>{back.label}</BackLink> : <Brand />}
+          {showSettings ? (
+            <Link
+              href="/settings"
+              className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+              aria-label="Ajustes"
+            >
+              <Settings className="size-5" />
+            </Link>
+          ) : (
+            <span className="size-10 shrink-0" aria-hidden />
+          )}
         </header>
         <main className="shell-scroll min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 md:px-8 md:pb-8 md:pt-6 lg:px-10">
           <div className="min-h-full w-full max-w-none">{children}</div>
