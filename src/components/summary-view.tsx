@@ -14,6 +14,7 @@ import {
   type PeriodKind,
 } from "@/lib/activity";
 import { etherscanAddressActivityUrl } from "@/lib/etherscan";
+import { listStores } from "@/lib/catalog";
 import { listReceipts } from "@/lib/receipts";
 import { seedLivedIn } from "@/lib/seed";
 import { Price } from "@/components/price";
@@ -41,21 +42,24 @@ export function SummaryView() {
   }, [wallet?.address]);
 
   const fx = useFx();
+  const storeIssuers = useMemo(() => listStores().map((store) => store.issuer), [receipts]);
   const report = useMemo(
     () =>
       buildActivityReport(receipts, {
         kind,
         anchor,
         me: wallet?.address,
-        storeIssuers: [],
+        storeIssuers,
         arsPerUsdt: fx.perUsdt,
       }),
-    [receipts, kind, anchor, wallet?.address, fx.perUsdt],
+    [receipts, kind, anchor, wallet?.address, storeIssuers, fx.perUsdt],
   );
 
+  const personalOut = report.personalExpense + report.storeExpense;
   const moneyStats = [
-    ["Ingresos", report.income, report.incomeArs],
-    ["Gastos", report.expense, report.expenseArs],
+    ["Ingresos personales", report.personalIncome],
+    ["Gastos personales", personalOut],
+    ["Ingresos tienda", report.storeIncome],
     ["Neto", report.net, report.netArs],
   ] as const;
 

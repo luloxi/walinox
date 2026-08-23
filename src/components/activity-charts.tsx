@@ -97,22 +97,17 @@ export function ActivityCharts({ report }: { report: ActivityReport }) {
         <BarPair buckets={report.buckets} fiat={fiat} />
       </div>
       <div>
-        <p className="mb-2 text-sm font-medium">Tienda vs personal</p>
+        <p className="mb-2 text-sm font-medium">Personal y tienda</p>
         <SplitBar
-          left={report.store}
-          right={report.personal}
-          leftLabel="Tienda"
-          rightLabel="Personal"
+          left={report.personalIncome}
+          right={report.personalExpense + report.storeExpense}
+          leftLabel="Personal +"
+          rightLabel="Personal −"
           rate={rate}
           fiat={fiat}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-        <p>
-          Tienda +{money(report.storeIncome, rate, fiat)} / −{money(report.storeExpense, rate, fiat)}
-        </p>
-        <p className="text-right">
-          Personal +{money(report.personalIncome, rate, fiat)} / −{money(report.personalExpense, rate, fiat)}
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          Tienda ingresos {money(report.storeIncome, rate, fiat)}
         </p>
       </div>
     </div>
