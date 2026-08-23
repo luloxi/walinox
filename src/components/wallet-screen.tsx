@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, ScanLine, Store } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine } from "lucide-react";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
 import { SectionLabel } from "@/components/empty-state";
@@ -114,19 +114,6 @@ export function WalletScreen() {
           })}
         </div>
       </WalletCard>
-
-      <Link
-        href="/tienda"
-        className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 text-sm transition-colors hover:bg-muted/60 active:scale-[0.99]"
-      >
-        <span className="inline-flex items-center gap-2.5">
-          <span className="flex size-8 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Store className="size-4" />
-          </span>
-          <span className="font-medium">Ir a la tienda</span>
-        </span>
-        <ArrowRight className="size-4 text-muted-foreground" />
-      </Link>
 
       <section className="flex flex-col">
         <div className="flex items-center justify-between gap-3">
