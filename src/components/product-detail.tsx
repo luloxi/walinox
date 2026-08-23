@@ -236,7 +236,7 @@ export function ProductDetail() {
           {!wallet ? (
             <>
               <p className="text-sm text-muted-foreground">Conectá tu billetera para comprar.</p>
-              <ConnectCta stacked label="Iniciar sesión para comprar" />
+              <ConnectCta stacked label="Billetera local" />
             </>
           ) : (
             <Button

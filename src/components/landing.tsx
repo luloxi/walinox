@@ -48,7 +48,7 @@ export function Landing() {
           <p className="mt-3 max-w-sm text-base leading-snug text-muted-foreground">
             USDT que se firma sin internet y se cobra en la tienda cuando hay red.
           </p>
-          <ConnectCta stacked label="Empezar" className="mt-8 max-w-xs" />
+          <ConnectCta stacked className="mt-8 max-w-xs" />
           <p className="mt-4 text-[11px] text-muted-foreground">Auto-custodia · Ethereum · USDT</p>
         </div>
         <button
@@ -165,7 +165,7 @@ export function Landing() {
           <p className="mt-2 text-sm text-muted-foreground">
             Claves en tu teléfono. Saldo en USDT. Cobro cuando hay red.
           </p>
-          <ConnectCta stacked label="Conectar billetera" className="mx-auto mt-6 max-w-xs" />
+          <ConnectCta stacked className="mx-auto mt-6 max-w-xs" />
         </div>
       </section>
     </div>

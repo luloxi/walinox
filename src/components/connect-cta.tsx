@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export function ConnectCta({
   stacked,
-  label = "Iniciar sesión",
+  label = "Billetera local",
   className,
 }: {
   stacked?: boolean;
@@ -283,15 +283,47 @@ export function ConnectCta({
 
   return (
     <>
-      <div className={cn(stacked ? "flex w-full flex-col gap-2" : "flex flex-wrap gap-2", className)}>
-        <Button type="button" className={cn("h-11", stacked && "w-full")} onClick={() => openConnectModal?.()}>
+      <div className={cn(stacked ? "flex w-full flex-col gap-2" : "flex flex-wrap items-center gap-2", className)}>
+        <Button type="button" className={cn("h-11", stacked && "w-full")} onClick={startLocal}>
           {label}
         </Button>
-        <Button type="button" variant="outline" className={cn("h-11", stacked && "w-full")} onClick={startLocal}>
-          Billetera local
+        <Button
+          type="button"
+          variant="ghost"
+          className={cn(
+            "h-11 gap-2 text-muted-foreground hover:text-foreground",
+            stacked && "w-full",
+          )}
+          onClick={() => openConnectModal?.()}
+        >
+          <WalletMarks />
+          Wallet externa
         </Button>
       </div>
       {dialog}
     </>
+  );
+}
+
+function WalletMarks() {
+  return (
+    <span className="flex items-center -space-x-1" aria-hidden>
+      <span className="flex size-5 items-center justify-center rounded-full bg-[#E8831D] ring-2 ring-background">
+        <svg viewBox="0 0 24 24" className="size-3.5" fill="none">
+          <path fill="#E2761B" d="M20.5 3.5 13.2 8.9l1.4-3.2z" />
+          <path fill="#E4761B" d="M3.5 3.5 10.7 9l-1.3-3.3z" />
+          <path fill="#E4761B" d="M17.8 16.4 15.7 19.6l4.5 1.2 1.3-4.3z" />
+          <path fill="#E4761B" d="M2.5 16.5 3.8 20.8l4.5-1.2-2.1-3.2z" />
+          <path fill="#D7C1B3" d="M7.9 10.8 6.8 12.5l4.4.2-.2-4.7z" />
+          <path fill="#D7C1B3" d="M16.1 10.8 13 7.9l-.1 4.8 4.4-.2z" />
+        </svg>
+      </span>
+      <span className="flex size-5 items-center justify-center rounded-full bg-[#7084FF] ring-2 ring-background">
+        <svg viewBox="0 0 24 24" className="size-3 text-white" fill="currentColor">
+          <path d="M12 4.5c.7 2.2 1.2 3.6 2.2 5.3 1.3 2.1 3.3 3.5 3.3 6.2 0 3-2.4 5.5-5.5 5.5S6.5 19 6.5 16c0-2.7 2-4.1 3.3-6.2 1-1.7 1.5-3.1 2.2-5.3Z" />
+        </svg>
+      </span>
+      <span className="flex size-5 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5B99] via-[#FFC148] to-[#4ADE80] ring-2 ring-background" />
+    </span>
   );
 }
