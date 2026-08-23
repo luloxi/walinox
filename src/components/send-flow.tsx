@@ -14,6 +14,7 @@ import { ChannelPanel } from "@/components/channel-panel";
 import { QvacHint } from "@/components/qvac-hint";
 import { ContactPicker } from "@/components/contact-picker";
 import { SaveContact } from "@/components/save-contact";
+import { UnitToggle } from "@/components/unit-toggle";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { Price } from "@/components/price";
 import { fiatToUsdt, formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
@@ -390,15 +391,7 @@ export function SendFlow() {
                 className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
                 aria-label={unit === "usdt" ? "Monto en USDT" : `Monto en ${fiatMeta(prefs.fiat).name}`}
               />
-              <select
-                className="h-11 w-[5.4rem] shrink-0 cursor-pointer border-0 bg-transparent pr-2 text-sm text-muted-foreground disabled:cursor-not-allowed"
-                value={unit}
-                aria-label="USDT o pesos"
-                onChange={(event) => switchUnit(event.target.value === "usdt" ? "usdt" : "fiat")}
-              >
-                <option value="fiat">{prefs.fiat}</option>
-                <option value="usdt">USDT</option>
-              </select>
+              <UnitToggle value={unit} fiatLabel={prefs.fiat} onChange={switchUnit} className="mr-1" />
             </div>
             {amount && Number(amount) > 0 ? (
               <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
