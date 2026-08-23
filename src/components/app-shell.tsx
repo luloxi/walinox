@@ -52,11 +52,11 @@ function NavLink({
       <Link
         href={href}
         className={cn(
-          "relative flex min-h-11 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] transition-colors",
+          "relative flex h-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] leading-none transition-colors",
           on ? "text-primary" : "text-muted-foreground",
         )}
       >
-        <span className="relative">
+        <span className="relative flex size-6 items-center justify-center">
           <Icon className={cn("size-5", on && "stroke-[2.25]")} />
           {badge && badge > 0 ? (
             <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
@@ -64,7 +64,7 @@ function NavLink({
             </span>
           ) : null}
         </span>
-        {label}
+        <span className="truncate">{label}</span>
       </Link>
     );
   }
@@ -166,27 +166,27 @@ function MobileNav({ unread }: { unread: number }) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md md:hidden pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto grid max-w-lg grid-cols-5 items-end px-1 py-1.5">
+      <div className="relative mx-auto grid h-14 max-w-lg grid-cols-5 items-center px-1">
         <NavLink href="/" label="Billetera" icon={Wallet} pathname={pathname} mobile />
         <NavLink href="/contacts" label="Contactos" icon={Users} pathname={pathname} mobile />
         <Link
           href="/?tab=pagar"
-          className="flex -mt-3 cursor-pointer flex-col items-center justify-center gap-0.5"
+          className="relative z-10 flex -mt-5 cursor-pointer flex-col items-center justify-end gap-0.5"
           aria-label="Pagar"
         >
           <span
             className={cn(
-              "flex size-14 items-center justify-center rounded-2xl shadow-md transition-transform active:scale-95",
+              "flex size-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95",
               payOn
                 ? "bg-primary text-primary-foreground ring-2 ring-primary/40"
-                : "bg-emerald-500 text-white shadow-emerald-500/30",
+                : "bg-emerald-500 text-white shadow-emerald-500/35",
             )}
           >
             <ScanLine className="size-6" strokeWidth={2.25} />
           </span>
           <span
             className={cn(
-              "text-[11px] font-medium",
+              "text-[10px] font-medium leading-none",
               payOn ? "text-primary" : "text-emerald-600 dark:text-emerald-400",
             )}
           >
