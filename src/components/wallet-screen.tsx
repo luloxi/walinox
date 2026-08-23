@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine, Users } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine } from "lucide-react";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
 import { listReceipts, type Receipt } from "@/lib/receipts";
@@ -20,10 +20,9 @@ const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) =
 });
 
 const ACTIONS = [
-  { id: "recibir", label: "Depositar", icon: ArrowDownLeft, href: null as string | null },
-  { id: "pagar", label: "Pagar", icon: ScanLine, href: null },
-  { id: "enviar", label: "Enviar", icon: ArrowUpRight, href: null },
-  { id: "contactos", label: "Contactos", icon: Users, href: "/contacts" },
+  { id: "recibir", label: "Recibir", icon: ArrowDownLeft },
+  { id: "pagar", label: "Pagar", icon: ScanLine },
+  { id: "enviar", label: "Enviar", icon: ArrowUpRight },
 ] as const;
 
 export function WalletScreen() {
@@ -58,7 +57,7 @@ export function WalletScreen() {
             onClick={() => go("")}
           >
             <ArrowLeft className="size-4" />
-            Volver al saldo
+            Saldo
           </button>
         </div>
         <div className="min-h-0 flex-1">
@@ -75,39 +74,27 @@ export function WalletScreen() {
   return (
     <div className="flex min-h-full flex-col gap-6">
       <WalletCard>
-        <div className="mt-5 flex justify-center gap-2 md:mt-6 md:gap-3">
+        <div className="mt-5 flex justify-center gap-3 md:mt-6 md:gap-4">
           {ACTIONS.map((item) => {
             const Icon = item.icon;
             const on = tab === item.id;
-            const box = `flex size-12 cursor-pointer items-center justify-center rounded-2xl ${
-              on ? "bg-primary text-primary-foreground" : "bg-muted ring-1 ring-border"
-            }`;
-            const body = (
-              <>
-                <span className={box}>
-                  <Icon className="size-6" />
-                </span>
-                <span className="text-[11px] font-medium">{item.label}</span>
-              </>
-            );
-            const className = `flex w-14 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground md:w-16 ${
-              on ? "text-primary" : "text-muted-foreground"
-            }`;
-            if (item.href) {
-              return (
-                <Link key={item.id} href={item.href} className={className}>
-                  {body}
-                </Link>
-              );
-            }
             return (
               <button
                 key={item.id}
                 type="button"
-                className={className}
+                className={`flex w-16 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground ${
+                  on ? "text-primary" : "text-muted-foreground"
+                }`}
                 onClick={() => go(tab === item.id ? "" : item.id)}
               >
-                {body}
+                <span
+                  className={`flex size-12 items-center justify-center rounded-2xl ${
+                    on ? "bg-primary text-primary-foreground" : "bg-muted ring-1 ring-border"
+                  }`}
+                >
+                  <Icon className="size-6" />
+                </span>
+                <span className="text-[11px] font-medium">{item.label}</span>
               </button>
             );
           })}
