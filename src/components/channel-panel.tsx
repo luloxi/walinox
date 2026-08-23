@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChannelRow, SoundPlayback } from "@/components/channel-row";
 import { useWallet } from "@/components/wallet-provider";
-import { playSound, transmitChannel } from "@/lib/air-io";
+import { playSound, shareViaSms, transmitChannel } from "@/lib/air-io";
+import { encodeEnvelopeQr } from "@/lib/envelope-pack";
 import { type Channel } from "@/lib/channels";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
 import { inviteFromSeed, wrapForPears } from "@/lib/pears";
@@ -87,7 +88,11 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
       }
       if (channel === "copy") {
         await navigator.clipboard.writeText(await offlinePayload());
-        await markSent("copy", "Permiso copiado.");
+        await markSent("copy", "Permiso copiado. Si te queda más fácil, mandalo por SMS.");
+        return;
+      }
+      if (channel === "sms") {
+        await markSent("sms", shareViaSms(encodeEnvelopeQr(envelope)));
         return;
       }
       if (channel === "file") {

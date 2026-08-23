@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChannelRow, SoundPlayback } from "@/components/channel-row";
-import { playSound, transmitChannel } from "@/lib/air-io";
+import { playSound, shareViaSms, transmitChannel } from "@/lib/air-io";
 import { type Channel } from "@/lib/channels";
 
 export function OfflineSend({
@@ -46,8 +46,13 @@ export function OfflineSend({
       }
       if (channel === "copy") {
         await navigator.clipboard.writeText(payload);
-        setNote("Copiado.");
+        setNote("Copiado. Si te queda más fácil, mandalo por SMS.");
         onSent?.("copy");
+        return;
+      }
+      if (channel === "sms") {
+        setNote(shareViaSms(payload));
+        onSent?.("sms");
         return;
       }
       if (channel === "file") {

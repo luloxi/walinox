@@ -362,6 +362,13 @@ export async function readBluetooth(): Promise<string> {
   }
 }
 
+export function shareViaSms(text: string): string {
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const href = `${ios ? "sms:&" : "sms:?"}body=${encodeURIComponent(text)}`;
+  window.location.href = href;
+  return "Se abrió Mensajes con el texto. Mandalo y en el otro: Pegar.";
+}
+
 export async function transmitChannel(channel: Channel, payload: string): Promise<string> {
   if (channel === "ultrasonic") {
     await playSound(payload);

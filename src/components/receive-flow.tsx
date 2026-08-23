@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +33,7 @@ export function ReceiveFlow() {
   const [askBusy, setAskBusy] = useState(false);
   const [askCharge, setAskCharge] = useState<ChargeRequest | null>(null);
   const [askQr, setAskQr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const askAmount =
     askExactUsdt ??
@@ -103,7 +105,22 @@ export function ReceiveFlow() {
           <TabsContent value="me" className="mt-4 space-y-3">
             {wallet ? (
               <>
-                <p className="break-all text-center font-mono text-xs text-muted-foreground">{wallet.address}</p>
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 break-all font-mono text-xs text-muted-foreground">{wallet.address}</p>
+                  <button
+                    type="button"
+                    className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(wallet.address).then(() => {
+                        setCopied(true);
+                        window.setTimeout(() => setCopied(false), 1200);
+                      });
+                    }}
+                    aria-label={copied ? "Copiado" : "Copiar address"}
+                  >
+                    {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                  </button>
+                </div>
                 <OfflineSend
                   payload={wallet.address}
                   qrUrl={addressQr}

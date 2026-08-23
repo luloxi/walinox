@@ -1,6 +1,6 @@
 "use client";
 
-import { Bluetooth, ClipboardCopy, FileDown, Nfc, QrCode, Sun, Volume2 } from "lucide-react";
+import { Bluetooth, ClipboardCopy, FileDown, MessageSquare, Nfc, QrCode, Sun, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OFFLINE_CHANNELS, type Channel } from "@/lib/channels";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const ICONS: Record<Exclude<Channel, "online">, typeof QrCode> = {
   ble: Bluetooth,
   nfc: Nfc,
   copy: ClipboardCopy,
+  sms: MessageSquare,
   file: FileDown,
 };
 
@@ -22,6 +23,7 @@ const LABELS: Record<Exclude<Channel, "online">, string> = {
   ble: "Bluetooth",
   nfc: "NFC",
   copy: "Copiar",
+  sms: "SMS",
   file: "Archivo",
 };
 

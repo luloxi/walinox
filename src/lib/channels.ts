@@ -6,6 +6,7 @@ export const CHANNELS = [
   "ble",
   "nfc",
   "copy",
+  "sms",
   "file",
 ] as const;
 
@@ -19,6 +20,7 @@ export const OFFLINE_CHANNELS = [
   "ble",
   "nfc",
   "copy",
+  "sms",
   "file",
 ] as const satisfies readonly Exclude<Channel, "online">[];
 
@@ -38,6 +40,7 @@ const LABELS: Record<Channel, { label: string; description: string }> = {
   ultrasonic: { label: "Sonido", description: "El permiso viaja en audio. El otro celular escucha." },
   optical: { label: "Luz", description: "La pantalla transmite; la cámara del otro lee." },
   copy: { label: "Copiar", description: "Copiá el JSON al portapapeles." },
+  sms: { label: "SMS", description: "Abrí Mensajes con el JSON listo para mandar." },
   file: { label: "Archivo", description: "Descargá o importá un .json." },
 };
 
