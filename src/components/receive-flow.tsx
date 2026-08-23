@@ -169,11 +169,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
     try {
       takePayload(await readBluetooth(), "ble");
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? `${err.message} Si te mandaron el .json por Bluetooth, elegilo abajo.`
-          : "Bluetooth falló",
-      );
+      setError(err instanceof Error ? err.message : "Bluetooth falló");
     }
   }
 
@@ -209,329 +205,323 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
-    <div className="space-y-3 pb-2 md:space-y-4">
-      <Tabs defaultValue={focus}>
-        <SectionBar>
-          <TabsList>
-            <TabsTrigger value="me" className="cursor-pointer">
-              Address
-            </TabsTrigger>
-            <TabsTrigger value="pedir" className="cursor-pointer">
-              Pedir
-            </TabsTrigger>
-            <TabsTrigger value="scan" className="cursor-pointer">
-              Escanear
-            </TabsTrigger>
-          </TabsList>
-        </SectionBar>
+      <div className="space-y-3 pb-2 md:space-y-4">
+        <Tabs defaultValue={focus}>
+          <SectionBar>
+            <TabsList>
+              <TabsTrigger value="me" className="cursor-pointer">
+                Address
+              </TabsTrigger>
+              <TabsTrigger value="pedir" className="cursor-pointer">
+                Pedir
+              </TabsTrigger>
+              <TabsTrigger value="scan" className="cursor-pointer">
+                Escanear
+              </TabsTrigger>
+            </TabsList>
+          </SectionBar>
 
-        <TabsContent value="me" className="mt-4 space-y-3">
-          {addressQr ? (
-            <div className="overflow-hidden rounded-3xl bg-white p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={addressQr} alt="Tu address" className="mx-auto h-40 w-40 md:h-44 md:w-44" />
-            </div>
-          ) : (
-            <div className="flex h-40 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-44">
-              Generando QR…
-            </div>
-          )}
-          <p className="break-all text-center font-mono text-xs text-muted-foreground">
-            {wallet ? wallet.address : "…"}
-          </p>
-          <Button
-            type="button"
-            className="h-11 w-full"
-            disabled={!wallet}
-            onClick={() => {
-              if (!wallet) return;
-              void navigator.clipboard.writeText(wallet.address).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1200);
-              });
-            }}
-          >
-            {copied ? "Address copiada" : "Copiar address"}
-          </Button>
-        </TabsContent>
-
-        <TabsContent value="pedir" className="mt-4 space-y-3">
-          {askCharge ? (
-            <div className="space-y-3">
-              <button
-                type="button"
-                className="cursor-pointer text-xs text-primary"
-                onClick={() => {
-                  setAskCharge(null);
-                  setAskQr(null);
-                }}
-              >
-                Cambiar monto
-              </button>
-              <div className="rounded-2xl border border-border px-3 py-2">
-                <p className="text-[11px] text-muted-foreground">{askCharge.store}</p>
-                <Price usdt={askCharge.amount} size="lg" />
+          <TabsContent value="me" className="mt-4 space-y-3">
+            {addressQr ? (
+              <div className="overflow-hidden rounded-3xl bg-white p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={addressQr} alt="Tu address" className="mx-auto h-40 w-40 md:h-44 md:w-44" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Mostrale este QR. El otro firma el pago y vos lo confirmás después.
-              </p>
-              <OfflineSend
-                payload={encodeCharge(askCharge)}
-                qrUrl={askQr}
-                filename="walinox-pedido.json"
-              />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Armá un pedido. El otro lo paga con Pagar o escaneando acá.
-              </p>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Monto</p>
-                <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
-                  <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
-                    <UsdtLogo className="size-4" />
-                  </span>
-                  <Input
-                    inputMode="decimal"
-                    value={askAmount}
-                    onChange={(event) => setAskAmount(event.target.value)}
-                    placeholder="0"
-                    className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
-                    aria-label="Monto en USDT"
-                  />
-                  <span className="pr-3 text-sm text-muted-foreground">USDT</span>
+            ) : (
+              <div className="flex h-40 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-44">
+                Generando QR…
+              </div>
+            )}
+            <p className="break-all text-center font-mono text-xs text-muted-foreground">
+              {wallet ? wallet.address : "…"}
+            </p>
+            <Button
+              type="button"
+              className="h-11 w-full"
+              disabled={!wallet}
+              onClick={() => {
+                if (!wallet) return;
+                void navigator.clipboard.writeText(wallet.address).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1200);
+                });
+              }}
+            >
+              {copied ? "Address copiada" : "Copiar address"}
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="pedir" className="mt-4 space-y-3">
+            {askCharge ? (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  className="cursor-pointer text-xs text-primary"
+                  onClick={() => {
+                    setAskCharge(null);
+                    setAskQr(null);
+                  }}
+                >
+                  Cambiar monto
+                </button>
+                <div className="rounded-2xl border border-border px-3 py-2">
+                  <p className="text-[11px] text-muted-foreground">{askCharge.store}</p>
+                  <Price usdt={askCharge.amount} size="lg" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Nota</p>
-                <Input
-                  value={askNote}
-                  onChange={(event) => setAskNote(event.target.value)}
-                  placeholder="Café, alquiler, lo que sea"
-                  className="h-11"
+                <OfflineSend
+                  payload={encodeCharge(askCharge)}
+                  qrUrl={askQr}
+                  filename="walinox-pedido.json"
                 />
               </div>
-              <Button
-                type="button"
-                className="h-11 w-full"
-                disabled={!wallet || askBusy || !askAmount.trim()}
-                onClick={() => void makeRequest()}
-              >
-                {askBusy ? "Armando…" : "Generar pedido"}
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="scan" className="mt-4 space-y-3">
-          {charge ? (
-            <PayCharge
-              charge={charge}
-              onBack={() => {
-                setCharge(null);
-                setResult(null);
-              }}
-            />
-          ) : result && envelope ? (
-            <div className="space-y-3">
-              <p className={result.valid ? "text-sm text-primary" : "text-sm text-red-400"}>
-                {result.valid
-                  ? `Firma válida · ${shortAddress(envelope.owner)}`
-                  : `Firma inválida${result.reason ? `: ${result.reason}` : ""}`}
-              </p>
-              <PermitCard
-                kind={envelope.kind}
-                owner={envelope.owner}
-                spender={envelope.spender}
-                value={envelope.value}
-                tokenLabel={tokenLabel}
-                nonce={String(envelope.typedData.message.nonce ?? "")}
-                deadline={String(envelope.typedData.message.deadline ?? "")}
-                chainId={envelope.typedData.domain.chainId}
-                explanation={envelope.explanation}
-                complianceNote={envelope.complianceNote}
-              />
-              {result.valid ? (
+            ) : (
+              <div className="space-y-3">
                 <div className="space-y-2">
-                  {envelope.kind === "permit2" ? (
-                    <Button
-                      type="button"
-                      className="h-11 w-full"
-                      disabled={!wallet}
-                      onClick={() => {
-                        if (!wallet) return;
-                        const { to, data } = encodePermit2TransferFrom(
-                          buildPermit2({
-                            token: envelope.token,
-                            spender: envelope.spender,
-                            amount: envelope.value,
-                            nonce: String(envelope.typedData.message.nonce ?? ""),
-                            deadline: String(envelope.typedData.message.deadline ?? ""),
-                            chainId: envelope.typedData.domain.chainId,
-                          }),
-                          envelope.signature,
-                          envelope.owner,
-                        );
-                        void ensure()
-                          .then(() => wallet.sendCalldata(to, data))
-                          .then(setTx)
-                          .catch((err: unknown) =>
-                            setError(err instanceof Error ? err.message : "Falló el envío"),
-                          );
-                      }}
-                    >
-                      Enviar por Permit2
-                    </Button>
-                  ) : (
-                    <>
+                  <p className="text-sm font-medium">Monto</p>
+                  <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
+                    <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
+                      <UsdtLogo className="size-4" />
+                    </span>
+                    <Input
+                      inputMode="decimal"
+                      value={askAmount}
+                      onChange={(event) => setAskAmount(event.target.value)}
+                      placeholder="0"
+                      className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
+                      aria-label="Monto en USDT"
+                    />
+                    <span className="pr-3 text-sm text-muted-foreground">USDT</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Nota</p>
+                  <Input
+                    value={askNote}
+                    onChange={(event) => setAskNote(event.target.value)}
+                    placeholder="Café, alquiler…"
+                    className="h-11"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  className="h-11 w-full"
+                  disabled={!wallet || askBusy || !askAmount.trim()}
+                  onClick={() => void makeRequest()}
+                >
+                  {askBusy ? "Armando…" : "Generar pedido"}
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="scan" className="mt-4 space-y-3">
+            {charge ? (
+              <PayCharge
+                charge={charge}
+                onBack={() => {
+                  setCharge(null);
+                  setResult(null);
+                }}
+              />
+            ) : result && envelope ? (
+              <div className="space-y-3">
+                <p className={result.valid ? "text-sm text-primary" : "text-sm text-red-400"}>
+                  {result.valid
+                    ? `Firma válida · ${shortAddress(envelope.owner)}`
+                    : `Firma inválida${result.reason ? `: ${result.reason}` : ""}`}
+                </p>
+                <PermitCard
+                  kind={envelope.kind}
+                  owner={envelope.owner}
+                  spender={envelope.spender}
+                  value={envelope.value}
+                  tokenLabel={tokenLabel}
+                  nonce={String(envelope.typedData.message.nonce ?? "")}
+                  deadline={String(envelope.typedData.message.deadline ?? "")}
+                  chainId={envelope.typedData.domain.chainId}
+                  explanation={envelope.explanation}
+                  complianceNote={envelope.complianceNote}
+                />
+                {result.valid ? (
+                  <div className="space-y-2">
+                    {envelope.kind === "permit2" ? (
                       <Button
                         type="button"
                         className="h-11 w-full"
                         disabled={!wallet}
                         onClick={() => {
                           if (!wallet) return;
+                          const { to, data } = encodePermit2TransferFrom(
+                            buildPermit2({
+                              token: envelope.token,
+                              spender: envelope.spender,
+                              amount: envelope.value,
+                              nonce: String(envelope.typedData.message.nonce ?? ""),
+                              deadline: String(envelope.typedData.message.deadline ?? ""),
+                              chainId: envelope.typedData.domain.chainId,
+                            }),
+                            envelope.signature,
+                            envelope.owner,
+                          );
                           void ensure()
-                            .then(() =>
-                              broadcastPermit(
-                                envelope.typedData as unknown as PermitTypedData,
-                                envelope.signature,
-                                (to, data) => wallet.sendCalldata(to, data),
-                              ),
-                            )
+                            .then(() => wallet.sendCalldata(to, data))
                             .then(setTx)
                             .catch((err: unknown) =>
                               setError(err instanceof Error ? err.message : "Falló el envío"),
                             );
                         }}
                       >
-                        Enviar permit()
+                        Confirmar cobro
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-11 w-full"
-                        onClick={() => {
-                          const { data } = encodePermitCall(
-                            envelope.typedData as unknown as PermitTypedData,
-                            envelope.signature,
-                          );
-                          void navigator.clipboard.writeText(data);
-                          setTx("calldata copiado");
-                        }}
-                      >
-                        Copiar calldata
-                      </Button>
-                    </>
-                  )}
-                  {tx ? (
-                    <div className="space-y-1">
-                      <p className="break-all font-mono text-[11px] text-muted-foreground">{tx}</p>
-                      <EtherscanTxLink hash={tx} className="text-xs" />
-                    </div>
-                  ) : null}
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          className="h-11 w-full"
+                          disabled={!wallet}
+                          onClick={() => {
+                            if (!wallet) return;
+                            void ensure()
+                              .then(() =>
+                                broadcastPermit(
+                                  envelope.typedData as unknown as PermitTypedData,
+                                  envelope.signature,
+                                  (to, data) => wallet.sendCalldata(to, data),
+                                ),
+                              )
+                              .then(setTx)
+                              .catch((err: unknown) =>
+                                setError(err instanceof Error ? err.message : "Falló el envío"),
+                              );
+                          }}
+                        >
+                          Confirmar cobro
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-11 w-full"
+                          onClick={() => {
+                            const { data } = encodePermitCall(
+                              envelope.typedData as unknown as PermitTypedData,
+                              envelope.signature,
+                            );
+                            void navigator.clipboard.writeText(data);
+                            setTx("calldata copiado");
+                          }}
+                        >
+                          Copiar calldata
+                        </Button>
+                      </>
+                    )}
+                    {tx ? (
+                      <div className="space-y-1">
+                        <p className="break-all font-mono text-[11px] text-muted-foreground">{tx}</p>
+                        <EtherscanTxLink hash={tx} className="text-xs" />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {result.valid &&
+                envelope.owner &&
+                wallet?.address.toLowerCase() !== envelope.owner.toLowerCase() ? (
+                  <SaveContact address={envelope.owner} hint="Te mandó este permiso" />
+                ) : null}
+              </div>
+            ) : null}
+
+            {charge ? null : (
+              <>
+                <QrScanner
+                  active={scanning}
+                  onResult={(text) => takePayload(text, "qr")}
+                  onError={(message) => {
+                    setError(message);
+                    setScanning(false);
+                  }}
+                />
+                <Button
+                  type="button"
+                  className="h-11 w-full"
+                  onClick={() => {
+                    listenAbort.current?.abort();
+                    setScanning((value) => !value);
+                  }}
+                >
+                  {scanning ? "Parar cámara" : "Escanear QR"}
+                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
+                    {listening ? "Parar" : "Escuchar"}
+                  </Button>
+                  <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
+                    Bluetooth
+                  </Button>
                 </div>
-              ) : null}
-              {result.valid &&
-              envelope.owner &&
-              wallet?.address.toLowerCase() !== envelope.owner.toLowerCase() ? (
-                <SaveContact address={envelope.owner} hint="Te mandó este permiso" />
-              ) : null}
-            </div>
-          ) : null}
+                <Textarea
+                  value={pasted}
+                  onChange={(event) => setPasted(event.target.value)}
+                  rows={3}
+                  placeholder="Pegá el JSON"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full"
+                  onClick={() => {
+                    try {
+                      const nextCharge = decodeCharge(pasted);
+                      if (nextCharge) {
+                        setCharge(nextCharge);
+                        setResult(null);
+                      } else {
+                        setCharge(null);
+                        setResult(ingest(pasted, "copy"));
+                      }
+                      setError(null);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "JSON inválido");
+                    }
+                  }}
+                >
+                  Validar
+                </Button>
+                <Input
+                  type="file"
+                  accept="application/json,.json"
+                  className="cursor-pointer"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    void file.text().then((text) => {
+                      try {
+                        const nextCharge = decodeCharge(text);
+                        if (nextCharge) {
+                          setCharge(nextCharge);
+                          setResult(null);
+                        } else {
+                          setCharge(null);
+                          setResult(ingest(text, "file"));
+                        }
+                        setError(null);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Archivo inválido");
+                      }
+                    });
+                  }}
+                />
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
 
-          {charge ? null : (
-          <>
-          <QrScanner
-            active={scanning}
-            onResult={(text) => takePayload(text, "qr")}
-            onError={(message) => {
-              setError(message);
-              setScanning(false);
-            }}
-          />
-          <Button
-            type="button"
-            className="h-11 w-full"
-            onClick={() => {
-              listenAbort.current?.abort();
-              setScanning((value) => !value);
-            }}
-          >
-            {scanning ? "Parar cámara" : "Escanear QR o luz"}
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" className="h-11" onClick={() => void onListen()}>
-              {listening ? "Parar oído" : "Escuchar"}
-            </Button>
-            <Button type="button" variant="outline" className="h-11" onClick={() => void onBle()}>
-              Bluetooth
-            </Button>
-          </div>
-          <Textarea
-            value={pasted}
-            onChange={(event) => setPasted(event.target.value)}
-            rows={3}
-            placeholder="O pegá el JSON acá"
-            className="font-mono text-xs"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full"
-            onClick={() => {
-              try {
-                const nextCharge = decodeCharge(pasted);
-                if (nextCharge) {
-                  setCharge(nextCharge);
-                  setResult(null);
-                } else {
-                  setCharge(null);
-                  setResult(ingest(pasted, "copy"));
-                }
-                setError(null);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "JSON inválido");
-              }
-            }}
-          >
-            Validar JSON
-          </Button>
-          <Input
-            type="file"
-            accept="application/json,.json"
-            className="cursor-pointer"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              void file.text().then((text) => {
-                try {
-                  const nextCharge = decodeCharge(text);
-                  if (nextCharge) {
-                    setCharge(nextCharge);
-                    setResult(null);
-                  } else {
-                    setCharge(null);
-                    setResult(ingest(text, "file"));
-                  }
-                  setError(null);
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "Archivo inválido");
-                }
-              });
-            }}
-          />
-          </>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {error ? (
-        <Alert>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
-    </div>
+        {error ? (
+          <Alert>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+      </div>
     </div>
   );
 }
