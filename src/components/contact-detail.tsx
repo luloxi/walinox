@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ActivityList } from "@/components/activity-list";
 import { useWallet } from "@/components/wallet-provider";
 import {
+  CONTACT_UNDO_KEY,
   getContact,
   receiptsWith,
   rememberContact,
@@ -22,6 +23,7 @@ import type { Receipt } from "@/lib/receipts";
 
 export function ContactDetail() {
   const params = useParams<{ address: string }>();
+  const router = useRouter();
   const { wallet } = useWallet();
   const address = decodeURIComponent(params.address ?? "");
   const [contact, setContact] = useState<Contact | undefined>();
@@ -44,6 +46,18 @@ export function ContactDetail() {
       setHistory([]);
     }
   }, [address, wallet?.address]);
+
+  function forget() {
+    const removed = removeContact(address);
+    if (removed) {
+      try {
+        sessionStorage.setItem(CONTACT_UNDO_KEY, JSON.stringify(removed));
+      } catch {
+        /* ignore */
+      }
+    }
+    router.replace("/contacts");
+  }
 
   if (!address) return <p className="text-sm text-muted-foreground">Contacto inválido.</p>;
 
@@ -78,15 +92,7 @@ export function ContactDetail() {
             <Button asChild className="h-11">
               <Link href={`/?to=${address}`}>Enviar</Link>
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11"
-              onClick={() => {
-                removeContact(address);
-                setContact(undefined);
-              }}
-            >
+            <Button type="button" variant="outline" className="h-11" onClick={forget}>
               Olvidar
             </Button>
           </div>
