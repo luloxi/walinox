@@ -13,7 +13,6 @@ export type Signable = {
 };
 
 export type LocalWallet = {
-  seedPhrase?: string;
   source?: "injected" | "local";
   address: string;
   signTypedData: (typed: Signable) => Promise<string>;
@@ -92,7 +91,6 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
   }
 
   return {
-    seedPhrase,
     source: "local",
     address,
     async signTypedData(typed) {
