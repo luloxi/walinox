@@ -9,12 +9,18 @@ import { LoginScreen } from "@/components/login-screen";
 import { useWallet } from "@/components/wallet-provider";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+const NAV_DESKTOP = [
   { href: "/", label: "Billetera", icon: Wallet },
   { href: "/contacts", label: "Contactos", icon: Users },
   { href: "/tienda", label: "Local", icon: Store },
   { href: "/summary", label: "Actividad", icon: History },
   { href: "/settings", label: "Ajustes", icon: Settings },
+] as const;
+
+const NAV_MOBILE = [
+  { href: "/", label: "Billetera", icon: Wallet },
+  { href: "/contacts", label: "Contactos", icon: Users },
+  { href: "/tienda", label: "Local", icon: Store },
 ] as const;
 
 function active(pathname: string, href: string): boolean {
@@ -85,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
         <Brand className="px-2" />
         <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {NAV.map((item) => (
+          {NAV_DESKTOP.map((item) => (
             <NavLink key={item.href} {...item} pathname={pathname} />
           ))}
         </nav>
@@ -101,8 +107,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md md:hidden pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto grid max-w-lg grid-cols-5 px-1 py-1.5">
-          {NAV.map((item) => (
+        <div className="mx-auto grid max-w-lg grid-cols-3 px-1 py-1.5">
+          {NAV_MOBILE.map((item) => (
             <NavLink key={item.href} {...item} pathname={pathname} mobile />
           ))}
         </div>
