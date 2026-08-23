@@ -22,6 +22,7 @@ const LAST_USDT_KEY = "walinox.lastUsdt.";
 export function NotifyProvider({ children }: { children: ReactNode }) {
   const { wallet } = useWallet();
   const address = wallet?.address;
+  const sign = wallet?.signTypedData;
   const lastPoll = useRef(0);
 
   useEffect(() => {
@@ -37,19 +38,19 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!address) return;
+    if (!address || !sign) return;
     let live = true;
 
     async function sync() {
-      if (!live || !address) return;
+      if (!live || !address || !sign) return;
       if (
         typeof Notification !== "undefined" &&
         Notification.permission === "granted" &&
         localStorage.getItem(NOTIFY_OFF_KEY) !== "1"
       ) {
-        await subscribePush(address);
+        await subscribePush(address, sign);
       }
-      const added = await pullRemoteInbox(address);
+      const added = await pullRemoteInbox(address, sign);
       if (added > 0) window.dispatchEvent(new Event(INBOX_EVENT));
       maybeDeliverMonthlyReport(address);
     }
@@ -72,7 +73,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
     };
-  }, [address]);
+  }, [address, sign]);
 
   useEffect(() => {
     if (!address || isLocalHost()) return;
@@ -116,12 +117,18 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
-      <NotifyBanner address={address} />
+      <NotifyBanner address={address} sign={sign} />
     </>
   );
 }
 
-function NotifyBanner({ address }: { address?: string }) {
+function NotifyBanner({
+  address,
+  sign,
+}: {
+  address?: string;
+  sign?: (typed: import("@/lib/wallet").Signable) => Promise<string>;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -134,13 +141,13 @@ function NotifyBanner({ address }: { address?: string }) {
     return () => window.clearTimeout(timer);
   }, [address]);
 
-  if (!open || !address) return null;
+  if (!open || !address || !sign) return null;
   const walletAddress = address;
 
   async function enable() {
     const permission = await requestNotifyPermission();
     if (permission === "granted") {
-      await subscribePush(walletAddress);
+      await subscribePush(walletAddress, sign);
     }
     localStorage.setItem(BANNER_KEY, "1");
     setOpen(false);
