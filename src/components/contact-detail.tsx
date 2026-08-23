@@ -98,13 +98,16 @@ export function ContactDetail() {
                 event.preventDefault();
                 setPinging(true);
                 setPingNote(null);
-                void notifyPeer({
-                  kind: "ping",
-                  from: wallet.address,
-                  to: address,
-                  message: ping,
-                  url: `/contacts/${wallet.address}`,
-                }).then((result) => {
+                void notifyPeer(
+                  {
+                    kind: "ping",
+                    from: wallet.address,
+                    to: address,
+                    message: ping,
+                    url: `/contacts/${wallet.address}`,
+                  },
+                  (typed) => wallet.signTypedData(typed),
+                ).then((result) => {
                   setPingNote(result.ok ? "Aviso enviado" : "No se pudo avisar. ¿Tiene la PWA abierta?");
                   if (result.ok) setPing("");
                   setPinging(false);
