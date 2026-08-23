@@ -15,19 +15,12 @@ import { localStorageStore, setReceiptStore } from "@/lib/receipts";
 import { loadOrCreateWallet, type LocalWallet } from "@/lib/wallet";
 import {
   TERMS_VERSION,
-  clearGrant,
-  hasChosenSignMode,
   hasSignedTos,
   isLocalUnlocked,
-  loadGrant,
-  loadSignMode,
-  saveSignMode,
   saveTos,
   setLocalUnlocked,
   termsTypedData,
-  type SignMode,
 } from "@/lib/session";
-import { requestSessionGrant } from "@/lib/session-grant";
 import { isLocalHost } from "@/lib/dev";
 import { seedLivedIn } from "@/lib/seed";
 
@@ -38,14 +31,10 @@ type WalletState = {
   ready: boolean;
   hydrating: boolean;
   needsTos: boolean;
-  needsMode: boolean;
   source: "injected" | "local" | null;
-  signMode: SignMode;
-  grantActive: boolean;
   unlockLocal: () => Promise<void>;
   lockLocal: () => void;
   signTos: () => Promise<void>;
-  chooseSignMode: (mode: SignMode) => Promise<boolean>;
 };
 
 const WalletContext = createContext<WalletState>({
@@ -55,14 +44,10 @@ const WalletContext = createContext<WalletState>({
   ready: false,
   hydrating: true,
   needsTos: false,
-  needsMode: false,
   source: null,
-  signMode: "every",
-  grantActive: false,
   unlockLocal: async () => {},
   lockLocal: () => {},
   signTos: async () => {},
-  chooseSignMode: async () => false,
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -104,19 +89,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [wantLocal]);
 
   const injected = Boolean(isConnected && address && walletClient);
-  const signMode = injected && address ? loadSignMode(address) : local ? loadSignMode(local.address) : "every";
-  const storedGrant =
-    injected && address ? loadGrant(address) : local ? loadGrant(local.address) : null;
-  const activeGrant = signMode === "session" ? storedGrant : null;
-  const grantActive = Boolean(activeGrant);
 
   const wallet = useMemo(() => {
     if (injected && address && walletClient) {
-      return fromConnected(address, walletClient, () => activeGrant);
+      return fromConnected(address, walletClient);
     }
     if (wantLocal) return local;
     return null;
-  }, [injected, address, walletClient, wantLocal, local, activeGrant]);
+  }, [injected, address, walletClient, wantLocal, local]);
 
   useEffect(() => {
     if (!wallet?.address || !isLocalHost()) return;
@@ -126,10 +106,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const source: "injected" | "local" | null = injected ? "injected" : wallet ? "local" : null;
   const tosOk = Boolean(wallet && hasSignedTos(wallet.address));
-  const modeChosen = Boolean(wallet && hasChosenSignMode(wallet.address));
   const hydrating =
     !localChecked || status === "connecting" || status === "reconnecting";
-  const ready = Boolean(wallet && tosOk && modeChosen);
+  const ready = Boolean(wallet && tosOk);
 
   const unlockLocal = useCallback(async () => {
     setLocalUnlocked(true);
@@ -159,38 +138,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setTosTick((value) => value + 1);
   }, [wallet, chainId]);
 
-  const chooseSignMode = useCallback(
-    async (mode: SignMode) => {
-      if (!wallet) return false;
-      if (mode === "every") {
-        saveSignMode(wallet.address, "every");
-        clearGrant(wallet.address);
-        setTosTick((value) => value + 1);
-        return true;
-      }
-      if (source === "local") {
-        saveSignMode(wallet.address, "session");
-        setTosTick((value) => value + 1);
-        return true;
-      }
-      if (!walletClient) {
-        saveSignMode(wallet.address, "every");
-        setTosTick((value) => value + 1);
-        return false;
-      }
-      try {
-        const grant = await requestSessionGrant(walletClient, wallet.address);
-        setTosTick((value) => value + 1);
-        return Boolean(grant);
-      } catch {
-        saveSignMode(wallet.address, "every");
-        setTosTick((value) => value + 1);
-        return false;
-      }
-    },
-    [wallet, source, walletClient],
-  );
-
   const value = useMemo<WalletState>(
     () => ({
       wallet,
@@ -199,31 +146,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       ready,
       hydrating,
       needsTos: Boolean(wallet && !tosOk),
-      needsMode: Boolean(wallet && tosOk && !modeChosen),
       source,
-      signMode,
-      grantActive,
       unlockLocal,
       lockLocal,
       signTos,
-      chooseSignMode,
     }),
-    [
-      wallet,
-      error,
-      isConnected,
-      ready,
-      hydrating,
-      tosOk,
-      modeChosen,
-      source,
-      signMode,
-      grantActive,
-      unlockLocal,
-      lockLocal,
-      signTos,
-      chooseSignMode,
-    ],
+    [wallet, error, isConnected, ready, hydrating, tosOk, source, unlockLocal, lockLocal, signTos],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
