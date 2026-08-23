@@ -54,7 +54,7 @@ export function SettingsView() {
     setNote(null);
     try {
       const ok = await chooseSignMode(session ? "session" : "every");
-      if (session && !ok) setNote("Tu wallet no permite enviar sin firmar. Vas a firmar cada envío.");
+      if (session && !ok) setNote("Tu wallet no permite enviar sin firmar.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "No se pudo cambiar el modo");
     } finally {
@@ -111,9 +111,6 @@ export function SettingsView() {
     <div className="mx-auto w-full max-w-lg pb-6">
       <section className="space-y-2">
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Moneda</p>
-        <p className="text-sm text-muted-foreground">
-          El cobro es USDT. La otra moneda es para ver precios. Una de las dos siempre es Tether.
-        </p>
         <select
           className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm"
           value={prefs.fiat}
@@ -130,7 +127,7 @@ export function SettingsView() {
           ))}
         </select>
         <p className="text-[11px] text-muted-foreground">
-          {local.source} · {formatFiat(fx.perUsdt, prefs.fiat)} por 1 USDT
+          {local.source} · {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
         </p>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -156,7 +153,7 @@ export function SettingsView() {
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
         <p className="font-mono text-sm">{wallet ? shortAddress(wallet.address) : "—"}</p>
         <p className="text-xs text-muted-foreground">
-          {source === "local" ? "Billetera local de esta app." : "Wallet conectada."}
+          {source === "local" ? "Local en este dispositivo" : "Conectada"}
         </p>
         <div className="[&_button]:cursor-pointer">
           <ConnectButton chainStatus="none" showBalance={false} accountStatus="full" label="Conectar billetera" />
@@ -171,21 +168,15 @@ export function SettingsView() {
         {alerts === "unsupported" ? (
           <p className="text-sm text-muted-foreground">Este navegador no permite avisos.</p>
         ) : alerts === "denied" ? (
-          <p className="text-sm text-muted-foreground">Los avisos están bloqueados. Activalos en el navegador.</p>
+          <p className="text-sm text-muted-foreground">Bloqueados en el navegador.</p>
         ) : alerts === "on" ? (
-          <>
-            <p className="text-sm">Avisos activos.</p>
-            <Button type="button" variant="outline" className="h-11 w-full" disabled={notifyBusy} onClick={() => void disableAlerts()}>
-              Silenciar avisos
-            </Button>
-          </>
+          <Button type="button" variant="outline" className="h-11 w-full" disabled={notifyBusy} onClick={() => void disableAlerts()}>
+            Silenciar
+          </Button>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground">Enterate cuando te mandan USDT o un vale.</p>
-            <Button type="button" className="h-11 w-full" disabled={notifyBusy || !wallet} onClick={() => void enableAlerts()}>
-              {notifyBusy ? "Activando…" : "Activar avisos"}
-            </Button>
-          </>
+          <Button type="button" className="h-11 w-full" disabled={notifyBusy || !wallet} onClick={() => void enableAlerts()}>
+            {notifyBusy ? "Activando…" : "Activar avisos"}
+          </Button>
         )}
         <div className="pt-2">
           <InboxList />
@@ -194,24 +185,18 @@ export function SettingsView() {
 
       <section className="mt-6 space-y-2">
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Reporte</p>
-        <p className="text-sm text-muted-foreground">
-          Cada mes te dejamos en avisos un resumen de ingresos, gastos y neto.
-        </p>
         {monthly ? (
-          <>
-            <p className="text-sm">Reporte mensual activo.</p>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full"
-              onClick={() => {
-                setMonthlyReportOn(false);
-                setMonthly(false);
-              }}
-            >
-              Desactivar reporte
-            </Button>
-          </>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => {
+              setMonthlyReportOn(false);
+              setMonthly(false);
+            }}
+          >
+            Desactivar resumen mensual
+          </Button>
         ) : (
           <Button
             type="button"
@@ -223,7 +208,7 @@ export function SettingsView() {
               if (wallet?.address) maybeDeliverMonthlyReport(wallet.address);
             }}
           >
-            Activar reporte mensual
+            Resumen mensual
           </Button>
         )}
       </section>
@@ -246,11 +231,8 @@ export function SettingsView() {
           disabled={modeBusy}
           onClick={() => void toggleSign(true)}
         >
-          {modeBusy ? "Pidiendo permiso…" : "Modo rápido · esta sesión"}
+          {modeBusy ? "Pidiendo permiso…" : "Modo rápido · 24 h"}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          El modo rápido pide una firma ahora. Si la wallet acepta, los envíos de las próximas 24 h no vuelven a abrir el popup.
-        </p>
       </section>
 
       <section className="mt-6 space-y-2">
