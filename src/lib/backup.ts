@@ -11,7 +11,7 @@ import { DEFAULT_DISPLAY, isFiatId, loadDisplay, saveDisplay, type DisplayPrefs 
 import { listInbox, replaceInboxFor, type InboxItem } from "@/lib/notify";
 import { listReceipts, replaceReceiptsFor, type Receipt } from "@/lib/receipts";
 import { isTheme, loadTheme, saveTheme, type Theme } from "@/lib/theme";
-import type { Product } from "@/lib/vale";
+import type { Product, RedeemRecord, ValeEnvelope } from "@/lib/vale";
 
 export const CLOUD_BACKUP_AT_KEY = "walinox.cloudBackup.at";
 export const CLOUD_BACKUP_EVENT = "walinox.cloud.backup";
@@ -62,9 +62,9 @@ export function parsePayload(raw: unknown): CloudPayload | null {
     .slice(0, 80);
   const catalogRaw = (value.catalog ?? {}) as Partial<CatalogSlice>;
   const catalog: CatalogSlice = {
-    held: asArray(catalogRaw.held).slice(0, 200),
-    issued: asArray(catalogRaw.issued).slice(0, 200),
-    redeemed: asArray(catalogRaw.redeemed).slice(0, 200),
+    held: asArray<ValeEnvelope>(catalogRaw.held).slice(0, 200),
+    issued: asArray<ValeEnvelope>(catalogRaw.issued).slice(0, 200),
+    redeemed: asArray<RedeemRecord>(catalogRaw.redeemed).slice(0, 200),
   };
   const payload: CloudPayload = { v: 1, products, contacts, display, theme, receipts, inbox, catalog };
   if (JSON.stringify(payload).length > MAX_JSON) return null;
