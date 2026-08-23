@@ -154,7 +154,7 @@ export function ProductDetail() {
         to,
         amount: listing.price,
         token: "USDT",
-        url: "/vales",
+        url: "/tienda",
       });
       setProduct(getProduct(listing.id));
     } catch (err) {
@@ -167,10 +167,10 @@ export function ProductDetail() {
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
       <BackLink
-        href={`/tienda/${listing.storeId ?? listing.issuer.toLowerCase()}`}
+        href="/tienda"
         className={`mb-3 -ml-1 ${ready ? "hidden md:inline-flex" : ""}`}
       >
-        Tienda
+        Local
       </BackLink>
       <p className="mt-3 text-lg font-semibold leading-tight">{product.title}</p>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -197,8 +197,8 @@ export function ProductDetail() {
               <img src={valeQr} alt="Tu vale" className="mx-auto h-52 w-52" />
             </div>
           ) : null}
-          <Button type="button" className="h-12 w-full" onClick={() => router.push("/tienda?tab=vales")}>
-            Ver mis vales
+          <Button type="button" className="h-12 w-full" onClick={() => router.push("/tienda")}>
+            Volver al local
           </Button>
         </div>
       ) : isSeller ? (
