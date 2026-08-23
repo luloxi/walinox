@@ -12,12 +12,13 @@ import { SectionLabel } from "@/components/empty-state";
 import { useWallet } from "@/components/wallet-provider";
 import { listReceiptsFor, RECEIPTS_EVENT, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
+import { AppLoader } from "@/components/app-loader";
 
 const SendFlow = dynamic(() => import("@/components/send-flow").then((m) => m.SendFlow), {
   ssr: false,
   loading: () => (
     <div className="flex h-40 items-center justify-center">
-      <p className="text-sm text-muted-foreground">Cargando…</p>
+      <AppLoader />
     </div>
   ),
 });
@@ -26,7 +27,7 @@ const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) =
   ssr: false,
   loading: () => (
     <div className="flex h-40 items-center justify-center">
-      <p className="text-sm text-muted-foreground">Cargando…</p>
+      <AppLoader />
     </div>
   ),
 });
@@ -35,7 +36,7 @@ const PayFlow = dynamic(() => import("@/components/pay-flow").then((m) => m.PayF
   ssr: false,
   loading: () => (
     <div className="flex h-40 items-center justify-center">
-      <p className="text-sm text-muted-foreground">Cargando…</p>
+      <AppLoader />
     </div>
   ),
 });
