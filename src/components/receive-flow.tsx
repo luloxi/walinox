@@ -11,6 +11,8 @@ import { PermitCard } from "@/components/permit-card";
 import { OfflineSend } from "@/components/offline-send";
 import { Price } from "@/components/price";
 import { UsdtLogo } from "@/components/usdt-logo";
+import { useDisplay } from "@/components/display-provider";
+import { useFx } from "@/components/use-fx";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { PayCharge } from "@/components/pay-charge";
@@ -20,6 +22,8 @@ import {
   encodeCharge,
   type ChargeRequest,
 } from "@/lib/charge";
+import { fiatMeta, fiatPrefix } from "@/lib/display";
+import { fiatToUsdt, formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 import { decodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { broadcastPermit, encodePermitCall, validatePermitSignature, type PermitTypedData } from "@/lib/permit";
 import {
@@ -98,6 +102,8 @@ function ingest(raw: string, channel: Channel): Result {
 export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
   const { wallet } = useWallet();
   const { ensure } = usePaymentChain();
+  const { prefs } = useDisplay();
+  const fx = useFx();
   const [addressQr, setAddressQr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pasted, setPasted] = useState("");
@@ -109,11 +115,21 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
   const [result, setResult] = useState<Result | null>(null);
   const [charge, setCharge] = useState<ChargeRequest | null>(null);
   const [tx, setTx] = useState<string | null>(null);
-  const [askAmount, setAskAmount] = useState("");
+  const [askUnit, setAskUnit] = useState<"fiat" | "usdt">(prefs.primary);
+  const [askAmountInput, setAskAmountInput] = useState("");
+  const [askExactUsdt, setAskExactUsdt] = useState<string | null>(null);
   const [askNote, setAskNote] = useState("");
   const [askBusy, setAskBusy] = useState(false);
   const [askCharge, setAskCharge] = useState<ChargeRequest | null>(null);
   const [askQr, setAskQr] = useState<string | null>(null);
+
+  const askAmount =
+    askExactUsdt ??
+    (askAmountInput.trim()
+      ? askUnit === "usdt"
+        ? askAmountInput.trim()
+        : fiatToUsdt(askAmountInput, fx.perUsdt)
+      : "");
 
   useEffect(() => {
     if (!wallet) return;
@@ -174,6 +190,20 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bluetooth falló");
     }
+  }
+
+  function switchAskUnit(next: "fiat" | "usdt") {
+    if (next === askUnit) return;
+    const current = askAmount;
+    setAskUnit(next);
+    if (!current || Number(current) <= 0) {
+      setAskAmountInput("");
+      setAskExactUsdt(null);
+      return;
+    }
+    setAskExactUsdt(current);
+    if (next === "usdt") setAskAmountInput(current);
+    else setAskAmountInput(String(Math.round(usdtToFiat(current, fx.perUsdt))));
   }
 
   async function makeRequest() {
@@ -283,18 +313,44 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                   <p className="text-sm font-medium">Monto</p>
                   <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
                     <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
-                      <UsdtLogo className="size-4" />
+                      {askUnit === "fiat" ? fiatPrefix(prefs.fiat) : null}
+                      {askUnit === "usdt" ? <UsdtLogo className="size-4" /> : null}
                     </span>
                     <Input
                       inputMode="decimal"
-                      value={askAmount}
-                      onChange={(event) => setAskAmount(event.target.value)}
+                      value={askAmountInput}
+                      onChange={(event) => {
+                        setAskExactUsdt(null);
+                        setAskAmountInput(event.target.value);
+                      }}
                       placeholder="0"
                       className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
-                      aria-label="Monto en USDT"
+                      aria-label={
+                        askUnit === "usdt" ? "Monto en USDT" : `Monto en ${fiatMeta(prefs.fiat).name}`
+                      }
                     />
-                    <span className="pr-3 text-sm text-muted-foreground">USDT</span>
+                    <select
+                      className="h-11 w-[5.4rem] shrink-0 cursor-pointer border-0 bg-transparent pr-2 text-sm text-muted-foreground"
+                      value={askUnit}
+                      aria-label="Moneda del pedido"
+                      onChange={(event) => switchAskUnit(event.target.value === "usdt" ? "usdt" : "fiat")}
+                    >
+                      <option value="fiat">{prefs.fiat}</option>
+                      <option value="usdt">USDT</option>
+                    </select>
                   </div>
+                  {askAmount && Number(askAmount) > 0 ? (
+                    <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                      {askUnit === "fiat" ? (
+                        <>
+                          {formatUsdt(askAmount, 6)}
+                          <UsdtLogo className="size-3" />
+                        </>
+                      ) : (
+                        formatFiat(usdtToFiat(askAmount, fx.perUsdt), prefs.fiat)
+                      )}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Nota</p>
