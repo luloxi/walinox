@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CollectSigned } from "@/components/collect-signed";
 import { OfflineSend } from "@/components/offline-send";
 import { Price } from "@/components/price";
 import { UnitToggle } from "@/components/unit-toggle";
@@ -23,7 +24,6 @@ export function ReceiveFlow() {
   const { prefs } = useDisplay();
   const fx = useFx();
   const [addressQr, setAddressQr] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [askUnit, setAskUnit] = useState<"fiat" | "usdt">(prefs.primary);
   const [askAmountInput, setAskAmountInput] = useState("");
@@ -92,7 +92,7 @@ export function ReceiveFlow() {
           <SectionBar>
             <TabsList>
               <TabsTrigger value="me" className="cursor-pointer">
-                Address
+                Recibir
               </TabsTrigger>
               <TabsTrigger value="pedir" className="cursor-pointer">
                 Pedir
@@ -101,33 +101,22 @@ export function ReceiveFlow() {
           </SectionBar>
 
           <TabsContent value="me" className="mt-4 space-y-3">
-            {addressQr ? (
-              <div className="overflow-hidden rounded-3xl bg-white p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={addressQr} alt="Tu address" className="mx-auto h-44 w-44 md:h-48 md:w-48" />
-              </div>
+            {wallet ? (
+              <>
+                <p className="break-all text-center font-mono text-xs text-muted-foreground">{wallet.address}</p>
+                <OfflineSend
+                  payload={wallet.address}
+                  qrUrl={addressQr}
+                  filename="walinox-address.txt"
+                />
+                <div className="space-y-2 pt-2">
+                  <p className="text-sm font-medium">Leer un pago</p>
+                  <CollectSigned expectedSpender={wallet.address} />
+                </div>
+              </>
             ) : (
-              <div className="flex h-44 items-center justify-center rounded-3xl bg-muted text-sm text-muted-foreground md:h-48">
-                Generando QR…
-              </div>
+              <p className="text-sm text-muted-foreground">Conectá una wallet para recibir.</p>
             )}
-            <p className="break-all text-center font-mono text-xs text-muted-foreground">
-              {wallet ? wallet.address : "…"}
-            </p>
-            <Button
-              type="button"
-              className="h-11 w-full"
-              disabled={!wallet}
-              onClick={() => {
-                if (!wallet) return;
-                void navigator.clipboard.writeText(wallet.address).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1200);
-                });
-              }}
-            >
-              {copied ? "Copiada" : "Copiar address"}
-            </Button>
           </TabsContent>
 
           <TabsContent value="pedir" className="mt-4 space-y-3">
@@ -152,6 +141,10 @@ export function ReceiveFlow() {
                   qrUrl={askQr}
                   filename="walinox-pedido.json"
                 />
+                <div className="space-y-2 pt-2">
+                  <p className="text-sm font-medium">Cuando te firmen</p>
+                  <CollectSigned expectedSpender={wallet?.address} />
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
