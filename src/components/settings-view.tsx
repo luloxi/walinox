@@ -213,30 +213,32 @@ export function SettingsView() {
         >
           {FIATS.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.flag} {item.country}
+              {item.flag} {item.country} · {item.name}
             </option>
           ))}
         </select>
         <p className="text-[11px] text-muted-foreground">
-          <span className="text-base leading-none">{local.flag}</span>{" "}
           {formatFiat(fx.perUsdt, prefs.fiat)} / USDT
         </p>
+        <p className="pt-1 text-sm">Mostrar primero</p>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant={prefs.primary === "fiat" ? "default" : "outline"}
             className="h-11 gap-2"
+            aria-pressed={prefs.primary === "fiat"}
             onClick={() => setPrefs({ ...prefs, primary: "fiat" })}
           >
             <span className="text-lg leading-none" aria-hidden>
               {local.flag}
             </span>
-            {local.id}
+            {local.name}
           </Button>
           <Button
             type="button"
             variant={prefs.primary === "usdt" ? "default" : "outline"}
             className="h-11 gap-2"
+            aria-pressed={prefs.primary === "usdt"}
             onClick={() => setPrefs({ ...prefs, primary: "usdt" })}
           >
             <UsdtLogo className="size-5 shrink-0" />

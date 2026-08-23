@@ -35,13 +35,8 @@ Con secret en el servidor, `/api/onramp/sign` firma el widget para prellenar la 
 
 ## Postgres (Neon)
 
-Creada en Vercel (store Neon `walinox`). En Production/Preview las vars son sensitive: el deploy las ve, `vercel env pull` deja placeholders vacíos.
+En Neon: **Connect** → tab `.env` → **Copy snippet**. Eso es `DATABASE_URL` (pooling ON). Pegalo en `.env.local`.
 
-```
-POSTGRES_PRISMA_URL=           # pooled, Prisma
-POSTGRES_URL_NON_POOLING=      # migraciones
-DATABASE_URL=
-DATABASE_URL_UNPOOLED=
-```
+Opcional: apagá Connection pooling, copiá de nuevo como `DATABASE_URL_UNPOOLED` (migraciones locales).
 
-Sin ellas la PWA sigue en localStorage. Para backup en `next dev`, copiá las URLs desde el dashboard de Neon a `.env.local`.
+En Vercel las mismas vars ya están (sensitive). Sin `.env.local` la PWA sigue en localStorage.
