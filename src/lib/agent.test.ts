@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  heuristicComplete,
   heuristicIntent,
   naturalLanguageToIntent,
   naturalLanguageToPermit,
@@ -42,7 +41,10 @@ describe("QVAC-shaped agent path", () => {
   });
 
   it("routes USDT through Permit2 via the same parser", async () => {
-    const raw = heuristicComplete(`allow ${SPENDER} to spend 50 USDT`, OWNER);
+    const raw = JSON.stringify({
+      token: "USDT",
+      permit: { owner: OWNER, spender: SPENDER, value: "50000000", nonce: "0", deadline: "2000000000" },
+    });
     const draft = parseAgentOutput(raw);
     const result = await naturalLanguageToPermit(`allow ${SPENDER} to spend 50 USDT`, {
       owner: OWNER,

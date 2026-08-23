@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  heuristicComplete,
-  heuristicIntent,
-  naturalLanguageToIntent,
-  naturalLanguageToPermit,
-  parseAgentOutput,
-  type AgentTask,
-} from "@/lib/agent";
+import { heuristicIntent, naturalLanguageToIntent, parseAgentOutput, type AgentTask } from "@/lib/agent";
 import { qvacComplete, qvacLoadError } from "@/lib/qvac";
 
 export const runtime = "nodejs";
@@ -34,26 +27,10 @@ export async function POST(request: Request) {
   };
 
   try {
-    if (task === "send" && owner && !body.task) {
-      const permit = await naturalLanguageToPermit(prompt, { owner, complete });
-      return NextResponse.json({ ...permit, qvac: true, qvacError: qvacLoadError() });
-    }
     const intent = await naturalLanguageToIntent(prompt, { task, owner, complete });
     return NextResponse.json({ ...intent, qvac: true, qvacError: qvacLoadError() });
   } catch (error) {
     try {
-      if (task === "send" && owner && !body.task) {
-        const fallback = await naturalLanguageToPermit(prompt, {
-          owner,
-          complete: async () => heuristicComplete(prompt, owner),
-        });
-        return NextResponse.json({
-          ...fallback,
-          qvac: false,
-          qvacError: error instanceof Error ? error.message : String(error),
-          source: "heuristic",
-        });
-      }
       const fallback = heuristicIntent(prompt, task);
       return NextResponse.json({
         ...fallback,

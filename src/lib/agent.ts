@@ -1,5 +1,5 @@
 import { extractEnsName } from "@/lib/ens";
-import { buildPermit, type PermitTypedData } from "@/lib/permit";
+import type { PermitTypedData } from "@/lib/permit";
 import { buildPermit2, type Permit2TypedData } from "@/lib/permit2";
 import { tokenFromInput, type PermitKind, type TokenInfo } from "@/lib/tokens";
 
@@ -89,7 +89,7 @@ function humanAmount(value?: string): string | undefined {
   return trimmed;
 }
 
-function parseAgentOutput(raw: string): Record<string, unknown> {
+export function parseAgentOutput(raw: string): Record<string, unknown> {
   const cleaned = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
@@ -106,19 +106,15 @@ function normalizePermit(
   data: Record<string, unknown>,
   opts: { owner: string; input: string },
 ): Omit<AgentPermit, "source"> {
-  const token = tokenFromInput(opts.input) ?? {
-    symbol: "USDT",
-    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    decimals: 6,
-  };
+  const token = tokenFromInput(opts.input);
   const permit = (data.permit ?? {}) as Record<string, unknown>;
   const value = String(permit.value ?? data.value ?? "0");
   const owner = String(permit.owner ?? opts.owner);
   const spender = String(permit.spender ?? "0x000000000022D473030F116dDEE9F6B43aC78BA3");
   const typed = buildPermit2({
-    owner,
+    token: token.address,
     spender,
-    value,
+    amount: value,
     nonce: String(permit.nonce ?? "0"),
     deadline: String(permit.deadline ?? Math.floor(Date.now() / 1000) + 3600),
   });

@@ -10,7 +10,8 @@ function bytesToInvite(bytes: Uint8Array, length = 8): string {
 }
 
 async function sha256(input: string | Uint8Array): Promise<Uint8Array> {
-  const data = typeof input === "string" ? new TextEncoder().encode(input) : input;
+  const data =
+    typeof input === "string" ? new TextEncoder().encode(input) : Uint8Array.from(input);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return new Uint8Array(digest);
 }
