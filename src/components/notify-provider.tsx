@@ -22,9 +22,11 @@ const LAST_USDT_KEY = "walinox.lastUsdt.";
 type SignFn = (typed: Signable) => Promise<string>;
 
 export function NotifyProvider({ children }: { children: ReactNode }) {
-  const { wallet } = useWallet();
+  const { wallet, source } = useWallet();
   const address = wallet?.address;
   const sign = wallet?.signTypedData;
+  const signRef = useRef<SignFn | undefined>(sign);
+  signRef.current = sign;
   const lastPoll = useRef(0);
 
   useEffect(() => {
@@ -39,21 +41,21 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
   }, []);
 
+  // Remote push/inbox auth requires EIP-712 signatures.
+  // Injected wallets (MetaMask, etc.) would open a popup every poll — never auto-sign them.
+  // Local wallet can sign silently; still throttle and only when push is enabled.
   useEffect(() => {
-    if (!address || !sign) return;
+    if (!address || source !== "local") return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (localStorage.getItem(NOTIFY_OFF_KEY) === "1") return;
+
     let live = true;
     const walletAddress = address;
-    const signFn: SignFn = sign;
 
     async function sync() {
-      if (!live) return;
-      if (
-        typeof Notification !== "undefined" &&
-        Notification.permission === "granted" &&
-        localStorage.getItem(NOTIFY_OFF_KEY) !== "1"
-      ) {
-        await subscribePush(walletAddress, signFn);
-      }
+      if (!live || !signRef.current) return;
+      const signFn = signRef.current;
+      await subscribePush(walletAddress, signFn);
       const added = await pullRemoteInbox(walletAddress, signFn);
       if (added > 0) window.dispatchEvent(new Event(INBOX_EVENT));
     }
@@ -61,22 +63,16 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
     void sync();
     const timer = window.setInterval(() => {
       const now = Date.now();
-      if (now - lastPoll.current < 20_000) return;
+      if (now - lastPoll.current < 60_000) return;
       lastPoll.current = now;
       void sync();
-    }, 20_000);
+    }, 60_000);
 
-    const onFocus = () => {
-      lastPoll.current = 0;
-      void sync();
-    };
-    window.addEventListener("focus", onFocus);
     return () => {
       live = false;
       window.clearInterval(timer);
-      window.removeEventListener("focus", onFocus);
     };
-  }, [address, sign]);
+  }, [address, source]);
 
   useEffect(() => {
     if (!address || isLocalHost()) return;
@@ -127,6 +123,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
 
 function NotifyBanner({ address, sign }: { address?: string; sign?: SignFn }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
@@ -143,12 +140,17 @@ function NotifyBanner({ address, sign }: { address?: string; sign?: SignFn }) {
   const signFn: SignFn = sign;
 
   async function enable() {
-    const permission = await requestNotifyPermission();
-    if (permission === "granted") {
-      await subscribePush(walletAddress, signFn);
+    setBusy(true);
+    try {
+      const permission = await requestNotifyPermission();
+      if (permission === "granted") {
+        await subscribePush(walletAddress, signFn);
+      }
+      localStorage.setItem(BANNER_KEY, "1");
+      setOpen(false);
+    } finally {
+      setBusy(false);
     }
-    localStorage.setItem(BANNER_KEY, "1");
-    setOpen(false);
   }
 
   function dismiss() {
@@ -160,10 +162,10 @@ function NotifyBanner({ address, sign }: { address?: string; sign?: SignFn }) {
     <div className="fixed inset-x-3 bottom-20 z-30 rounded-2xl bg-popover p-3 ring-1 ring-border md:inset-x-auto md:right-6 md:bottom-6 md:w-96">
       <p className="text-sm">Activá avisos para enterarte cuando te mandan USDT.</p>
       <div className="mt-3 flex gap-2">
-        <Button type="button" className="h-10 flex-1" onClick={() => void enable()}>
-          Activar
+        <Button type="button" className="h-10 flex-1" disabled={busy} onClick={() => void enable()}>
+          {busy ? "…" : "Activar"}
         </Button>
-        <Button type="button" variant="outline" className="h-10 flex-1" onClick={dismiss}>
+        <Button type="button" variant="outline" className="h-10 flex-1" disabled={busy} onClick={dismiss}>
           Ahora no
         </Button>
       </div>
