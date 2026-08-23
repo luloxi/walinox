@@ -259,21 +259,30 @@ export function SettingsView() {
                 {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
               </button>
             </div>
-            {etherscanUrl ? (
-              <Button type="button" variant="outline" className="h-11 w-full gap-2" asChild>
-                <a href={etherscanUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="size-5" />
-                  Etherscan
-                </a>
+            <div className="grid grid-cols-2 gap-2">
+              {etherscanUrl ? (
+                <Button type="button" variant="outline" className="h-11 gap-2" asChild>
+                  <a href={etherscanUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-5" />
+                    Etherscan
+                  </a>
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button type="button" variant="destructive" className="h-11" onClick={disconnectWallet}>
+                Desconectar
               </Button>
-            ) : null}
+            </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Sin wallet</p>
+          <>
+            <p className="text-sm text-muted-foreground">Sin wallet</p>
+            <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
+              Desconectar
+            </Button>
+          </>
         )}
-        <Button type="button" variant="destructive" className="h-11 w-full" onClick={disconnectWallet}>
-          Desconectar
-        </Button>
       </section>
 
       {source === "local" ? (
@@ -281,6 +290,35 @@ export function SettingsView() {
           <SectionTitle icon={KeyRound}>Seguridad</SectionTitle>
 
           {pinOk ? <p className="text-sm text-primary">PIN actualizado</p> : null}
+
+          {!pinOpen && !bioAskPin ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 gap-2"
+                onClick={() => setPinOpen(true)}
+              >
+                <KeyRound className="size-5" />
+                Cambiar PIN
+              </Button>
+              {bioAvailable ? (
+                bioOn ? (
+                  <Button type="button" variant="outline" className="h-11 gap-2" onClick={turnOffBio}>
+                    <Fingerprint className="size-5" />
+                    Biometría
+                  </Button>
+                ) : (
+                  <Button type="button" className="h-11 gap-2" onClick={() => setBioAskPin(true)}>
+                    <Fingerprint className="size-5" />
+                    Biometría
+                  </Button>
+                )
+              ) : (
+                <span />
+              )}
+            </div>
+          ) : null}
 
           {pinOpen ? (
             <div className="space-y-2 rounded-2xl border border-border p-3">
@@ -335,25 +373,10 @@ export function SettingsView() {
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full gap-2"
-              onClick={() => setPinOpen(true)}
-            >
-              <KeyRound className="size-5" />
-              Cambiar PIN
-            </Button>
-          )}
+          ) : null}
 
-          {!bioAvailable ? null : bioOn ? (
-            <Button type="button" variant="outline" className="h-11 w-full gap-2" onClick={turnOffBio}>
-              <Fingerprint className="size-5" />
-              Desactivar biometría
-            </Button>
-          ) : bioAskPin ? (
-            <div className="space-y-2">
+          {bioAskPin ? (
+            <div className="space-y-2 rounded-2xl border border-border p-3">
               <Input
                 type="password"
                 inputMode="numeric"
@@ -378,12 +401,7 @@ export function SettingsView() {
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button type="button" className="h-11 w-full gap-2" onClick={() => setBioAskPin(true)}>
-              <Fingerprint className="size-5" />
-              Activar biometría
-            </Button>
-          )}
+          ) : null}
         </section>
       ) : null}
 
