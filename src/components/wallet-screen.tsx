@@ -30,6 +30,15 @@ const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) =
   ),
 });
 
+const PayFlow = dynamic(() => import("@/components/pay-flow").then((m) => m.PayFlow), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-40 items-center justify-center">
+      <p className="text-sm text-muted-foreground">Cargando…</p>
+    </div>
+  ),
+});
+
 const ACTIONS = [
   {
     id: "ingresar",
@@ -101,8 +110,10 @@ export function WalletScreen() {
             <SendFlow />
           ) : tab === "ingresar" ? (
             <OnrampPanel />
+          ) : tab === "pagar" ? (
+            <PayFlow />
           ) : (
-            <ReceiveFlow focus={tab === "pagar" ? "scan" : "me"} />
+            <ReceiveFlow />
           )}
         </div>
       </div>
