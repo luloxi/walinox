@@ -38,25 +38,27 @@ export type MonthlySummary = {
   month: number;
   label: string;
   count: number;
-  usdtIn: number;
-  usdtOut: number;
-  arsIn: number;
-  arsOut: number;
+  signed: number;
+  received: number;
+  sent: number;
+  channels: Partial<Record<Channel, number>>;
+  prose: string;
+  receipts: Receipt[];
 };
 
 const STORAGE_KEY = "walinox.receipts";
 
-export function memoryReceiptStore(seed: Receipt[] = []): ReceiptStore {
-  let rows = [...seed];
+export function memoryStore(seed: Receipt[] = []): ReceiptStore {
+  let receipts = [...seed];
   return {
-    load: () => rows,
+    load: () => receipts,
     save: (next) => {
-      rows = [...next];
+      receipts = [...next];
     },
   };
 }
 
-export function localStorageReceiptStore(key = STORAGE_KEY): ReceiptStore {
+export function localStorageStore(key = STORAGE_KEY): ReceiptStore {
   return {
     load() {
       const raw = localStorage.getItem(key);
@@ -74,34 +76,43 @@ export function localStorageReceiptStore(key = STORAGE_KEY): ReceiptStore {
   };
 }
 
-let store: ReceiptStore = memoryReceiptStore();
+let store: ReceiptStore = memoryStore();
 
 export function setReceiptStore(next: ReceiptStore): void {
   store = next;
 }
 
 function currentStore(): ReceiptStore {
-  if (typeof window !== "undefined") return localStorageReceiptStore();
+  if (typeof window !== "undefined") {
+    return localStorageStore();
+  }
   return store;
 }
 
+function withRates(rows: Receipt[]): Receipt[] {
+  let changed = false;
+  const next = rows.map((row) => {
+    if (row.arsPerUsdt && row.arsPerUsdt > 0) return row;
+    changed = true;
+    return { ...row, arsPerUsdt: rateAt(row.at, cachedArsPerUsdt()) };
+  });
+  return changed ? next : rows;
+}
+
 export function listReceipts(): Receipt[] {
-  return currentStore()
-    .load()
-    .slice()
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .map((row) => {
-      if (row.arsPerUsdt && row.arsPerUsdt > 0) return row;
-      return { ...row, arsPerUsdt: rateAt(row.at, cachedArsPerUsdt()) };
-    });
+  const current = currentStore();
+  const loaded = current.load();
+  const next = withRates(loaded);
+  if (next !== loaded) current.save(next);
+  return next;
 }
 
 export function replaceReceiptsFor(address: string, receipts: Receipt[]): void {
   const key = address.toLowerCase();
   const current = currentStore();
-  const others = current.load().filter(
-    (item) => item.owner.toLowerCase() !== key && item.spender.toLowerCase() !== key,
-  );
+  const others = current
+    .load()
+    .filter((item) => item.owner.toLowerCase() !== key && item.spender.toLowerCase() !== key);
   const mine = receipts.filter(
     (item) => item.owner.toLowerCase() === key || item.spender.toLowerCase() === key,
   );
@@ -109,25 +120,98 @@ export function replaceReceiptsFor(address: string, receipts: Receipt[]): void {
 }
 
 export function addReceipt(
-  input: Omit<Receipt, "id" | "at"> & { id?: string; at?: string; arsPerUsdt?: number },
+  input: Omit<Receipt, "id" | "at"> & { id?: string; at?: string },
 ): Receipt {
+  const current = currentStore();
+  const existing = current.load();
+  if (input.id) {
+    const found = existing.find((row) => row.id === input.id);
+    if (found) return found;
+  }
   const at = input.at ?? new Date().toISOString();
-  const row: Receipt = {
-    id: input.id ?? `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  const receipt: Receipt = {
+    ...input,
+    id: input.id ?? crypto.randomUUID(),
     at,
-    action: input.action,
-    channel: input.channel,
-    owner: input.owner,
-    spender: input.spender,
-    value: input.value,
-    token: input.token,
-    signature: input.signature,
-    valid: input.valid,
-    digest: input.digest,
     arsPerUsdt:
       input.arsPerUsdt && input.arsPerUsdt > 0 ? input.arsPerUsdt : rateAt(at, cachedArsPerUsdt()),
   };
-  const current = currentStore();
-  current.save([row, ...current.load()]);
-  return row;
+  current.save([receipt, ...existing]);
+  return receipt;
+}
+
+export function receiptFromPermit(
+  fields: { owner: string; spender: string; value: string; token: string },
+  extra: Pick<Receipt, "action" | "channel" | "signature"> &
+    Partial<Pick<Receipt, "valid" | "digest" | "id" | "at">>,
+): Receipt {
+  return addReceipt({
+    owner: fields.owner,
+    spender: fields.spender,
+    value: fields.value,
+    token: fields.token,
+    ...extra,
+  });
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export function generateMonthlySummary(
+  receipts: Receipt[],
+  when: Date = new Date(),
+): MonthlySummary {
+  const year = when.getFullYear();
+  const month = when.getMonth();
+  const monthReceipts = receipts.filter((receipt) => {
+    const at = new Date(receipt.at);
+    return at.getFullYear() === year && at.getMonth() === month;
+  });
+
+  const channels: Partial<Record<Channel, number>> = {};
+  let signed = 0;
+  let received = 0;
+  let sent = 0;
+
+  for (const receipt of monthReceipts) {
+    channels[receipt.channel] = (channels[receipt.channel] ?? 0) + 1;
+    if (receipt.action === "signed") signed += 1;
+    if (receipt.action === "received") received += 1;
+    if (receipt.action === "sent") sent += 1;
+  }
+
+  const channelBits = Object.entries(channels)
+    .map(([id, count]) => `${count} via ${id}`)
+    .join(", ");
+
+  const label = `${MONTHS[month]} ${year}`;
+  const prose =
+    monthReceipts.length === 0
+      ? `No Walinox activity in ${label}.`
+      : `In ${label}, Walinox recorded ${monthReceipts.length} action${monthReceipts.length === 1 ? "" : "s"}: ${signed} signed, ${sent} sent, ${received} received${channelBits ? ` (${channelBits})` : ""}.`;
+
+  return {
+    year,
+    month,
+    label,
+    count: monthReceipts.length,
+    signed,
+    received,
+    sent,
+    channels,
+    prose,
+    receipts: monthReceipts,
+  };
 }
