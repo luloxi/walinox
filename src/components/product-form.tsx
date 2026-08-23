@@ -99,7 +99,6 @@ export function ProductForm({
         <QvacHint
           task="product"
           owner={wallet.address}
-          label="En una frase"
           placeholder="vendo café a 14000 pesos"
           onFill={(intent) => {
             if (intent.title) setTitle(intent.title);
