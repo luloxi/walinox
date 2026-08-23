@@ -142,7 +142,7 @@ export function ConnectCta({
     open && typeof document !== "undefined"
       ? createPortal(
           <div
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4"
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4"
             onClick={() => {
               if (mode !== "suggest-bio") setOpen(false);
             }}
@@ -151,7 +151,7 @@ export function ConnectCta({
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className="w-full max-w-sm space-y-3 rounded-3xl bg-popover p-6 ring-1 ring-border"
+              className="w-full max-w-sm space-y-3 rounded-3xl bg-popover p-5 ring-1 ring-border sm:p-6"
               onClick={(event) => event.stopPropagation()}
               onSubmit={(event) => void submit(event)}
             >
@@ -207,29 +207,30 @@ export function ConnectCta({
                     type="password"
                     inputMode="numeric"
                     autoComplete="current-password"
+                    enterKeyHint="done"
                     value={pin}
                     onChange={(event) => setPin(event.target.value)}
                     placeholder="PIN"
-                    className="h-11"
+                    className="h-12 text-base"
                     autoFocus
                   />
                   {mode === "create" ? (
                     <Input
-                      type="password"
-                      inputMode="numeric"
+                      type="password"léchi  inputMode="numeric"
                       autoComplete="new-password"
+                      enterKeyHint="done"
                       value={confirm}
                       onChange={(event) => setConfirm(event.target.value)}
                       placeholder="Repetir PIN"
-                      className="h-11"
+                      className="h-12 text-base"
                     />
                   ) : null}
                   {error ? <p className="text-xs text-destructive">{error}</p> : null}
                   <div className="flex gap-2 pt-1">
-                    <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => setOpen(false)}>
+                    <Button type="button" variant="outline" className="h-12 flex-1" onClick={() => setOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button type="submit" className="h-11 flex-1" disabled={busy || pin.length < 6}>
+                    <Button type="submit" className="h-12 flex-1" disabled={busy || pin.length < 6}>
                       {busy ? "…" : mode === "create" ? "Crear" : "Entrar"}
                     </Button>
                   </div>
