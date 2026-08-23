@@ -82,7 +82,7 @@ function currentStore(): InboxStore {
 }
 
 export function notifyKindUrl(kind: NotifyKind, from?: string): string {
-  if (kind === "vale") return "/vales";
+  if (kind === "vale") return "/tienda";
   if (kind === "redeemed") return "/tienda";
   if (kind === "permit") return "/?tab=recibir";
   if (kind === "report") return "/summary";
@@ -109,7 +109,7 @@ export function buildNotify(
       body: amount
         ? `${fromLabel} te dejó un vale de ${amount} ${token}`
         : `${fromLabel} te dejó un vale`,
-      url: "/vales",
+      url: "/tienda",
     },
     redeemed: {
       title: "Canjearon un vale",
