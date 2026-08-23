@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChannelRow, SoundPlayback } from "@/components/channel-row";
 import { useWallet } from "@/components/wallet-provider";
 import { playSound, transmitChannel } from "@/lib/air-io";
@@ -15,15 +15,17 @@ type Props = {
   envelope: SignedEnvelope;
   qrUrl: string | null;
   onSent: (channel: Channel) => void;
+  autoStart?: Exclude<Channel, "online"> | null;
 };
 
-export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
+export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
   const { wallet } = useWallet();
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<Exclude<Channel, "online"> | null>(null);
   const [playing, setPlaying] = useState(false);
   const [soundOpen, setSoundOpen] = useState(false);
+  const autoStarted = useRef(false);
 
   async function offlinePayload() {
     return wrapForPears(encodeEnvelope(envelope), envelope.signature);
@@ -127,6 +129,12 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
       setPlaying(false);
     }
   }
+
+  useEffect(() => {
+    if (!autoStart || autoStarted.current) return;
+    autoStarted.current = true;
+    void send(autoStart);
+  }, [autoStart]);
 
   return (
     <div className="space-y-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isAddress } from "ethers";
 import { ClipboardPaste, ScanLine } from "lucide-react";
@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { AddressInput } from "@/components/address-input";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PermitCard } from "@/components/permit-card";
 import { ChannelPanel } from "@/components/channel-panel";
+import { ChannelRow } from "@/components/channel-row";
 import { QvacHint } from "@/components/qvac-hint";
 import { ContactPicker } from "@/components/contact-picker";
 import { SaveContact } from "@/components/save-contact";
@@ -31,7 +31,7 @@ import { type SignedEnvelope } from "@/lib/payload";
 import { payloadToDataUrl } from "@/lib/qr";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
-import { PERMIT2_ADDRESS, buildPermit2, ensurePermit2Allowance } from "@/lib/permit2";
+import { buildPermit2, ensurePermit2Allowance } from "@/lib/permit2";
 import { USDT } from "@/lib/tokens";
 import { parsePaymentAddress } from "@/lib/payment-address";
 
@@ -43,8 +43,6 @@ import dynamic from "next/dynamic";
 const QrScanner = dynamic(() => import("@/components/qr-scanner").then((m) => m.QrScanner), {
   ssr: false,
 });
-
-type PayMode = "online" | "offline";
 
 function draftFromForm(owner: string, to: string, amount: string): AgentPermit {
   const value = toBaseUnits(amount, USDT.decimals);
@@ -79,7 +77,6 @@ export function SendFlow() {
   const { prefs } = useDisplay();
   const fx = useFx();
   const search = useSearchParams();
-  const [mode, setMode] = useState<PayMode>("online");
   const retryAmount = search.get("amount");
   const [to, setTo] = useState(() => search.get("to") ?? "");
   const [unit, setUnit] = useState<"fiat" | "usdt">(retryAmount ? "usdt" : prefs.primary);
@@ -89,44 +86,11 @@ export function SendFlow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hash, setHash] = useState<string | null>(null);
-  const [draft, setDraft] = useState<AgentPermit | null>(null);
   const [envelope, setEnvelope] = useState<SignedEnvelope | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [sent, setSent] = useState<Channel | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
-  const draftRef = useRef(draft);
-  const envelopeRef = useRef(envelope);
-
-  useEffect(() => {
-    draftRef.current = draft;
-    envelopeRef.current = envelope;
-  }, [draft, envelope]);
-
-  function applyMode(next: PayMode) {
-    setMode(next);
-    if (next === "online") {
-      setDraft(null);
-      setEnvelope(null);
-      setQrUrl(null);
-      setSent(null);
-    }
-  }
-
-  useEffect(() => {
-    const sync = () => {
-      if (draftRef.current || envelopeRef.current) return;
-      const next: PayMode = navigator.onLine ? "online" : "offline";
-      setMode(next);
-    };
-    const id = window.setTimeout(sync, 0);
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.clearTimeout(id);
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
+  const [autoStart, setAutoStart] = useState<Exclude<Channel, "online"> | null>(null);
 
   function applyAddress(raw: string) {
     const text = raw.trim();
@@ -199,71 +163,46 @@ export function SendFlow() {
     }
   }
 
-  async function prepareOffline() {
+  async function signOffline() {
     if (!wallet) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const dest = await destination();
-      if (!dest || !isAddress(dest)) {
-        setError("Address, ENS o Basename inválido");
-        return;
-      }
-      setTo(dest);
-      setEnvelope(null);
-      setDraft(draftFromForm(wallet.address, dest, amount));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo armar el permiso");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function pay() {
-    if (mode === "online") {
-      void sendOnline();
+    const dest = await destination();
+    if (!dest || !isAddress(dest)) {
+      setError("Address, ENS o Basename inválido");
       return;
     }
-    if (envelope) return;
-    if (draft) void signOffline();
-    else void prepareOffline();
-  }
-
-  async function signOffline() {
-    if (!wallet || !draft) return;
+    const nextDraft = draftFromForm(wallet.address, dest, amount);
+    setTo(dest);
     setBusy(true);
     setError(null);
     try {
       await ensurePermit2Allowance(wallet);
       const signature = await wallet.signTypedData({
-        domain: draft.typed.domain,
-        types: draft.typed.types,
-        message: draft.typed.message as unknown as Record<string, unknown>,
+        domain: nextDraft.typed.domain,
+        types: nextDraft.typed.types,
+        message: nextDraft.typed.message as unknown as Record<string, unknown>,
       });
       const next: SignedEnvelope = {
         v: 1,
-        kind: draft.kind,
-        owner: draft.owner,
-        spender: draft.spender,
-        token: draft.token.address,
-        value: draft.value,
+        kind: nextDraft.kind,
+        owner: nextDraft.owner,
+        spender: nextDraft.spender,
+        token: nextDraft.token.address,
+        value: nextDraft.value,
         typedData: {
-          domain: draft.typed.domain,
-          types: draft.typed.types,
-          primaryType: draft.typed.primaryType,
-          message: draft.typed.message as unknown as Record<string, unknown>,
+          domain: nextDraft.typed.domain,
+          types: nextDraft.typed.types,
+          primaryType: nextDraft.typed.primaryType,
+          message: nextDraft.typed.message as unknown as Record<string, unknown>,
         },
         signature,
-        explanation: draft.explanation,
-        complianceNote: draft.complianceNote,
+        explanation: nextDraft.explanation,
+        complianceNote: nextDraft.complianceNote,
       };
       setEnvelope(next);
-      setQrUrl(
-        await payloadToDataUrl(encodeEnvelopeQr(next)),
-      );
-      setSavedTo(draft.spender);
+      setQrUrl(await payloadToDataUrl(encodeEnvelopeQr(next)));
+      setSavedTo(nextDraft.spender);
       receiptFromPermit(
-        { owner: draft.owner, spender: draft.spender, value: draft.value, token: draft.token.symbol },
+        { owner: nextDraft.owner, spender: nextDraft.spender, value: nextDraft.value, token: nextDraft.token.symbol },
         { action: "signed", channel: "qr", signature, valid: true },
       );
     } catch (err) {
@@ -271,6 +210,15 @@ export function SendFlow() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function pay() {
+    void sendOnline();
+  }
+
+  function pickOffline(channel: Exclude<Channel, "online">) {
+    setAutoStart(channel);
+    if (!envelope) void signOffline();
   }
 
   const amount =
@@ -281,22 +229,16 @@ export function SendFlow() {
         : fiatToUsdt(amountInput, fx.perUsdt)
       : "");
   const hasBalance = Boolean(usdt && Number(usdt) > 0);
-  const canPay = Boolean(wallet && !busy && to && amount && Number(amount) > 0 && !(mode === "offline" && envelope));
-  const payLabel =
-    busy && mode === "online"
-      ? "Enviando…"
-      : busy && mode === "offline" && draft && !envelope
-        ? "Firmando…"
-        : busy
-          ? "Armando…"
-          : mode === "offline" && draft && !envelope
-            ? "Firmar"
-            : (
-                <span className="inline-flex items-center gap-2">
-                  Enviar
-                  <UsdtLogo className="size-4" />
-                </span>
-              );
+  const canPay = Boolean(wallet && !busy && to && amount && Number(amount) > 0);
+  const canOffline = canPay;
+  const payLabel = busy ? (
+    "Enviando…"
+  ) : (
+    <span className="inline-flex items-center gap-2">
+      Enviar
+      <UsdtLogo className="size-4" />
+    </span>
+  );
 
   function setFromUsdt(value: string) {
     setExactUsdt(value);
@@ -458,41 +400,8 @@ export function SendFlow() {
               <ConnectButton label="Conectar wallet" />
             </div>
           ) : null}
-          <div
-            className="grid h-11 grid-cols-2 gap-1 rounded-xl bg-muted p-1"
-            role="tablist"
-            aria-label="Modo de envío"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "online"}
-              disabled={busy}
-              className={`rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                mode === "online" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-              onClick={() => applyMode("online")}
-            >
-              Online
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "offline"}
-              disabled={busy}
-              className={`rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                mode === "offline" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-              onClick={() => applyMode("offline")}
-            >
-              Offline
-            </button>
-          </div>
-          {mode === "online" && needsSwitch ? (
-            <p className="text-xs text-muted-foreground">Al enviar te va a pedir cambiar a Ethereum.</p>
-          ) : null}
-          {mode === "offline" ? (
-            <p className="text-xs text-muted-foreground">Firmás ahora y lo pasás por QR u otro canal.</p>
+          {needsSwitch ? (
+            <p className="text-xs text-muted-foreground">Al enviar on-chain te va a pedir cambiar a Ethereum.</p>
           ) : null}
           <Button type="button" className="h-12 w-full" disabled={!canPay} onClick={() => pay()}>
             {payLabel}
@@ -503,55 +412,27 @@ export function SendFlow() {
               <EtherscanTxLink hash={hash} className="text-xs" />
             </div>
           ) : null}
-          {mode === "offline" && draft ? (
-            <div className="space-y-3">
-              <PermitCard
-                kind={draft.kind}
-                owner={draft.owner}
-                spender={draft.spender}
-                value={draft.value}
-                tokenLabel={draft.token.symbol}
-                nonce={draft.typed.message.nonce}
-                deadline={draft.typed.message.deadline}
-                chainId={draft.typed.domain.chainId}
-                explanation={draft.explanation}
-                complianceNote={draft.complianceNote}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full"
-                disabled={!wallet || busy}
-                onClick={() => {
-                  if (!wallet) return;
-                  setBusy(true);
-                  void wallet
-                    .approve(draft.token.address, PERMIT2_ADDRESS)
-                    .then((tx) => {
-                      setHash(tx);
-                      setError(null);
-                    })
-                    .catch((err: unknown) =>
-                      setError(err instanceof Error ? err.message : "Approve falló"),
-                    )
-                    .finally(() => setBusy(false));
-                }}
-              >
-                Primera vez: aprobar Permit2
-              </Button>
-            </div>
-          ) : null}
-          {mode === "offline" && envelope ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Pasale el permiso al otro</p>
-              <ChannelPanel envelope={envelope} qrUrl={qrUrl} onSent={setSent} />
-              {sent ? <p className="text-xs text-primary">Guardado en actividad.</p> : null}
-            </div>
-          ) : null}
+          <div className="space-y-2 pt-1">
+            <p className="text-sm font-medium">Sin internet</p>
+            <p className="text-xs text-muted-foreground">QR, sonido, luz, Bluetooth, NFC, copiar o archivo.</p>
+            {envelope ? (
+              <>
+                <ChannelPanel
+                  envelope={envelope}
+                  qrUrl={qrUrl}
+                  onSent={setSent}
+                  autoStart={autoStart}
+                />
+                {sent ? <p className="text-xs text-primary">Guardado en actividad.</p> : null}
+              </>
+            ) : (
+              <ChannelRow busy={busy || !canOffline} onPick={(id) => void pickOffline(id)} />
+            )}
+          </div>
           {savedTo ? (
             <SaveContact
               address={savedTo}
-              hint={mode === "online" ? "Le acabás de enviar" : "Le armaste este permiso"}
+              hint={hash ? "Le acabás de enviar" : "Le armaste este permiso"}
             />
           ) : null}
         </div>
