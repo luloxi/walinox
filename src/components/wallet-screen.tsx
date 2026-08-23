@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, ScanLine, Store } from "lucide-react";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
+import { SectionLabel } from "@/components/empty-state";
 import { listReceipts, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
 
@@ -129,13 +130,13 @@ export function WalletScreen() {
 
       <section className="flex flex-col">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium">Recientes</p>
+          <SectionLabel>Recientes</SectionLabel>
           <Link href="/summary" className="cursor-pointer text-xs text-primary">
             Ver todos
           </Link>
         </div>
         <div className="mt-3">
-          <ActivityList receipts={recent} empty="Todavía no hay movimientos." />
+          <ActivityList receipts={recent} empty="Todavía no hay movimientos" />
         </div>
       </section>
     </div>
