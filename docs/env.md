@@ -32,3 +32,16 @@ MOONPAY_SECRET_KEY=sk_test_…            # opcional; firma la URL y fija wallet
 
 Sin la publishable key, el botón **Ingresar** avisa que falta configurar.
 Con secret en el servidor, `/api/onramp/sign` firma el widget para prellenar la address.
+
+## Postgres (Neon)
+
+Creada en Vercel (store Neon `walinox`). En Production/Preview las vars son sensitive: el deploy las ve, `vercel env pull` deja placeholders vacíos.
+
+```
+POSTGRES_PRISMA_URL=           # pooled, Prisma
+POSTGRES_URL_NON_POOLING=      # migraciones
+DATABASE_URL=
+DATABASE_URL_UNPOOLED=
+```
+
+Sin ellas la PWA sigue en localStorage. Para backup en `next dev`, copiá las URLs desde el dashboard de Neon a `.env.local`.

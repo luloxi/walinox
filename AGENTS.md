@@ -90,6 +90,8 @@ Más contexto: `docs/billetera.md`, `docs/mentores.md`, `docs/roadmap.md`, `data
 
 Lo diferido está en **`docs/roadmap.md`**. **Tienda** (caja + productos + canales offline) es MVP. No confundir con la vitrina pública online.
 
+Postgres / Prisma: backup opcional en la nube (`database.md`). Offline-first en localStorage; seed nunca al server.
+
 ## Comentarios
 
 - No escribas comentarios de más. El código tiene que leerse solo.

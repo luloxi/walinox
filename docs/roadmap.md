@@ -13,7 +13,7 @@ Flujo núcleo: armar cobro (monto o productos) → el comprador firma **sin red*
 - **Local (vendedor B2C):** listar productos, caja (POS), cobrar con **todos los canales offline** (`OfflineSend` / `ChannelRow`).
 - Contactos mínimos.
 - Actividad local de movimientos (sin reportes automáticos).
-- Ajustes: moneda, wallet, avisos push, tema.
+- Ajustes: moneda, wallet, avisos push, tema, copia en la nube (opcional, cuando hay internet).
 
 ## Quitado del MVP (sigue en roadmap)
 

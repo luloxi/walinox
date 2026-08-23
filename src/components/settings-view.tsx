@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CloudBackup } from "@/components/cloud-backup";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { useDisplay } from "@/components/display-provider";
 import { useTheme } from "@/components/theme-provider";
@@ -284,6 +285,8 @@ export function SettingsView() {
           </>
         )}
       </section>
+
+      <CloudBackup />
 
       {source === "local" ? (
         <section className="mt-6 space-y-2">

@@ -175,6 +175,18 @@ export function rememberContact(
   return created;
 }
 
+export function replaceContacts(contacts: Contact[]): void {
+  currentStore().save(
+    contacts.filter((item) => {
+      try {
+        return Boolean(normalizeAddress(item.address));
+      } catch {
+        return false;
+      }
+    }),
+  );
+}
+
 export function removeContact(address: string): Contact | undefined {
   const key = normalizeAddress(address).toLowerCase();
   const current = currentStore();

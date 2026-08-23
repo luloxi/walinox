@@ -107,6 +107,18 @@ export function listReceipts(): Receipt[] {
   return next;
 }
 
+export function replaceReceiptsFor(address: string, receipts: Receipt[]): void {
+  const key = address.toLowerCase();
+  const current = currentStore();
+  const others = current
+    .load()
+    .filter((item) => item.owner.toLowerCase() !== key && item.spender.toLowerCase() !== key);
+  const mine = receipts.filter(
+    (item) => item.owner.toLowerCase() === key || item.spender.toLowerCase() === key,
+  );
+  current.save([...mine, ...others]);
+}
+
 export function addReceipt(
   input: Omit<Receipt, "id" | "at"> & { id?: string; at?: string },
 ): Receipt {

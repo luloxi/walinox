@@ -137,6 +137,50 @@ export function saveProduct(product: Product): Product {
   return product;
 }
 
+export function replaceIssuerProducts(issuer: string, products: Product[]): void {
+  const key = issuer.toLowerCase();
+  const current = load();
+  const others = current.products.filter((item) => item.issuer.toLowerCase() !== key);
+  const mine = products.filter((item) => item.issuer.toLowerCase() === key);
+  current.products = [...mine, ...others];
+  save(current);
+}
+
+export type CatalogSlice = {
+  held: ValeEnvelope[];
+  issued: ValeEnvelope[];
+  redeemed: RedeemRecord[];
+};
+
+export function catalogSlice(address: string): CatalogSlice {
+  const key = address.toLowerCase();
+  const current = load();
+  return {
+    held: current.held.filter((item) => item.holder.toLowerCase() === key),
+    issued: current.issued.filter((item) => item.issuer.toLowerCase() === key),
+    redeemed: current.redeemed.filter(
+      (item) => item.issuer.toLowerCase() === key || item.holder.toLowerCase() === key,
+    ),
+  };
+}
+
+export function mergeCatalogSlice(address: string, slice: CatalogSlice): void {
+  const key = address.toLowerCase();
+  const current = load();
+  current.held = [...slice.held, ...current.held.filter((item) => item.holder.toLowerCase() !== key)];
+  current.issued = [
+    ...slice.issued,
+    ...current.issued.filter((item) => item.issuer.toLowerCase() !== key),
+  ];
+  current.redeemed = [
+    ...slice.redeemed,
+    ...current.redeemed.filter(
+      (item) => item.issuer.toLowerCase() !== key && item.holder.toLowerCase() !== key,
+    ),
+  ];
+  save(current);
+}
+
 export function bumpSold(id: string): Product {
   const product = getProduct(id);
   if (!product) throw new Error("Producto no encontrado");

@@ -223,6 +223,17 @@ export function mergeInbox(items: InboxItem[]): number {
   return fresh.length;
 }
 
+export function replaceInboxFor(address: string, items: InboxItem[]): void {
+  const key = address.toLowerCase();
+  const current = currentStore();
+  const others = current
+    .load()
+    .filter((item) => item.to.toLowerCase() !== key && item.from.toLowerCase() !== key);
+  const mine = items.filter((item) => item.to.toLowerCase() === key || item.from.toLowerCase() === key);
+  current.save([...mine, ...others].slice(0, MAX_INBOX));
+  emitInbox();
+}
+
 export function markInboxRead(id?: string): void {
   const current = currentStore();
   const next = current.load().map((item) => {
