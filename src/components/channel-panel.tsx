@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChannelRow, SoundPlayback } from "@/components/channel-row";
+import { useWallet } from "@/components/wallet-provider";
 import { playSound, transmitChannel } from "@/lib/air-io";
 import { type Channel } from "@/lib/channels";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
+  const { wallet } = useWallet();
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<Exclude<Channel, "online"> | null>(null);
@@ -44,14 +46,19 @@ export function ChannelPanel({ envelope, qrUrl, onSent }: Props) {
     );
     setNote(detail);
     onSent(channel);
-    void notifyPeer({
-      kind: "permit",
-      from: envelope.owner,
-      to: envelope.spender,
-      amount: fromBaseUnits(envelope.value),
-      token: "USDT",
-      url: "/?tab=recibir",
-    });
+    if (wallet) {
+      void notifyPeer(
+        {
+          kind: "permit",
+          from: envelope.owner,
+          to: envelope.spender,
+          amount: fromBaseUnits(envelope.value),
+          token: "USDT",
+          url: "/?tab=recibir",
+        },
+        (typed) => wallet.signTypedData(typed),
+      );
+    }
   }
 
   async function replaySound() {
