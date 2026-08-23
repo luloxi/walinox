@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const NAV_DESKTOP = [
   { href: "/", label: "Billetera", icon: Wallet },
   { href: "/contacts", label: "Contactos", icon: Users },
-  { href: "/tienda", label: "Local", icon: Store },
+  { href: "/tienda", label: "Tienda", icon: Store },
   { href: "/inbox", label: "Avisos", icon: Bell },
   { href: "/summary", label: "Actividad", icon: History },
   { href: "/settings", label: "Ajustes", icon: Settings },
@@ -195,7 +195,7 @@ function MobileNav({ unread }: { unread: number }) {
           </span>
         </Link>
         <NavLink href="/inbox" label="Avisos" icon={Bell} pathname={pathname} mobile badge={unread} />
-        <NavLink href="/tienda" label="Local" icon={Store} pathname={pathname} mobile />
+        <NavLink href="/tienda" label="Tienda" icon={Store} pathname={pathname} mobile />
       </div>
     </nav>
   );
