@@ -3,6 +3,7 @@ import {
   amountUsdt,
   buildActivityReport,
   periodBounds,
+  receiptActionLabel,
   receiptFlow,
   receiptOrigin,
   shiftAnchor,
@@ -29,11 +30,19 @@ describe("activity", () => {
     expect(amountUsdt("10")).toBe(10);
     expect(amountUsdt("12.50")).toBe(12.5);
     expect(amountUsdt("10000000")).toBe(10);
+    expect(amountUsdt("667111")).toBe(0.667111);
+    expect(amountUsdt("500000")).toBe(0.5);
   });
 
   it("classifies sent as expense and received as income", () => {
     expect(receiptFlow(receipt({ action: "sent", owner: ME, spender: PEER, value: "1" }), ME)).toBe("out");
     expect(receiptFlow(receipt({ action: "received", owner: PEER, spender: ME, value: "1" }), ME)).toBe("in");
+    const paidStore = receipt({ action: "sent", owner: PEER, spender: ME, value: "667111" });
+    expect(receiptFlow(paidStore, ME)).toBe("in");
+    expect(receiptActionLabel(paidStore, ME)).toBe("Recibiste");
+    expect(receiptActionLabel(receipt({ action: "sent", owner: ME, spender: PEER, value: "1" }), ME)).toBe(
+      "Enviaste",
+    );
     expect(receiptOrigin(receipt({ action: "issued", owner: ME, spender: PEER, value: "1", token: "VALE" }))).toBe(
       "tienda",
     );

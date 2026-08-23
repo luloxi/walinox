@@ -1,6 +1,6 @@
 import { fromBaseUnits } from "@/lib/format";
 import { FALLBACK_ARS_PER_USDT, receiptRate, usdtToArs } from "@/lib/fx";
-import type { Receipt } from "@/lib/receipts";
+import { ACTION_LABEL, type Receipt } from "@/lib/receipts";
 
 export type PeriodKind = "month" | "quarter" | "year" | "all";
 export type FlowKind = "in" | "out" | "none";
@@ -53,11 +53,12 @@ const MONTHS = [
   "Diciembre",
 ];
 
+/** Permit receipts store 6-decimal base units. Integers of 6+ digits are base units ("667111" = 0.667111 USDT). Shorter integers stay human so seed values like "40" remain 40 USDT. */
 export function amountUsdt(value: string): number {
   if (!value) return 0;
   const trimmed = value.trim();
   if (trimmed.includes(".")) return Number(trimmed) || 0;
-  if (/^\d+$/.test(trimmed) && trimmed.length > 6) return Number(fromBaseUnits(trimmed, 6)) || 0;
+  if (/^\d+$/.test(trimmed) && trimmed.length >= 6) return Number(fromBaseUnits(trimmed, 6)) || 0;
   return Number(trimmed) || 0;
 }
 
@@ -82,6 +83,13 @@ export function receiptFlow(receipt: Receipt, me?: string): FlowKind {
     return "out";
   }
   return "none";
+}
+
+export function receiptActionLabel(receipt: Receipt, me?: string): string {
+  const flow = receiptFlow(receipt, me);
+  if (flow === "in") return "Recibiste";
+  if (flow === "out") return "Enviaste";
+  return ACTION_LABEL[receipt.action];
 }
 
 export function receiptOrigin(receipt: Receipt, storeIssuers: string[] = [], me?: string): OriginKind {

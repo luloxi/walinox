@@ -20,7 +20,7 @@ import {
 } from "@/lib/backup";
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { productsByIssuer, removeProduct } from "@/lib/catalog";
-import { listReceipts, type Receipt } from "@/lib/receipts";
+import { listReceiptsFor, type Receipt } from "@/lib/receipts";
 import { seedLivedIn } from "@/lib/seed";
 import type { Product } from "@/lib/vale";
 
@@ -38,7 +38,7 @@ export function TiendaView() {
   function refresh() {
     seedLivedIn(wallet?.address);
     setMine(wallet ? productsByIssuer(wallet.address) : []);
-    setRecent(listReceipts().slice(0, 5));
+    setRecent(listReceiptsFor(wallet?.address).slice(0, 5));
   }
 
   useEffect(() => {

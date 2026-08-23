@@ -9,7 +9,8 @@ import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
 import { OnrampPanel } from "@/components/onramp-panel";
 import { SectionLabel } from "@/components/empty-state";
-import { listReceipts, type Receipt } from "@/lib/receipts";
+import { useWallet } from "@/components/wallet-provider";
+import { listReceiptsFor, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
 
 const SendFlow = dynamic(() => import("@/components/send-flow").then((m) => m.SendFlow), {
@@ -73,13 +74,14 @@ const ACTIONS = [
 export function WalletScreen() {
   const router = useRouter();
   const search = useSearchParams();
+  const { wallet } = useWallet();
   const tab = search.get("tab");
   const [recent, setRecent] = useState<Receipt[]>([]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setRecent(listReceipts().slice(0, 5)), 0);
+    const timer = window.setTimeout(() => setRecent(listReceiptsFor(wallet?.address).slice(0, 5)), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [wallet?.address]);
 
   function go(next: string) {
     const to = search.get("to");

@@ -107,6 +107,15 @@ export function listReceipts(): Receipt[] {
   return next;
 }
 
+export function listReceiptsFor(address?: string): Receipt[] {
+  const rows = listReceipts();
+  if (!address) return rows;
+  const key = address.toLowerCase();
+  return rows.filter(
+    (item) => item.owner.toLowerCase() === key || item.spender.toLowerCase() === key,
+  );
+}
+
 export function replaceReceiptsFor(address: string, receipts: Receipt[]): void {
   const key = address.toLowerCase();
   const current = currentStore();

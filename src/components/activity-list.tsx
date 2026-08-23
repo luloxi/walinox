@@ -1,8 +1,8 @@
 "use client";
 
 import { History } from "lucide-react";
-import { ACTION_LABEL, type Receipt } from "@/lib/receipts";
-import { amountUsdt } from "@/lib/activity";
+import { type Receipt } from "@/lib/receipts";
+import { amountUsdt, receiptActionLabel } from "@/lib/activity";
 import { formatFiat, receiptRate } from "@/lib/fx";
 import { isTxHash } from "@/lib/etherscan";
 import { EtherscanAddressLink, EtherscanTxLink } from "@/components/etherscan-link";
@@ -10,9 +10,11 @@ import { EmptyState } from "@/components/empty-state";
 import { Price } from "@/components/price";
 import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
+import { useWallet } from "@/components/wallet-provider";
 import { fiatMeta } from "@/lib/display";
 
 export function ActivityList({ receipts, empty }: { receipts: Receipt[]; empty: string }) {
+  const { wallet } = useWallet();
   const { prefs } = useDisplay();
   const fx = useFx();
   if (receipts.length === 0) {
@@ -26,7 +28,7 @@ export function ActivityList({ receipts, empty }: { receipts: Receipt[]; empty: 
           <li key={receipt.id} className="rounded-2xl border border-border bg-card px-3 py-3">
             <div className="flex items-start justify-between gap-3 text-sm">
               <span className="font-medium">
-                {ACTION_LABEL[receipt.action]}
+                {receiptActionLabel(receipt, wallet?.address)}
                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                   · {receipt.channel === "online" ? "on-chain" : receipt.channel}
                 </span>

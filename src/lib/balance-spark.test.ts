@@ -5,13 +5,14 @@ import type { Receipt } from "@/lib/receipts";
 const ME = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const PEER = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const NOW = Date.parse("2026-08-23T12:00:00.000Z");
+const TX = `0x${"ab".repeat(32)}`;
 
 function row(partial: Partial<Receipt> & Pick<Receipt, "action" | "value" | "at">): Receipt {
   return {
     id: partial.id ?? partial.at,
     channel: "online",
     token: "USDT",
-    signature: "0x",
+    signature: TX,
     owner: partial.action === "received" ? PEER : ME,
     spender: partial.action === "received" ? ME : PEER,
     ...partial,
@@ -42,6 +43,26 @@ describe("spark24h", () => {
       ],
       ME,
       50,
+      NOW,
+    );
+    expect(deltaUsdt).toBe(0);
+  });
+
+  it("ignores unsigned QR permits so they do not swing the on-chain 24h", () => {
+    const { deltaUsdt } = spark24h(
+      [
+        row({
+          action: "sent",
+          value: "667111",
+          at: "2026-08-23T11:06:47.000Z",
+          channel: "qr",
+          signature: `0x${"cd".repeat(65)}`,
+          owner: PEER,
+          spender: ME,
+        }),
+      ],
+      ME,
+      7.85,
       NOW,
     );
     expect(deltaUsdt).toBe(0);

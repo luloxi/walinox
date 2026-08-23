@@ -1,4 +1,5 @@
 import { amountUsdt, receiptFlow } from "@/lib/activity";
+import { isTxHash } from "@/lib/etherscan";
 import type { Receipt } from "@/lib/receipts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16,6 +17,7 @@ export function spark24h(
   const events = receipts
     .filter((row) => {
       if (row.token.toUpperCase() === "VALE") return false;
+      if (!isTxHash(row.signature)) return false;
       const t = new Date(row.at).getTime();
       if (!Number.isFinite(t) || t < from || t > now) return false;
       return receiptFlow(row, mine) !== "none";
