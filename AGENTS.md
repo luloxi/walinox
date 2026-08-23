@@ -14,9 +14,12 @@ PWA de USDT auto-custodia. UI en español. Settlement siempre USDT.
 
 ## MVP
 
-**Una cosa bien:** pagos sin internet del lado del comprador (B2B / B2C). Firmar offline → pasar la firma (QR u otro canal) → asentar on-chain cuando hay red.
+**Pagos sin internet del comprador** (B2B y B2C).
 
-No reactivar en la UI principal lo que está en [`docs/roadmap.md`](docs/roadmap.md) (tienda online por wallet, resumen mensual automatizado, etc.) salvo pedido explícito.
+- **P2P / B2B:** enviar, recibir, pedir, escanear firma.
+- **B2C / Local:** el vendedor lista productos, arma el pedido en caja y cobra con **todos los canales offline** (QR, NFC, Bluetooth, sonido, luz, archivo, copiar). El comprador firma sin red; el asiento on-chain puede esperar red del que cobra.
+
+Fuera del MVP (ver [`docs/roadmap.md`](docs/roadmap.md)): **vitrina pública** por wallet, marketplace comprador, vales/canje, resumen mensual automatizado. No los reenganches en nav salvo pedido explícito.
 
 ## Cómo cambiar código
 
@@ -50,7 +53,7 @@ Más contexto: `docs/billetera.md`, `docs/mentores.md`, `docs/roadmap.md`.
 
 ## Roadmap (no borrar a ciegas)
 
-Features sacadas del MVP viven documentadas en **`docs/roadmap.md`**. El código de tienda/vales/reporte puede seguir en el repo; **no lo enganches de nuevo en nav ni copy** sin que el roadmap diga que vuelve al producto.
+Lo diferido está en **`docs/roadmap.md`**. **Local** (caja + productos + canales offline) es MVP. No confundir con la vitrina pública online.
 
 ## Comentarios
 
