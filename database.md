@@ -1,29 +1,31 @@
 # Database
 
-Postgres (Neon en Vercel) + Prisma. La app es **offline-first**: productos, contactos, prefs y actividad viven en **localStorage**. La seed **nunca** va a la DB.
+Postgres ([Neon](https://neon.tech) on [Vercel](https://vercel.com)) + [Prisma](https://www.prisma.io). The app is **offline-first**: products, contacts, prefs, and activity live in **`localStorage`**. The wallet **seed never** goes to the database.
 
-## Copia en la nube (automática)
+USDT balances are read from Ethereum (`balanceOf` on the [USDT](https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7) contract). They are not mirrored in Postgres.
 
-Con wallet lista e internet, la app **guarda sola** un snapshot (debounce ~8 s tras cambios, y cada ~3 min). En **Tienda** hay un chip con la antigüedad de la última copia; tocarlo fuerza un guardado. En Ajustes podés **Guardar ahora** o **Restaurar** (con confirmación).
+## Automatic cloud copy
 
-No pide firma de wallet: es backup de datos de app, no de claves. Rate limit en el API. Solo se aceptan productos cuyo `issuer` sea la address dueña.
+With a wallet ready and a network, the app **saves on its own** (debounce ~8 s after edits, and about every ~3 min). **Shop** shows a chip with the age of the last copy; tap it to force a save. Settings can **Save now** or **Restore** (with confirmation).
 
-| En DB | Nunca en DB |
-|---|---|
-| Productos propios, contactos, prefs, tema, recibos, inbox, vales locales | Seed / claves |
-| | Saldo USDT (on-chain) |
+This is app-data backup, not key backup — no wallet signature is required. The API is rate-limited. Only products whose `issuer` is the owning address are accepted.
+
+| In the DB | Never in the DB |
+| --- | --- |
+| Own products, contacts, prefs, theme, receipts, inbox, local vales | Seed / keys |
+| | USDT balance (on-chain) |
 
 ## Stack
 
 - Prisma + Postgres (`DATABASE_URL` / `POSTGRES_PRISMA_URL`)
-- Modelo: `CloudBackup(address, payload Json)`
-- Auth: sin firma (MVP); mitigación = rate limit + issuer check
+- Model: `CloudBackup(address, payload Json)`
+- Auth: no signature in the MVP; mitigation = rate limit + issuer check
 
-En local, sin esas env, la app corre igual y el endpoint responde 503.
+Locally, without those env vars, the app still runs and the endpoint returns 503.
 
 ```bash
 npx prisma migrate deploy
 npm run dev
 ```
 
-Build en Vercel: `prisma generate` + `prisma migrate deploy`.
+Vercel build: `prisma generate` + `prisma migrate deploy`. Env details: [docs/env.md](docs/env.md).

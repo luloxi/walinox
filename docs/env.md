@@ -1,42 +1,52 @@
-# Variables de entorno
+# Environment variables
 
 ## Push (VAPID)
 
-La clave **pública** tiene default en `src/lib/vapid.ts`.
-La **privada** solo en el servidor — nunca en el repo.
+The **public** key has a default in `src/lib/vapid.ts`.
+The **private** key lives only on the server — never in the repo.
 
-En Vercel → Project → Settings → Environment Variables:
+In Vercel → Project → Settings → Environment Variables:
 
 ```
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=<publica>
-VAPID_PRIVATE_KEY=<privada>
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public>
+VAPID_PRIVATE_KEY=<private>
 VAPID_SUBJECT=mailto:hello@walinox.app
 ```
 
-Generar un par nuevo:
+Generate a new pair:
 
 ```bash
 npx web-push generate-vapid-keys
 ```
 
-Sin `VAPID_PRIVATE_KEY`, el push queda deshabilitado (fail closed).
+Without `VAPID_PRIVATE_KEY`, push is disabled (fail closed).
 
-## Onramp (MoonPay · preferido por Tether WDK)
+## On-ramp ([MoonPay](https://www.moonpay.com) · Tether WDK fiat rail)
 
-El módulo fiat documentado por Tether es `@tetherto/wdk-protocol-fiat-moonpay` (MoonPay).
+Tether documents `@tetherto/wdk-protocol-fiat-moonpay` as the WDK fiat on-ramp. See [WDK](https://docs.wdk.tether.io).
 
 ```
-NEXT_PUBLIC_MOONPAY_API_KEY=pk_test_…   # o pk_live_…
-MOONPAY_SECRET_KEY=sk_test_…            # opcional; firma la URL y fija walletAddress
+NEXT_PUBLIC_MOONPAY_API_KEY=pk_live_…   # pk_test_… only hits MoonPay sandbox
+MOONPAY_SECRET_KEY=sk_live_…            # optional; signs the URL and locks walletAddress
 ```
 
-Sin la publishable key, el botón **Ingresar** avisa que falta configurar.
-Con secret en el servidor, `/api/onramp/sign` firma el widget para prellenar la address.
+Without the publishable key, **Add funds** tells the user it is not configured.
+With the secret on the server, `/api/onramp/sign` signs the widget so the destination address is prefilled.
 
-## Postgres (Neon)
+Sandbox keys do **not** mint mainnet USDT. Production demo needs live MoonPay keys.
 
-En Neon: **Connect** → tab `.env` → **Copy snippet**. Eso es `DATABASE_URL` (pooling ON). Pegalo en `.env.local`.
+## Postgres ([Neon](https://neon.tech))
 
-Opcional: apagá Connection pooling, copiá de nuevo como `DATABASE_URL_UNPOOLED` (migraciones locales).
+In Neon: **Connect** → `.env` tab → **Copy snippet**. That is `DATABASE_URL` (pooling on). Paste it into `.env.local`.
 
-En Vercel las mismas vars ya están (sensitive). Sin `.env.local` la PWA sigue en localStorage.
+Optional: turn pooling off and copy again as `DATABASE_URL_UNPOOLED` (local migrations).
+
+The same vars are already on Vercel (sensitive). Without `.env.local` the PWA still runs on `localStorage`. Details: [database.md](../database.md).
+
+## RPC
+
+```
+NEXT_PUBLIC_RPC_URL=https://ethereum-rpc.publicnode.com
+```
+
+Used for mainnet USDT `balanceOf` and WDK provider. Defaults to a public Ethereum mainnet endpoint if unset.

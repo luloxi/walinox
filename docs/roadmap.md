@@ -1,72 +1,74 @@
-# Roadmap — fuera del MVP actual
+# Roadmap — outside the current MVP
 
-**MVP (agosto 2026):** pagos sin internet del lado del **comprador**, para **B2B y B2C**.
+**MVP (August 2026):** payments that do not need the **buyer’s** internet, for **B2B and B2C**.
 
-Flujo núcleo: armar cobro (monto o productos) → el comprador firma **sin red** → se pasa la firma por **QR / NFC / Bluetooth / sonido / luz / archivo / copiar** → el vendedor (o quien cobra) asienta on-chain cuando hay internet.
+Core loop: build a charge (amount or products) → the buyer signs **offline** → the signature travels over **QR / NFC / Bluetooth / sound / light / file / copy** → the merchant settles on-chain when they have a network.
+
+Settlement is always [USDT on Ethereum](https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7) via [Uniswap Permit2](https://developers.uniswap.org/docs/protocols/permit2/overview).
 
 ---
 
-## MVP in scope
+## In the MVP
 
-- Wallet local o externa (intermediario).
-- **Billetera:** enviar online/offline, recibir, pedir, pagar (escanear pedido/firma).
-- **Tienda (vendedor B2C):** listar productos, caja (POS), cobrar con **todos los canales offline** (`OfflineSend` / `ChannelRow`).
-- Contactos mínimos.
-- Actividad local de movimientos (sin reportes automáticos).
-- Ajustes: moneda, wallet, avisos push, tema, copia en la nube (opcional, cuando hay internet).
-- **Ingresar fondos:** on-ramp fiat → USDT vía MoonPay (ARS por defecto en `onramp.ts` si hay `NEXT_PUBLIC_MOONPAY_API_KEY`). Es **compra de USDT**, no pagar un comercio “en pesos on-chain”.
+- Local [WDK](https://docs.wdk.tether.io) wallet or an injected wallet.
+- **Wallet:** send online/offline, receive, request, pay (scan charge / signature).
+- **Shop (B2C seller):** list products, POS, collect on **every offline channel**.
+- Minimal contacts.
+- Local activity (no automated reports).
+- Settings: display currency, wallet, push, theme, optional cloud backup of **app data** (never the seed).
+- **Add funds:** fiat → USDT via [MoonPay](https://www.moonpay.com) (ARS as `baseCurrencyCode` when `NEXT_PUBLIC_MOONPAY_API_KEY` is set). That **buys USDT**. It is not “pay a shop in on-chain pesos.”
 
-## Quitado del MVP (sigue en roadmap)
+## Pulled from the MVP (still on the roadmap)
 
-### Tienda online / vitrina pública por wallet
+### Public storefront / buyer marketplace
 
-- **Qué era:** marketplace comprador, link público `/tienda/[id]`, compartir vitrina, browse de tiendas ajenas, vales como producto aparte y canje de vales.
-- **Por qué fuera:** no es el cobro offline en el mostrador. Es vitrina web, no el núcleo B2C de “cobrar sin red del comprador”.
-- **Qué SÍ quedó en MVP:** **Tienda** — catálogo propio del vendedor + POS + canales offline.
-- **Estado:** fuera de la UI principal. Código puede quedar en el repo.
+- **What it was:** buyer marketplace, public `/tienda/[id]` link, shareable vitrine, browsing other shops, vouchers as a separate product and redemption.
+- **Why it is out:** that is a web storefront, not “charge at the counter while the buyer is offline.”
+- **What stayed:** **Shop** — the seller’s own catalog + POS + offline channels (including the live [lulox.eth](https://app.ens.domains/lulox.eth) demo catalog).
+- **Status:** out of the main nav. Code may still exist in the repo.
 
-### Resumen / reporte automatizado
+### Automated monthly report
 
-- **Qué era:** resumen mensual por push/inbox, prompt en Actividad, toggle en Ajustes.
-- **Por qué fuera:** no ayuda al pago offline.
-- **Estado:** fuera de Ajustes y sin prompt. **Actividad** manual sigue.
+- **What it was:** monthly summary via push/inbox, prompt on Activity, toggle in Settings.
+- **Why it is out:** it does not help offline payment.
+- **Status:** out of Settings, no prompt. Manual **Activity** remains.
 
-## Ciclo ARS ↔ USDT (inclusión completa)
+## ARS ↔ USDT loop (daily-driver inclusion)
 
-Cerrar el loop pesos ↔ USDT es lo que convierte a Walinox en app de uso diario en Argentina, no solo wallet crypto.
+Closing pesos ↔ USDT is what would make Walinox a daily app in Argentina, not only a crypto wallet.
 
-### Hoy
+### Today
 
-- UI muestra saldos y montos en **ARS (referencia)** con cotización de mercado USDT.
-- **On-ramp:** botón **Ingresar** → MoonPay (fiat → USDT a la address). Con key configurada y ARS como `baseCurrencyCode`.
-- **Settlement on-chain:** siempre **USDT**. No existe un token “peso argentino” nativo en el flujo de pago offline.
+- UI shows balances and amounts in **ARS (reference)** using a market USDT quote.
+- **On-ramp:** **Add funds** → MoonPay (fiat → USDT to the address), ARS as the default fiat.
+- **On-chain settlement:** always **USDT**. There is no native Argentine-peso token in the offline payment path.
 
-### Roadmap — on-ramp ARS más profundo
+### Later — deeper ARS on-ramp
 
-- MoonPay (o el fiat rail de Tether/WDK vigente) con **ARS + métodos locales** (tarjeta, transferencia) bien testeados en producción.
-- Mensajes claros: “comprás USDT con pesos”; el gasto sigue siendo USDT.
-- Fallbacks si MoonPay no cubre ARS en algún momento: otro rail fiat documentado (sin inventar custodial propio).
+- MoonPay (or whichever [WDK](https://docs.wdk.tether.io) fiat rail is current) with **ARS + local rails** (card, bank transfer) proven in production.
+- Copy that stays honest: “you buy USDT with pesos”; the spend is still USDT.
+- Fallback if MoonPay drops ARS: another documented fiat rail — no homegrown custodial on-ramp.
 
-### Roadmap — off-ramp USDT → ARS
+### Later — USDT → ARS off-ramp
 
-- **Cash-out** a cuenta bancaria / CVU / billetera ARS (MoonPay sell, o partner local: exchange, PSP, fintech regulada).
-- UX en Ajustes o Billetera: “Pasar a pesos” con monto, destino y estado del retiro.
-- Compliance: KYC del proveedor, límites, tiempos de liquidación. Walinox no custodia el fiat.
+- Cash-out to a bank account / CVU / ARS wallet (MoonPay sell, or a local exchange / PSP / regulated fintech).
+- UX in Settings or Wallet: “Cash out to pesos” with amount, destination, and status.
+- Compliance belongs to the provider (KYC, limits, settlement times). Walinox does not custody fiat.
 
-### Roadmap — “pagar como en pesos” (sin mentir al ledger)
+### Later — “pay as if it were pesos” without lying to the ledger
 
-- Seguir cobrando/asentando en **USDT**.
-- UX: el vendedor y el comprador ven y escriben montos en **ARS**; la app convierte al instante con el rate de mercado.
-- Opcional: recibo bilingüe “pagaste X ARS ≈ Y USDT”.
-- **No** es un stablecoin ARS propio en el MVP; si algún día hay un ARS on-chain confiable y líquido, evaluar como unidad de cuenta, no como reemplazo del núcleo offline-USDT.
+- Keep charging and settling in **USDT**.
+- UX: both sides type **ARS**; the app converts with the live rate.
+- Optional bilingual receipt: “you paid X ARS ≈ Y USDT.”
+- **Not** a homemade ARS stablecoin in the MVP. If a liquid on-chain ARS ever exists, evaluate it as a unit of account — not as a replacement for the offline-USDT core.
 
-### Por qué no es “mega app” todavía
+### Why this is not a mega-app yet
 
-On-ramp + off-ramp + cobro offline cierran inclusión **solo si** el rail fiat es confiable, barato y legal en AR. Eso es producto + partner + compliance, no un sprint de UI. Prioridad post-hackathon: (1) on-ramp ARS usable, (2) off-ramp mínimo, (3) pulir conversión ARS en toda la caja.
+On-ramp + off-ramp + offline charge only close inclusion if the fiat rail is reliable, cheap, and legal in AR. That is product + partner + compliance, not a UI sprint. Post-hackathon order: (1) a usable ARS on-ramp, (2) a minimal off-ramp, (3) ARS conversion everywhere in the POS.
 
-## Más adelante (ideas)
+## Later ideas
 
-- Reactivar vitrina pública / vales / canje.
-- Reportes mensuales y analytics.
-- P2P más fuerte vía Pears/Hyperswarm.
-- Recovery de seed más allá del PIN local.
+- Bring back the public vitrine / vouchers / redemption.
+- Monthly reports and analytics.
+- Stronger P2P via [Pears](https://docs.pears.com) / Hyperswarm.
+- Seed recovery beyond the local PIN.

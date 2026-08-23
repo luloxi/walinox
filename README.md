@@ -1,77 +1,84 @@
 # Walinox
 
-**Pagás en USDT aunque no haya señal.**
+**Pay in USDT when the buyer has no signal.**
 
-El comprador firma en el celular sin internet. El que cobra asienta on-chain cuando vuelve la red. Plata en dólares digitales, claves en tu dispositivo, pensado para kioscos, ferias y el día a día en LATAM.
+The payer signs on their phone offline. The merchant settles on Ethereum when they are back online. Funds stay in self-custodial [USDT](https://tether.io) on Ethereum mainnet — keys never leave the device.
 
-Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app)
-
-Roadmap: [`docs/roadmap.md`](docs/roadmap.md)
+[Live demo](https://walinox-nu.vercel.app) · [Wallet](docs/wallet.md) · [Env](docs/env.md) · [Cloud backup](database.md) · [Roadmap](docs/roadmap.md)
 
 ---
 
-## ¿Qué es?
+## What it is
 
-Una PWA de **USDT auto-custodia** en Ethereum. El pago no depende de que el comprador tenga datos: firmás offline (QR, NFC, Bluetooth, sonido, luz, archivo o copiar) y el settlement usa Uniswap **Permit2**. Sirve para mandar entre personas y para que un local arme la caja, liste productos y cobre sin que la red del cliente sea un requisito.
+A Spanish-language [PWA](https://web.dev/learn/pwa/) for self-custodial USDT on [Ethereum](https://ethereum.org). Payments do not wait on the buyer’s data connection: they authorize a spend with an [EIP-712](https://eips.ethereum.org/EIPS/eip-712) signature, hand it over in person (QR, NFC, Bluetooth, sound, light, file, or copy), and the merchant broadcasts it later.
 
-## ¿Cómo funciona?
+Settlement is always [Tether USD (USDT)](https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7) on Ethereum mainnet. There is no ARS token on-chain. Local currency in the UI is a live FX reference.
 
-1. El comprador **autoriza** un gasto (firma EIP-712 Permit2), con o sin internet.
-2. Pasa esa firma al que cobra por un canal del teléfono.
-3. Quien cobra, **con red**, ejecuta `permitTransferFrom` y el USDT se mueve on-chain.
+The [lulox.eth](https://app.ens.domains/lulox.eth) shop is the live demo catalog (1–2 USDT items).
 
-Firmar no mueve tokens. USDT mainnet no tiene `permit()` (ERC-2612); por eso usamos Permit2.
+## How a payment moves
 
-| Canal | Rol |
+```
+Buyer (maybe airplane mode)          Merchant (needs the network)
+─────────────────────────────        ────────────────────────────
+1. Sign Permit2 EIP-712
+2. Hand over the envelope  ────────► 3. permitTransferFrom()
+                                        USDT moves on-chain
+```
+
+Signing is **not** a transfer. Mainnet USDT is a classic [ERC-20](https://eips.ethereum.org/EIPS/eip-20). It does **not** implement [ERC-2612 `permit()`](https://eips.ethereum.org/EIPS/eip-2612), so Walinox uses [Uniswap Permit2](https://developers.uniswap.org/docs/protocols/permit2/overview) instead:
+
+1. Once per wallet: `approve` [Permit2](https://etherscan.io/address/0x000000000022D473030F116dDEE9F6B43aC78BA3) (`0x000000000022D473030F116dDEE9F6B43aC78BA3`).
+2. Each offline spend: sign `PermitTransferFrom` ([signature transfer](https://developers.uniswap.org/docs/protocols/permit2/concepts/signature-transfer)).
+3. The merchant (or any online party) calls [`permitTransferFrom`](https://github.com/Uniswap/permit2) — that is when USDT actually moves.
+
+Online sends can skip the envelope and call ERC-20 `transfer` directly.
+
+| Channel | Role |
 | --- | --- |
-| QR | Camino principal |
-| Copiar / archivo | Siempre disponible |
-| NFC / sonido / luz / BLE | En `OfflineSend` / `ChannelRow` |
+| QR | Default in-person path |
+| Copy / file | Always available |
+| NFC / sound / light / Bluetooth | Same signed envelope, different air |
 
-Después del primer load (PWA) el comprador puede pagar en modo avión.
+After the first PWA load, a buyer can pay in airplane mode.
 
-## ¿Por qué existe?
+## Tether stack
 
-En Argentina y buena parte de LATAM la señal es irregular y el efectivo duele. Las stablecoins ayudan, pero casi todas las wallets asumen internet permanente y una curva técnica alta.
+Walinox is built on Tether’s current client-side kits — not a custodial Tether account.
 
-Walinox apuesta a **firmar ahora, asentar después**, auto-custodia real, UI en español y una tienda usable en el mostrador. Inclusión financiera práctica, no otra app de trading.
+| Piece | What Walinox uses | Docs |
+| --- | --- | --- |
+| **USDT** | Ethereum mainnet ERC-20 settlement | [tether.io](https://tether.io) · [token](https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7) |
+| **[WDK](https://docs.wdk.tether.io)** | Local non-custodial wallet (`@tetherto/wdk`, `@tetherto/wdk-wallet-evm`) | [About WDK](https://docs.wdk.tether.io/overview/about/) · [Get started](https://docs.wdk.tether.io/sdk/get-started/) |
+| **EIP-7702 gasless** | Pay gas in USDT via `@tetherto/wdk-wallet-evm-7702-gasless` (Candide bundler). If that fails, the EOA needs ETH. | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) · [WDK module](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-evm-7702-gasless/) · [package](https://github.com/tetherto/wdk-wallet-evm-7702-gasless) |
+| **[QVAC](https://docs.qvac.tether.io)** | “In one sentence” form fill (send, contacts, products). Qwen3 0.6B Instruct Q4 via `/api/agent`. Heuristic fallback if QVAC is down. | [qvac.tether.io](https://qvac.tether.io) |
+| **MoonPay** | Fiat → USDT on-ramp (Tether WDK’s documented fiat rail) | [MoonPay](https://www.moonpay.com) |
 
-## ¿Qué hay hoy (MVP)?
+The seed stays on the device (PIN-encrypted). Tether does not custody keys. Walinox never stores the seed on the server.
 
-- **P2P / B2B** — enviar, recibir, pedir, pagar.
-- **B2C / Tienda** — catálogo del vendedor, caja (POS) y cobro por canales offline.
+## Ethereum primitives
 
-Pantallas:
+| Primitive | Why it is here |
+| --- | --- |
+| [ERC-20](https://eips.ethereum.org/EIPS/eip-20) | USDT transfers |
+| [EIP-712](https://eips.ethereum.org/EIPS/eip-712) | Typed signatures for Permit2, terms of use, and vales |
+| [ERC-2612](https://eips.ethereum.org/EIPS/eip-2612) | **Not** used — mainnet USDT has no `permit()` |
+| [Uniswap Permit2](https://developers.uniswap.org/docs/protocols/permit2/overview) | Signed spends that work for any ERC-20 |
+| [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) / [ERC-4337](https://eips.ethereum.org/EIPS/eip-4337) | Optional gasless path (paymaster takes USDT) |
+| [ENS](https://docs.ens.domains/) | Names like `lulox.eth` as pay-to addresses |
 
-- **Login** — RainbowKit o billetera local WDK + términos EIP-712.
-- **Billetera** — saldo, Ingresar / Recibir / Enviar / Pagar.
-- **Tienda** — pestañas Cobrar (default) y Catálogo.
-- **Contactos** — agenda mínima.
-- **Avisos** — notificaciones in-app (+ push si hay VAPID).
-- **Actividad** — historial local.
-- **Ajustes** — moneda, seguridad (PIN/biometría), tema, backup de seed (wallet local).
+Injected wallets (MetaMask, Rabby, Rainbow, …) connect through [RainbowKit](https://rainbowkit.com) + [wagmi](https://wagmi.sh) on Ethereum mainnet.
 
-Saldo en USDT con referencia en moneda local (cotización de mercado). Lo diferido (vitrina pública, vales, reporte mensual, off-ramp ARS): [`docs/roadmap.md`](docs/roadmap.md).
+## What ships in the MVP
 
-## ¿Cómo se mueve el USDT?
+- **P2P / B2B** — send, receive, request, pay (scan a signed envelope).
+- **B2C / Shop** — seller catalog, POS checkout, collect over every offline channel.
+- **Wallet** — on-chain USDT balance, on-ramp, receive, send, pay.
+- **Contacts, inbox, activity, settings** — PIN / biometrics, theme, seed backup (local wallet).
 
-USDT (`0xdAC17F958D2ee523a2206206994597C13D831ec7`):
+Deferred (public storefront URL, vouchers as a marketplace, monthly reports, USDT → ARS off-ramp): [roadmap](docs/roadmap.md).
 
-1. Una vez: `approve(Permit2)`.
-2. Cada gasto offline: EIP-712 `PermitTransferFrom`.
-3. El receptor llama `permitTransferFrom`. Ahí se mueve el token.
-
-Online, la wallet conectada puede transferir directo; WDK intenta gas en USDT (7702 gasless) y si falla usa EOA con ETH.
-
-## ¿Qué trae del stack Tether?
-
-**WDK** — billetera local no-custodial (`@tetherto/wdk` + `wdk-wallet-evm`). Seed en el dispositivo, cifrada con PIN.
-
-**QVAC** — atajo “En una frase” para completar formularios (enviar, contactos, productos). Modelo Qwen3 0.6B Instruct Q4 vía `/api/agent`. Sin QVAC, heurística local.
-
-**Pears** — envelopes offline con invite + topic (preparado para sala P2P). Sin runtime Pear en la PWA todavía.
-
-## ¿Cómo lo corro?
+## Run it
 
 Node 22.17+.
 
@@ -82,11 +89,11 @@ npm run build
 npm start
 ```
 
-Variables: [`docs/env.md`](docs/env.md). Entrada de usuario: [`docs/billetera.md`](docs/billetera.md). Backup multi-dispositivo: [`database.md`](database.md).
+Environment variables: [docs/env.md](docs/env.md). How users get a wallet: [docs/wallet.md](docs/wallet.md). Multi-device app data (never the seed): [database.md](database.md).
 
-## ¿Cuáles son los límites del MVP?
+## Honest limits
 
-- Seed local cifrada con PIN (sin recovery de cloud de la frase).
-- Push durable en Vercel necesita store durable en producción.
-- Candide público está rate-limited.
-- On-ramp MoonPay necesita `NEXT_PUBLIC_MOONPAY_API_KEY`; el off-ramp ARS es roadmap.
+- Local seed is PIN-encrypted on the device. There is no cloud recovery of the 12 words.
+- Durable web push on Vercel needs a durable store in production.
+- The public Candide bundler is rate-limited; gasless can fall back to an ETH-paying EOA.
+- MoonPay on-ramp needs `NEXT_PUBLIC_MOONPAY_API_KEY`. ARS off-ramp is still roadmap.
