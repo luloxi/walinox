@@ -1,17 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Mic, Sparkles } from "lucide-react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { heuristicIntent, type AgentIntent, type AgentTask } from "@/lib/agent";
 import { speechSupported, startSpeech, type SpeechHandle } from "@/lib/speech";
+import { cn } from "@/lib/utils";
+
+function QvacMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-[10px] font-bold tracking-wide text-primary",
+        className,
+      )}
+      aria-hidden
+    >
+      QV
+    </span>
+  );
+}
 
 export function QvacHint({
   task,
   owner,
   placeholder,
-  label = "Completar con una frase",
+  label = "En una frase",
   onFill,
 }: {
   task: AgentTask;
@@ -25,12 +40,50 @@ export function QvacHint({
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [kbPad, setKbPad] = useState(0);
   const speech = useRef<SpeechHandle | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const areaId = useId();
   const canSpeak = speechSupported();
 
   useEffect(() => {
     return () => speech.current?.stop();
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setKbPad(0);
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    function sync() {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      const obscured = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKbPad(obscured > 40 ? obscured : 0);
+      window.requestAnimationFrame(() => {
+        boxRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
+
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      document.getElementById(areaId)?.focus();
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [open, areaId]);
 
   async function apply(raw?: string) {
     const prompt = (raw ?? text).trim();
@@ -49,7 +102,7 @@ export function QvacHint({
         const data = (await res.json()) as AgentIntent & { error?: string };
         if (res.ok && !data.error) intent = data;
       } catch {
-        /* QVAC may be down; the heuristic still fills the form. */
+        /* offline / no QVAC */
       }
       if (!intent) intent = heuristicIntent(prompt, task);
       onFill(intent);
@@ -109,67 +162,77 @@ export function QvacHint({
     return (
       <button
         type="button"
-        className="flex cursor-pointer items-center gap-1.5 text-sm font-medium hover:text-primary"
+        className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-medium transition-colors hover:bg-muted active:scale-[0.99]"
         onClick={() => setOpen(true)}
       >
-        <Sparkles className="size-4 text-primary/80" />
-        {label}
+        <QvacMark />
+        <span>{label}</span>
       </button>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-sm font-medium">
-        <Sparkles className="size-4 text-primary/80" />
-        {label}
-      </p>
-      <div className="space-y-2 rounded-2xl border border-border p-3">
-      <Textarea
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={onKeyDown}
-        rows={2}
-        placeholder={listening ? "Te escucho…" : placeholder}
-        className="text-sm"
-        autoFocus
-        disabled={listening}
-      />
-      <p className="text-[11px] text-muted-foreground">Enter envía. Shift+Enter, otra línea.</p>
-      {error ? <p className="text-xs text-red-400">{error}</p> : null}
-      <div className="flex gap-2">
-        <Button type="button" size="sm" className="h-8" onClick={() => void apply()} disabled={busy || listening || !text.trim()}>
-          {busy ? "…" : "Completar"}
-        </Button>
-        {canSpeak ? (
-          <Button
-            type="button"
-            size="sm"
-            variant={listening ? "default" : "outline"}
-            className="h-8"
-            onClick={() => void toggleMic()}
-            disabled={busy}
-            aria-pressed={listening}
-            aria-label={listening ? "Dejar de escuchar" : "Hablar"}
-          >
-            <Mic className="size-3.5" />
-            {listening ? "Escuchando…" : "Hablar"}
-          </Button>
-        ) : null}
-        <Button
+    <div
+      ref={boxRef}
+      className="space-y-2 rounded-2xl border border-primary/30 bg-card p-3"
+      style={kbPad > 0 ? { marginBottom: kbPad } : undefined}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <QvacMark />
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        <button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Cerrar"
           onClick={() => {
             speech.current?.stop();
             setListening(false);
             setOpen(false);
           }}
         >
-          Cerrar
-        </Button>
+          <X className="size-4" />
+        </button>
       </div>
+      <Textarea
+        id={areaId}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={onKeyDown}
+        onFocus={() => {
+          window.requestAnimationFrame(() => {
+            boxRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+          });
+        }}
+        rows={2}
+        placeholder={listening ? "Te escucho…" : placeholder}
+        className="text-sm"
+        disabled={listening}
+      />
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          className="h-11 flex-1"
+          onClick={() => void apply()}
+          disabled={busy || listening || !text.trim()}
+        >
+          {busy ? "…" : "Listo"}
+        </Button>
+        {canSpeak ? (
+          <Button
+            type="button"
+            variant={listening ? "default" : "outline"}
+            className="h-11 gap-1.5 px-3"
+            onClick={() => void toggleMic()}
+            disabled={busy}
+            aria-pressed={listening}
+            aria-label={listening ? "Dejar de escuchar" : "Hablar"}
+          >
+            <Mic className="size-4" />
+          </Button>
+        ) : null}
       </div>
     </div>
   );
