@@ -13,7 +13,7 @@ import { formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 export function WalletCard() {
   const { wallet } = useWallet();
   const { prefs, setPrefs } = useDisplay();
-  const { usdt } = useUsdtBalance(wallet?.address);
+  const { usdt, offline } = useUsdtBalance(wallet?.address);
   const fx = useFx();
   const current = fiatMeta(prefs.fiat);
   const fiatFirst = prefs.primary === "fiat";
@@ -92,6 +92,11 @@ export function WalletCard() {
       </div>
         {n != null ? <BalanceSpark address={address} nowUsdt={n} /> : null}
       </div>
+      {offline ? (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Sin conexión · saldo guardado en este dispositivo
+        </p>
+      ) : null}
     </div>
   );
 }
