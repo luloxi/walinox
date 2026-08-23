@@ -1,7 +1,7 @@
 import type { Channel } from "@/lib/channels";
 import { rateAt, cachedArsPerUsdt } from "@/lib/fx";
 
-export type ReceiptAction = "created" | "signed" | "sent" | "received" | "issued" | "redeemed";
+export type ReceiptAction = "created" | "signed" | "sent" | "received" | "issued" | "redeemed" | "failed";
 
 export const ACTION_LABEL: Record<ReceiptAction, string> = {
   created: "Borrador",
@@ -10,7 +10,10 @@ export const ACTION_LABEL: Record<ReceiptAction, string> = {
   received: "Recibiste",
   issued: "Emitiste vale",
   redeemed: "Canjeaste vale",
+  failed: "Falló",
 };
+
+export const RECEIPTS_EVENT = "walinox.receipts";
 
 export type Receipt = {
   id: string;
@@ -24,6 +27,8 @@ export type Receipt = {
   signature: string;
   valid?: boolean;
   digest?: string;
+  /** Motivo cuando action es failed. */
+  error?: string;
   /** Unidades de moneda local por 1 USDT al momento del movimiento. */
   arsPerUsdt?: number;
 };
@@ -89,6 +94,11 @@ function currentStore(): ReceiptStore {
   return store;
 }
 
+function emitReceipts(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(RECEIPTS_EVENT));
+}
+
 function withRates(rows: Receipt[]): Receipt[] {
   let changed = false;
   const next = rows.map((row) => {
@@ -126,6 +136,7 @@ export function replaceReceiptsFor(address: string, receipts: Receipt[]): void {
     (item) => item.owner.toLowerCase() === key || item.spender.toLowerCase() === key,
   );
   current.save([...mine, ...others]);
+  emitReceipts();
 }
 
 export function addReceipt(
@@ -146,13 +157,21 @@ export function addReceipt(
       input.arsPerUsdt && input.arsPerUsdt > 0 ? input.arsPerUsdt : rateAt(at, cachedArsPerUsdt()),
   };
   current.save([receipt, ...existing]);
+  emitReceipts();
   return receipt;
+}
+
+export function removeReceipt(id: string): void {
+  const current = currentStore();
+  const next = current.load().filter((row) => row.id !== id);
+  current.save(next);
+  emitReceipts();
 }
 
 export function receiptFromPermit(
   fields: { owner: string; spender: string; value: string; token: string },
   extra: Pick<Receipt, "action" | "channel" | "signature"> &
-    Partial<Pick<Receipt, "valid" | "digest" | "id" | "at">>,
+    Partial<Pick<Receipt, "valid" | "digest" | "id" | "at" | "error">>,
 ): Receipt {
   return addReceipt({
     owner: fields.owner,

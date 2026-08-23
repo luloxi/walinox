@@ -15,7 +15,7 @@ import {
 } from "@/lib/activity";
 import { etherscanAddressActivityUrl } from "@/lib/etherscan";
 import { listStores } from "@/lib/catalog";
-import { listReceiptsFor } from "@/lib/receipts";
+import { listReceiptsFor, RECEIPTS_EVENT } from "@/lib/receipts";
 
 import { Price } from "@/components/price";
 import { useFx } from "@/components/use-fx";
@@ -34,10 +34,15 @@ export function SummaryView() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    function refresh() {
       setReceipts(listReceiptsFor(wallet?.address));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    }
+    const timer = window.setTimeout(refresh, 0);
+    window.addEventListener(RECEIPTS_EVENT, refresh);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(RECEIPTS_EVENT, refresh);
+    };
   }, [wallet?.address]);
 
   const fx = useFx();

@@ -80,10 +80,11 @@ export function SendFlow() {
   const fx = useFx();
   const search = useSearchParams();
   const [mode, setMode] = useState<PayMode>("online");
+  const retryAmount = search.get("amount");
   const [to, setTo] = useState(() => search.get("to") ?? "");
-  const [unit, setUnit] = useState<"fiat" | "usdt">(prefs.primary);
-  const [amountInput, setAmountInput] = useState("");
-  const [exactUsdt, setExactUsdt] = useState<string | null>(null);
+  const [unit, setUnit] = useState<"fiat" | "usdt">(retryAmount ? "usdt" : prefs.primary);
+  const [amountInput, setAmountInput] = useState(() => retryAmount ?? "");
+  const [exactUsdt, setExactUsdt] = useState<string | null>(retryAmount);
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,12 +167,12 @@ export function SendFlow() {
       setError("Address, ENS o Basename inválido");
       return;
     }
+    const value = toBaseUnits(amount, USDT.decimals);
     setBusy(true);
     setError(null);
     setHash(null);
     try {
       await ensure();
-      const value = toBaseUnits(amount, USDT.decimals);
       const tx = await wallet.transfer(USDT.address, dest, value);
       setHash(tx);
       receiptFromPermit(
@@ -184,10 +185,14 @@ export function SendFlow() {
       );
       setSavedTo(dest);
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "No se pudo enviar. Hace falta USDT para el gas (paymaster) y saldo del token.",
+          : "No se pudo enviar. Hace falta USDT para el gas (paymaster) y saldo del token.";
+      setError(message);
+      receiptFromPermit(
+        { owner: wallet.address, spender: dest, value, token: USDT.symbol },
+        { action: "failed", channel: "online", signature: "", valid: false, error: message },
       );
     } finally {
       setBusy(false);

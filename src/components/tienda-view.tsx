@@ -20,7 +20,7 @@ import {
 } from "@/lib/backup";
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { productsByIssuer, removeProduct } from "@/lib/catalog";
-import { listReceiptsFor, type Receipt } from "@/lib/receipts";
+import { listReceiptsFor, RECEIPTS_EVENT, type Receipt } from "@/lib/receipts";
 
 import type { Product } from "@/lib/vale";
 
@@ -42,7 +42,11 @@ export function TiendaView() {
 
   useEffect(() => {
     const timer = window.setTimeout(refresh, 0);
-    return () => window.clearTimeout(timer);
+    window.addEventListener(RECEIPTS_EVENT, refresh);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(RECEIPTS_EVENT, refresh);
+    };
   }, [wallet?.address]);
 
   useEffect(() => {

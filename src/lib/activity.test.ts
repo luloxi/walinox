@@ -43,6 +43,9 @@ describe("activity", () => {
     expect(receiptActionLabel(receipt({ action: "sent", owner: ME, spender: PEER, value: "1" }), ME)).toBe(
       "Enviaste",
     );
+    const failed = receipt({ action: "failed", owner: ME, spender: PEER, value: "2000000" });
+    expect(receiptFlow(failed, ME)).toBe("none");
+    expect(receiptActionLabel(failed, ME)).toBe("Falló");
     expect(receiptOrigin(receipt({ action: "issued", owner: ME, spender: PEER, value: "1", token: "VALE" }))).toBe(
       "tienda",
     );

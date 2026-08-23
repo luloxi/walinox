@@ -6,7 +6,7 @@ import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
 import { spark24h, sparkPath } from "@/lib/balance-spark";
 import { formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
-import { listReceipts, type Receipt } from "@/lib/receipts";
+import { listReceipts, RECEIPTS_EVENT, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
 
 const W = 320;
@@ -15,8 +15,15 @@ const H = 64;
 function useDaySpark(address: string, nowUsdt: number) {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   useEffect(() => {
-    const timer = window.setTimeout(() => setReceipts(listReceipts()), 0);
-    return () => window.clearTimeout(timer);
+    function refresh() {
+      setReceipts(listReceipts());
+    }
+    const timer = window.setTimeout(refresh, 0);
+    window.addEventListener(RECEIPTS_EVENT, refresh);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(RECEIPTS_EVENT, refresh);
+    };
   }, [address]);
   return useMemo(() => spark24h(receipts, address, nowUsdt), [receipts, address, nowUsdt]);
 }

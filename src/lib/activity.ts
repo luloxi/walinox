@@ -63,7 +63,9 @@ export function amountUsdt(value: string): number {
 }
 
 export function receiptFlow(receipt: Receipt, me?: string): FlowKind {
-  if (receipt.action === "created" || receipt.action === "redeemed") return "none";
+  if (receipt.action === "created" || receipt.action === "redeemed" || receipt.action === "failed") {
+    return "none";
+  }
   const mine = me?.toLowerCase();
   const owner = receipt.owner.toLowerCase();
   const spender = receipt.spender.toLowerCase();

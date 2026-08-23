@@ -110,7 +110,17 @@ export function ProductDetail() {
       setPaid(true);
       setProduct(getProduct(listing.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo comprar");
+      const message = err instanceof Error ? err.message : "No se pudo comprar";
+      setError(message);
+      receiptFromPermit(
+        {
+          owner: wallet.address,
+          spender: listing.issuer,
+          value: toBaseUnits(listing.price, USDT.decimals),
+          token: USDT.symbol,
+        },
+        { action: "failed", channel: "online", signature: "", valid: false, error: message },
+      );
     } finally {
       setBusy(false);
     }

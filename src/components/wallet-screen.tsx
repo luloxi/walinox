@@ -10,7 +10,7 @@ import { ActivityList } from "@/components/activity-list";
 import { OnrampPanel } from "@/components/onramp-panel";
 import { SectionLabel } from "@/components/empty-state";
 import { useWallet } from "@/components/wallet-provider";
-import { listReceiptsFor, type Receipt } from "@/lib/receipts";
+import { listReceiptsFor, RECEIPTS_EVENT, type Receipt } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
 
 const SendFlow = dynamic(() => import("@/components/send-flow").then((m) => m.SendFlow), {
@@ -79,8 +79,15 @@ export function WalletScreen() {
   const [recent, setRecent] = useState<Receipt[]>([]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setRecent(listReceiptsFor(wallet?.address).slice(0, 5)), 0);
-    return () => window.clearTimeout(timer);
+    function refresh() {
+      setRecent(listReceiptsFor(wallet?.address).slice(0, 5));
+    }
+    const timer = window.setTimeout(refresh, 0);
+    window.addEventListener(RECEIPTS_EVENT, refresh);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(RECEIPTS_EVENT, refresh);
+    };
   }, [wallet?.address]);
 
   function go(next: string) {
