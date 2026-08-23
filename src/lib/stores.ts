@@ -80,10 +80,10 @@ export const MOCK_PRODUCTS: Product[] = [
   mockProduct(panaderia, "Pan de masa madre", "5", 50, "Caja", "/products/pan.jpg", "panaderia", 31, "2026-01-20T08:00:00.000Z"),
   mockProduct(feria, "Kit de huerta", "18", 15, "Puesto 12", "/products/huerta.jpg", "huerta", 9, "2026-04-12T15:00:00.000Z"),
   mockProduct(feria, "Miel 500g", "7", 25, "Puesto 12", "/products/miel.jpg", "almacen", 11, "2026-03-22T15:00:00.000Z"),
-  mockProduct(localLulox, "Tostado de barrio 250g", "11", 30, "Mostrador", "/products/cafe-250g.jpg", "cafe", 9, "2026-04-04T12:00:00.000Z"),
-  mockProduct(localLulox, "Facturas del sábado", "6", 40, "Caja", "/products/facturas.jpg", "panaderia", 16, "2026-04-11T09:00:00.000Z"),
-  mockProduct(localLulox, "Yerba mate 500g", "8", 25, "Almacén", "/products/blend-1kg.jpg", "almacen", 7, "2026-05-02T14:00:00.000Z"),
-  mockProduct(localLulox, "Plantín de albahaca", "4", 20, "Huerta", "/products/huerta.jpg", "huerta", 5, "2026-05-20T16:00:00.000Z"),
+  mockProduct(localLulox, "Tostado de barrio 250g", "2", 30, "Mostrador", "/products/cafe-250g.jpg", "cafe", 9, "2026-04-04T12:00:00.000Z"),
+  mockProduct(localLulox, "Facturas del sábado", "1", 40, "Caja", "/products/facturas.jpg", "panaderia", 16, "2026-04-11T09:00:00.000Z"),
+  mockProduct(localLulox, "Yerba mate 500g", "2", 25, "Almacén", "/products/blend-1kg.jpg", "almacen", 7, "2026-05-02T14:00:00.000Z"),
+  mockProduct(localLulox, "Plantín de albahaca", "1", 20, "Huerta", "/products/huerta.jpg", "huerta", 5, "2026-05-20T16:00:00.000Z"),
 ];
 
 export function storeById(id: string): Store | undefined {
