@@ -313,7 +313,7 @@ export function SendFlow() {
 
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
-    <div className="space-y-3 pb-2 md:space-y-4">
+      <div className="space-y-3 pb-2 md:space-y-4">
         <div className="space-y-6">
           <section className="space-y-2">
             <p className="text-sm font-medium">Destinatario</p>
@@ -461,27 +461,45 @@ export function SendFlow() {
               <ConnectButton label="Conectar wallet" />
             </div>
           ) : null}
+          <div
+            className="grid h-11 grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+            role="tablist"
+            aria-label="Modo de envío"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "online"}
+              disabled={busy}
+              className={`rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                mode === "online" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+              }`}
+              onClick={() => applyMode("online")}
+            >
+              Online
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "offline"}
+              disabled={busy}
+              className={`rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                mode === "offline" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+              }`}
+              onClick={() => applyMode("offline")}
+            >
+              Offline
+            </button>
+          </div>
           {mode === "online" && needsSwitch ? (
             <p className="text-xs text-muted-foreground">Al enviar te va a pedir cambiar a Ethereum.</p>
           ) : null}
           {mode === "offline" ? (
-            <p className="text-xs text-muted-foreground">Firmás ahora y lo pasás por QR, sonido o luz.</p>
+            <p className="text-xs text-muted-foreground">Firmás ahora y lo pasás por QR u otro canal.</p>
           ) : null}
-          <div className="flex gap-2">
-            <Button type="button" className="h-11 min-w-0 flex-1" disabled={!canPay} onClick={() => pay()}>
-              {payLabel}
-            </Button>
-            <select
-              className="h-11 w-[6.8rem] shrink-0 cursor-pointer rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30 disabled:cursor-not-allowed disabled:opacity-50"
-              value={mode}
-              disabled={busy}
-              aria-label="Online u offline"
-              onChange={(event) => applyMode(event.target.value === "offline" ? "offline" : "online")}
-            >
-              <option value="online">Online</option>
-              <option value="offline">Offline</option>
-            </select>
-          </div>
+          <Button type="button" className="h-12 w-full" disabled={!canPay} onClick={() => pay()}>
+            {payLabel}
+          </Button>
           {hash ? (
             <div className="space-y-1">
               <p className="break-all font-mono text-[11px] text-muted-foreground">Tx {hash}</p>
@@ -541,17 +559,17 @@ export function SendFlow() {
           ) : null}
         </div>
 
-      {walletError ? (
-        <Alert>
-          <AlertDescription>{walletError}</AlertDescription>
-        </Alert>
-      ) : null}
-      {error ? (
-        <Alert>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
-    </div>
+        {walletError ? (
+          <Alert>
+            <AlertDescription>{walletError}</AlertDescription>
+          </Alert>
+        ) : null}
+        {error ? (
+          <Alert>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+      </div>
     </div>
   );
 }
