@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Users } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine, Users } from "lucide-react";
 import { SendFlow } from "@/components/send-flow";
 import { ReceiveFlow } from "@/components/receive-flow";
 import { WalletCard } from "@/components/wallet-card";
@@ -12,6 +12,7 @@ import { listReceipts, type Receipt } from "@/lib/receipts";
 
 const ACTIONS = [
   { id: "recibir", label: "Depositar", icon: ArrowDownLeft, href: null as string | null },
+  { id: "pagar", label: "Pagar", icon: ScanLine, href: null },
   { id: "enviar", label: "Enviar", icon: ArrowUpRight, href: null },
   { id: "contactos", label: "Contactos", icon: Users, href: "/contacts" },
 ] as const;
@@ -36,7 +37,7 @@ export function WalletScreen() {
     router.replace(qs ? `/?${qs}` : "/");
   }
 
-  const inFlow = tab === "enviar" || tab === "recibir";
+  const inFlow = tab === "enviar" || tab === "recibir" || tab === "pagar";
 
   if (inFlow) {
     return (
@@ -52,7 +53,11 @@ export function WalletScreen() {
           </button>
         </div>
         <div className="min-h-0 flex-1">
-          {tab === "enviar" ? <SendFlow /> : <ReceiveFlow />}
+          {tab === "enviar" ? (
+            <SendFlow />
+          ) : (
+            <ReceiveFlow focus={tab === "pagar" ? "scan" : "me"} />
+          )}
         </div>
       </div>
     );
@@ -61,7 +66,7 @@ export function WalletScreen() {
   return (
     <div className="flex min-h-full flex-col gap-6">
       <WalletCard>
-        <div className="mt-5 flex justify-center gap-3 md:mt-6">
+        <div className="mt-5 flex justify-center gap-2 md:mt-6 md:gap-3">
           {ACTIONS.map((item) => {
             const Icon = item.icon;
             const on = tab === item.id;
@@ -76,7 +81,7 @@ export function WalletScreen() {
                 <span className="text-[11px] font-medium">{item.label}</span>
               </>
             );
-            const className = `flex w-16 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground ${
+            const className = `flex w-14 cursor-pointer flex-col items-center gap-1.5 hover:text-foreground md:w-16 ${
               on ? "text-primary" : "text-muted-foreground"
             }`;
             if (item.href) {

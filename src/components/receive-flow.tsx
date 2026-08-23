@@ -7,10 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
+import { OfflineSend } from "@/components/offline-send";
+import { Price } from "@/components/price";
+import { UsdtLogo } from "@/components/usdt-logo";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { PayCharge } from "@/components/pay-charge";
-import { decodeCharge, type ChargeRequest } from "@/lib/charge";
+import {
+  buildCharge,
+  decodeCharge,
+  encodeCharge,
+  type ChargeRequest,
+} from "@/lib/charge";
 import { decodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { broadcastPermit, encodePermitCall, validatePermitSignature, type PermitTypedData } from "@/lib/permit";
 import {
@@ -35,6 +43,8 @@ type Result = {
   reason?: string;
   recovered?: string;
 };
+
+type Focus = "me" | "pedir" | "scan";
 
 function ingest(raw: string, channel: Channel): Result {
   const envelope = decodeEnvelope(raw);
@@ -79,7 +89,7 @@ function ingest(raw: string, channel: Channel): Result {
   };
 }
 
-export function ReceiveFlow() {
+export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
   const { wallet } = useWallet();
   const { ensure } = usePaymentChain();
   const [addressQr, setAddressQr] = useState<string | null>(null);
@@ -92,6 +102,11 @@ export function ReceiveFlow() {
   const [result, setResult] = useState<Result | null>(null);
   const [charge, setCharge] = useState<ChargeRequest | null>(null);
   const [tx, setTx] = useState<string | null>(null);
+  const [askAmount, setAskAmount] = useState("");
+  const [askNote, setAskNote] = useState("");
+  const [askBusy, setAskBusy] = useState(false);
+  const [askCharge, setAskCharge] = useState<ChargeRequest | null>(null);
+  const [askQr, setAskQr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wallet) return;
@@ -158,6 +173,31 @@ export function ReceiveFlow() {
     }
   }
 
+  async function makeRequest() {
+    if (!wallet) return;
+    const amount = askAmount.trim();
+    if (!amount || Number(amount) <= 0) {
+      setError("Monto inválido");
+      return;
+    }
+    setAskBusy(true);
+    setError(null);
+    try {
+      const note = askNote.trim() || "Pedido";
+      const next = buildCharge({
+        to: wallet.address,
+        store: note,
+        items: [{ productId: "request", title: note, price: amount, qty: 1 }],
+      });
+      setAskCharge(next);
+      setAskQr(await payloadToDataUrl(encodeCharge(next)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo armar el pedido");
+    } finally {
+      setAskBusy(false);
+    }
+  }
+
   const envelope = result?.envelope;
   const tokenLabel = envelope
     ? `${tokenByAddress(envelope.token)?.symbol ?? envelope.token} · ${envelope.kind}`
@@ -166,11 +206,14 @@ export function ReceiveFlow() {
   return (
     <div className="mx-auto w-full max-w-lg pb-6">
     <div className="space-y-3 pb-2 md:space-y-4">
-      <Tabs defaultValue="me">
+      <Tabs defaultValue={focus}>
         <SectionBar>
           <TabsList>
             <TabsTrigger value="me" className="cursor-pointer">
               Address
+            </TabsTrigger>
+            <TabsTrigger value="pedir" className="cursor-pointer">
+              Pedir
             </TabsTrigger>
             <TabsTrigger value="scan" className="cursor-pointer">
               Escanear
@@ -206,6 +249,75 @@ export function ReceiveFlow() {
           >
             {copied ? "Address copiada" : "Copiar address"}
           </Button>
+        </TabsContent>
+
+        <TabsContent value="pedir" className="mt-4 space-y-3">
+          {askCharge ? (
+            <div className="space-y-3">
+              <button
+                type="button"
+                className="cursor-pointer text-xs text-primary"
+                onClick={() => {
+                  setAskCharge(null);
+                  setAskQr(null);
+                }}
+              >
+                Cambiar monto
+              </button>
+              <div className="rounded-2xl border border-border px-3 py-2">
+                <p className="text-[11px] text-muted-foreground">{askCharge.store}</p>
+                <Price usdt={askCharge.amount} size="lg" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Mostrale este QR. El otro firma el pago y vos lo confirmás después.
+              </p>
+              <OfflineSend
+                payload={encodeCharge(askCharge)}
+                qrUrl={askQr}
+                filename="walinox-pedido.json"
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Armá un pedido. El otro lo paga con Pagar o escaneando acá.
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Monto</p>
+                <div className="flex h-11 items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-inset focus-within:ring-ring/50 dark:bg-input/30">
+                  <span className="pl-3 text-sm text-muted-foreground" aria-hidden="true">
+                    <UsdtLogo className="size-4" />
+                  </span>
+                  <Input
+                    inputMode="decimal"
+                    value={askAmount}
+                    onChange={(event) => setAskAmount(event.target.value)}
+                    placeholder="0"
+                    className="h-11 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
+                    aria-label="Monto en USDT"
+                  />
+                  <span className="pr-3 text-sm text-muted-foreground">USDT</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Nota</p>
+                <Input
+                  value={askNote}
+                  onChange={(event) => setAskNote(event.target.value)}
+                  placeholder="Café, alquiler, lo que sea"
+                  className="h-11"
+                />
+              </div>
+              <Button
+                type="button"
+                className="h-11 w-full"
+                disabled={!wallet || askBusy || !askAmount.trim()}
+                onClick={() => void makeRequest()}
+              >
+                {askBusy ? "Armando…" : "Generar pedido"}
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="scan" className="mt-4 space-y-3">
