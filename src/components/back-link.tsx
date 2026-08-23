@@ -29,10 +29,5 @@ export function nestedBack(pathname: string): { href: string; label: string } | 
   if (pathname.startsWith("/contacts/") && pathname !== "/contacts") {
     return { href: "/contacts", label: "Contactos" };
   }
-  if (pathname.startsWith("/tienda/") && pathname !== "/tienda") {
-    return { href: "/tienda", label: "Tienda" };
-  }
-  if (pathname.startsWith("/products/")) return { href: "/tienda", label: "Tienda" };
-  if (pathname.startsWith("/vales")) return { href: "/tienda", label: "Tienda" };
   return null;
 }
