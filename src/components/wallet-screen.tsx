@@ -1,14 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ScanLine, Users } from "lucide-react";
-import { SendFlow } from "@/components/send-flow";
-import { ReceiveFlow } from "@/components/receive-flow";
 import { WalletCard } from "@/components/wallet-card";
 import { ActivityList } from "@/components/activity-list";
 import { listReceipts, type Receipt } from "@/lib/receipts";
+
+const SendFlow = dynamic(() => import("@/components/send-flow").then((m) => m.SendFlow), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted-foreground">Cargando…</p>,
+});
+
+const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) => m.ReceiveFlow), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted-foreground">Cargando…</p>,
+});
 
 const ACTIONS = [
   { id: "recibir", label: "Depositar", icon: ArrowDownLeft, href: null as string | null },

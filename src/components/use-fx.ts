@@ -2,23 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useDisplay } from "@/components/display-provider";
-import { cacheFxQuote, FALLBACK_PER_USDT, type FxQuote } from "@/lib/fx";
+import { cacheFxQuote, cachedPerUsdt, FALLBACK_PER_USDT, type FxQuote } from "@/lib/fx";
 
 export function useFx(): FxQuote {
   const { prefs } = useDisplay();
-  const [quote, setQuote] = useState<FxQuote>({
+  const [quote, setQuote] = useState<FxQuote>(() => ({
     fiat: prefs.fiat,
-    perUsdt: FALLBACK_PER_USDT[prefs.fiat],
-    source: "fallback",
+    perUsdt: cachedPerUsdt(prefs.fiat),
+    source: "cache",
     at: "",
-  });
+  }));
 
   useEffect(() => {
     let live = true;
     setQuote({
       fiat: prefs.fiat,
-      perUsdt: FALLBACK_PER_USDT[prefs.fiat],
-      source: "fallback",
+      perUsdt: cachedPerUsdt(prefs.fiat),
+      source: "cache",
       at: "",
     });
     const timer = window.setTimeout(() => {
@@ -30,7 +30,7 @@ export function useFx(): FxQuote {
           setQuote(data);
         })
         .catch(() => {
-          /* keep fallback */
+          /* keep cache / fallback */
         });
     }, 0);
     return () => {
@@ -39,5 +39,7 @@ export function useFx(): FxQuote {
     };
   }, [prefs.fiat]);
 
-  return quote.fiat === prefs.fiat ? quote : { ...quote, fiat: prefs.fiat, perUsdt: FALLBACK_PER_USDT[prefs.fiat] };
+  return quote.fiat === prefs.fiat
+    ? quote
+    : { ...quote, fiat: prefs.fiat, perUsdt: cachedPerUsdt(prefs.fiat) };
 }

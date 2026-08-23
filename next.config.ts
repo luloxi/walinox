@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     "@tetherto/wdk-wallet-evm-7702-gasless",
     "@rainbow-me/rainbowkit",
   ],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@rainbow-me/rainbowkit"],
+  },
   turbopack: {
     root: path.join(__dirname),
     resolveAlias: {

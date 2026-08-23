@@ -1,12 +1,54 @@
-const CACHE = "walinox-v3";
+const CACHE = "walinox-v4";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
-const CORE_ROUTES = ["/", "/receive", "/summary", "/manifest.webmanifest"];
+
+const PRECACHE = [
+  "/",
+  "/contacts",
+  "/tienda",
+  "/summary",
+  "/settings",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/apple-touch-icon.png",
+];
+
+function isStaticAsset(url) {
+  return (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/products/") ||
+    url.pathname === "/apple-touch-icon.png" ||
+    url.pathname === "/manifest.webmanifest" ||
+    /\.(?:js|css|woff2?|png|jpg|jpeg|svg|webp|ico)$/i.test(url.pathname)
+  );
+}
+
+function isNavigation(request) {
+  return request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
+}
+
+async function cachePut(request, response) {
+  if (!response || !response.ok) return;
+  if (new URL(request.url).origin !== self.location.origin) return;
+  const copy = response.clone();
+  const cache = await caches.open(CACHE);
+  await cache.put(request, copy);
+}
+
+async function fromCache(request) {
+  return (await caches.match(request)) || (await caches.match(new URL(request.url).pathname));
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (LOCAL
       ? Promise.resolve()
-      : caches.open(CACHE).then((cache) => cache.addAll(CORE_ROUTES))
+      : caches.open(CACHE).then((cache) =>
+          Promise.all(
+            PRECACHE.map((path) => cache.add(path).catch(() => undefined)),
+          ),
+        )
     ).then(() => self.skipWaiting()),
   );
 });
@@ -25,23 +67,54 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname === "/sw.js") return;
 
   if (LOCAL) {
-    event.respondWith(fetch(request).catch(async () => (await caches.match(request)) ?? Response.error()));
+    event.respondWith(fetch(request).catch(async () => (await fromCache(request)) ?? Response.error()));
+    return;
+  }
+
+  if (isStaticAsset(url)) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          void cachePut(request, response);
+          return response;
+        });
+      }),
+    );
+    return;
+  }
+
+  if (isNavigation(request)) {
+    event.respondWith(
+      (async () => {
+        const cached = await fromCache(request);
+        const network = fetch(request)
+          .then((response) => {
+            void cachePut(request, response);
+            return response;
+          })
+          .catch(() => null);
+        if (cached) {
+          void network;
+          return cached;
+        }
+        return (await network) ?? (await caches.match("/")) ?? Response.error();
+      })(),
+    );
     return;
   }
 
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
-          const copy = response.clone();
-          void caches.open(CACHE).then((cache) => cache.put(request, copy));
-        }
+        void cachePut(request, response);
         return response;
       })
-      .catch(async () => (await caches.match(request)) ?? (await caches.match("/")) ?? Response.error()),
+      .catch(async () => (await fromCache(request)) ?? (await caches.match("/")) ?? Response.error()),
   );
 });
 
