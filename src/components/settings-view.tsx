@@ -19,7 +19,6 @@ import {
   subscribePush,
   unsubscribePush,
 } from "@/lib/notify";
-import { maybeDeliverMonthlyReport, monthlyReportOn, setMonthlyReportOn } from "@/lib/monthly-report";
 
 function notifyStatus(): "on" | "off" | "denied" | "unsupported" {
   if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
@@ -37,13 +36,9 @@ export function SettingsView() {
   const { disconnect } = useDisconnect();
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [alerts, setAlerts] = useState<"on" | "off" | "denied" | "unsupported">("off");
-  const [monthly, setMonthly] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setAlerts(notifyStatus());
-      setMonthly(monthlyReportOn());
-    }, 0);
+    const timer = window.setTimeout(() => setAlerts(notifyStatus()), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -166,36 +161,6 @@ export function SettingsView() {
         <div className="pt-2">
           <InboxList />
         </div>
-      </section>
-
-      <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Reporte</p>
-        {monthly ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full"
-            onClick={() => {
-              setMonthlyReportOn(false);
-              setMonthly(false);
-            }}
-          >
-            Desactivar resumen mensual
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="h-11 w-full"
-            disabled={!wallet}
-            onClick={() => {
-              setMonthlyReportOn(true);
-              setMonthly(true);
-              if (wallet?.address) maybeDeliverMonthlyReport(wallet.address);
-            }}
-          >
-            Resumen mensual
-          </Button>
-        )}
       </section>
 
       <section className="mt-6 space-y-2">
