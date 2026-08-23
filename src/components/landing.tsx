@@ -42,7 +42,7 @@ export function Landing() {
             alt=""
             width={72}
             height={72}
-            className="size-16 rounded-2xl md:size-20"
+            className="size-16 rounded-full md:size-20"
           />
           <h1 className="mt-6 text-3xl font-semibold tracking-tight md:text-4xl">Walinox</h1>
           <p className="mt-3 max-w-sm text-base leading-snug text-muted-foreground">

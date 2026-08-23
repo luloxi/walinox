@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Let someone spend your USDT — sign offline, send by QR.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0c1110",
-    theme_color: "#0c1110",
+    background_color: "#119f79",
+    theme_color: "#119f79",
     orientation: "portrait",
     lang: "es",
     icons: [

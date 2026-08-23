@@ -1,4 +1,4 @@
-const CACHE = "walinox-v7";
+const CACHE = "walinox-v8";
 const LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 const PRECACHE = [
@@ -8,6 +8,7 @@ const PRECACHE = [
   "/summary",
   "/settings",
   "/manifest.webmanifest",
+  "/favicon.ico",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/apple-touch-icon.png",
