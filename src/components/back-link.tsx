@@ -30,7 +30,7 @@ export function nestedBack(pathname: string): { href: string; label: string } | 
     return { href: "/contacts", label: "Contactos" };
   }
   if (pathname.startsWith("/products")) {
-    return { href: "/tienda", label: "Local" };
+    return { href: "/tienda", label: "Tienda" };
   }
   return null;
 }
