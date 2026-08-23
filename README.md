@@ -11,6 +11,24 @@ Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app) · repo `luloxi/wal
 
 Diferido (vitrina pública, vales, reporte mensual): [`docs/roadmap.md`](docs/roadmap.md).
 
+## Impacto social / Financial Inclusion
+
+Walinox está pensado para inclusión financiera real en contextos de alta inflación y conectividad irregular (Argentina / LATAM).
+
+**El problema**  
+Millones de personas y comercios chicos operan fuera del sistema bancario tradicional o con señal inestable. El efectivo es riesgoso e ineficiente. Las transferencias bancarias son lentas, caras o inaccesibles. Las stablecoins existen, pero la mayoría de las billeteras exigen internet permanente y fricción técnica que deja afuera al usuario de todos los días.
+
+**Qué hace Walinox**  
+- Permite **firmar pagos en USDT offline** (sin señal ni datos en el momento del pago)
+- Comercios y personas pueden cobrar en la tienda, kiosco, feria o calle y asentar on-chain después, cuando hay red
+- Auto-custodia total: las claves las tiene el usuario
+- Pensado para comercio real: modo tienda/POS, contactos, QR y canales offline, referencia en pesos (dólar blue)
+
+**Por qué importa**  
+Al sacar la necesidad de internet permanente y simplificar el uso de stablecoins para usuarios no técnicos, Walinox acerca dólares digitales utilizables a personas y negocios que la finanza tradicional y las wallets crypto actuales dejan afuera. Es infraestructura de inclusión, no de especulación.
+
+Alineado con Blockchain for Good: acceso a herramientas financieras digitales, reducción de desigualdad y soluciones blockchain prácticas para actividad económica real en mercados emergentes.
+
 ## Qué hay hoy (MVP)
 
 - **Login** — RainbowKit o billetera local WDK + términos EIP-712.
