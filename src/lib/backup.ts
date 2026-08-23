@@ -40,25 +40,29 @@ export function parsePayload(raw: unknown): CloudPayload | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
   if (value.v !== 1) return null;
-  const products = asArray<Product>(value.products).filter(
-    (item) => item && typeof item.id === "string" && isAddress(item.issuer),
-  );
-  const contacts = asArray<Contact>(value.contacts).filter(
-    (item) => item && isAddress(item.address),
-  );
+  const products = asArray<Product>(value.products)
+    .filter((item) => item && typeof item.id === "string" && isAddress(item.issuer))
+    .slice(0, 200);
+  const contacts = asArray<Contact>(value.contacts)
+    .filter((item) => item && isAddress(item.address))
+    .slice(0, 400);
   const displayRaw = (value.display ?? {}) as Partial<DisplayPrefs>;
   const display: DisplayPrefs = {
     fiat: displayRaw.fiat && isFiatId(displayRaw.fiat) ? displayRaw.fiat : DEFAULT_DISPLAY.fiat,
     primary: displayRaw.primary === "usdt" ? "usdt" : "fiat",
   };
   const theme: Theme = isTheme(value.theme as string) ? (value.theme as Theme) : "dark";
-  const receipts = asArray<Receipt>(value.receipts).filter((item) => item && typeof item.id === "string");
-  const inbox = asArray<InboxItem>(value.inbox).filter((item) => item && typeof item.id === "string");
+  const receipts = asArray<Receipt>(value.receipts)
+    .filter((item) => item && typeof item.id === "string")
+    .slice(0, 400);
+  const inbox = asArray<InboxItem>(value.inbox)
+    .filter((item) => item && typeof item.id === "string")
+    .slice(0, 80);
   const catalogRaw = (value.catalog ?? {}) as Partial<CatalogSlice>;
   const catalog: CatalogSlice = {
-    held: asArray(catalogRaw.held),
-    issued: asArray(catalogRaw.issued),
-    redeemed: asArray(catalogRaw.redeemed),
+    held: asArray(catalogRaw.held).slice(0, 200),
+    issued: asArray(catalogRaw.issued).slice(0, 200),
+    redeemed: asArray(catalogRaw.redeemed).slice(0, 200),
   };
   const payload: CloudPayload = { v: 1, products, contacts, display, theme, receipts, inbox, catalog };
   if (JSON.stringify(payload).length > MAX_JSON) return null;

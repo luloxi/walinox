@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isFiatId, type FiatId } from "@/lib/display";
 import { FALLBACK_PER_USDT, type FxQuote } from "@/lib/fx";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const revalidate = 300;
@@ -106,6 +107,10 @@ async function quoteFiat(fiat: FiatId): Promise<FxQuote> {
 }
 
 export async function GET(request: Request) {
+  const limited = rateLimit(clientKey(request, "fx"), 60, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json({ error: "rate limit" }, { status: 429 });
+  }
   const fiatParam = new URL(request.url).searchParams.get("fiat") ?? "ARS";
   const fiat: FiatId = isFiatId(fiatParam) ? fiatParam : "ARS";
   const quote = await quoteFiat(fiat);

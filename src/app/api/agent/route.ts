@@ -14,11 +14,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "rate limit" }, { status: 429 });
   }
 
-  const body = (await request.json()) as {
-    prompt?: string;
-    owner?: string;
-    task?: string;
-  };
+  let body: { prompt?: string; owner?: string; task?: string };
+  try {
+    body = (await request.json()) as { prompt?: string; owner?: string; task?: string };
+  } catch {
+    return NextResponse.json({ error: "bad json" }, { status: 400 });
+  }
   const prompt = body.prompt?.trim().slice(0, MAX_PROMPT);
   const owner = body.owner?.trim() ?? "";
   const task: AgentTask = TASKS.has(body.task as AgentTask) ? (body.task as AgentTask) : "send";

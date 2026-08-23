@@ -18,9 +18,17 @@ type Body = {
 };
 
 export async function POST(request: Request) {
-  const limited = rateLimit(clientKey(request, "backup"), 20, 60_000);
+  const limited = rateLimit(clientKey(request, "backup"), 10, 60_000);
   if (!limited.ok) {
-    return NextResponse.json({ error: "rate limit" }, { status: 429 });
+    return NextResponse.json(
+      { error: "rate limit" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(limited.retryAfterMs / 1000) || 1) } },
+    );
+  }
+
+  const bytes = Number(request.headers.get("content-length"));
+  if (Number.isFinite(bytes) && bytes > 900_000) {
+    return NextResponse.json({ error: "copia grande" }, { status: 413 });
   }
 
   const prisma = getPrisma();
@@ -28,7 +36,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "sin base" }, { status: 503 });
   }
 
-  const body = (await request.json()) as Body;
+  let body: Body;
+  try {
+    body = (await request.json()) as Body;
+  } catch {
+    return NextResponse.json({ error: "pedido inválido" }, { status: 400 });
+  }
   const address = body.address?.trim() ?? "";
   const action = body.action?.trim() ?? "";
   const ts = Number(body.ts);
@@ -47,9 +60,13 @@ export async function POST(request: Request) {
   const owner = getAddress(address);
 
   if (action === "restore") {
-    const row = await prisma.cloudBackup.findUnique({ where: { address: owner } });
-    if (!row) return NextResponse.json({ empty: true });
-    return NextResponse.json({ payload: row.payload, updatedAt: row.updatedAt.toISOString() });
+    try {
+      const row = await prisma.cloudBackup.findUnique({ where: { address: owner } });
+      if (!row) return NextResponse.json({ empty: true });
+      return NextResponse.json({ payload: row.payload, updatedAt: row.updatedAt.toISOString() });
+    } catch {
+      return NextResponse.json({ error: "no se pudo leer" }, { status: 502 });
+    }
   }
 
   const payload = parsePayload(body.payload);
@@ -65,10 +82,14 @@ export async function POST(request: Request) {
     }
   }
 
-  const row = await prisma.cloudBackup.upsert({
-    where: { address: owner },
-    create: { address: owner, payload },
-    update: { payload },
-  });
-  return NextResponse.json({ ok: true, updatedAt: row.updatedAt.toISOString() });
+  try {
+    const row = await prisma.cloudBackup.upsert({
+      where: { address: owner },
+      create: { address: owner, payload },
+      update: { payload },
+    });
+    return NextResponse.json({ ok: true, updatedAt: row.updatedAt.toISOString() });
+  } catch {
+    return NextResponse.json({ error: "no se pudo guardar" }, { status: 502 });
+  }
 }

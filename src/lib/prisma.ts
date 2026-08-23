@@ -3,12 +3,20 @@ import { PrismaClient } from "@prisma/client";
 const g = globalThis as unknown as { __walinoxPrisma?: PrismaClient };
 
 function prismaUrl(): string | undefined {
-  const url =
+  let url =
     process.env.POSTGRES_PRISMA_URL ||
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL;
-  if (!url || url === '""' || url.trim() === "") return undefined;
-  return url;
+  if (!url) return undefined;
+  url = url.trim().replace(/^['"]|['"]$/g, "");
+  if (!url || url === '""') return undefined;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.delete("channel_binding");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 export function databaseConfigured(): boolean {

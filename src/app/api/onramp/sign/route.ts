@@ -1,7 +1,12 @@
 import { createHmac } from "crypto";
 import { NextResponse } from "next/server";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(clientKey(request, "onramp"), 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json({ error: "rate limit" }, { status: 429 });
+  }
   const secret = process.env.MOONPAY_SECRET_KEY?.trim();
   if (!secret) {
     return NextResponse.json({ error: "signing disabled" }, { status: 501 });
