@@ -8,6 +8,12 @@ export function RegisterServiceWorker() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV === "development") {
+      void navigator.serviceWorker.getRegistrations().then((regs) => {
+        for (const registration of regs) void registration.unregister();
+      });
+      return;
+    }
 
     let reg: ServiceWorkerRegistration | undefined;
     let cancelled = false;
@@ -33,11 +39,14 @@ export function RegisterServiceWorker() {
     navigator.serviceWorker.addEventListener("controllerchange", onController);
 
     const register = () => {
-      void navigator.serviceWorker.register("/sw.js").then((registration) => {
-        if (cancelled) return;
-        track(registration);
-        void registration.update();
-      });
+      void navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          if (cancelled) return;
+          track(registration);
+          void registration.update().catch(() => undefined);
+        })
+        .catch(() => undefined);
     };
 
     let idleId: number | undefined;

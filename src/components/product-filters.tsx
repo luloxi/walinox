@@ -89,7 +89,7 @@ export function ProductFilters({
             {stores.map((item) => (
               <Link
                 key={item.id}
-                href={`/tienda/${encodeURIComponent(item.id)}`}
+                href="/tienda"
                 className="flex h-11 shrink-0 cursor-pointer flex-col justify-center rounded-xl border border-border bg-card px-3 hover:bg-muted"
               >
                 <span className="text-xs font-medium leading-tight">{item.name}</span>

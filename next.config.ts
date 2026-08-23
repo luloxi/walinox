@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@rainbow-me/rainbowkit"],
   },
+  async redirects() {
+    return [{ source: "/tienda/:id", destination: "/tienda", permanent: false }];
+  },
   turbopack: {
     root: path.join(__dirname),
     resolveAlias: {
