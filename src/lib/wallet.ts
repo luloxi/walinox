@@ -69,7 +69,6 @@ export async function openWallet(seedPhrase: string): Promise<LocalWallet> {
     return gasless;
   }
 
-  /** Try WDK 7702 gasless (gas paid in USDT) first; fall back to plain EOA (needs ETH). */
   async function gaslessThenEvm<T>(
     run: (session: GaslessSession) => Promise<T>,
     fallback: () => Promise<T>,
@@ -158,6 +157,6 @@ async function openGasless(seedPhrase: string): Promise<GaslessSession> {
 
 /** Open or create the local wallet. Seed is stored only encrypted under PIN. */
 export async function loadOrCreateWallet(pin: string): Promise<LocalWallet> {
-  const seed = await unlockOrCreateSeed(pin, randomSeedPhrase);
+  const { seed } = await unlockOrCreateSeed(pin, randomSeedPhrase);
   return openWallet(seed);
 }
