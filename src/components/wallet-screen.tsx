@@ -122,39 +122,39 @@ export function WalletScreen() {
 
   return (
     <div className="flex min-h-full flex-col gap-6">
-      <WalletCard>
-        <div className="mt-5 flex w-full items-start justify-between gap-2 md:mt-6">
-          {ACTIONS.map((item) => {
-            const Icon = item.icon;
-            const on = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-2 transition-colors active:scale-95"
-                onClick={() => go(tab === item.id ? "" : item.id)}
+      <WalletCard />
+
+      <div className="flex w-full items-start justify-between gap-2">
+        {ACTIONS.map((item) => {
+          const Icon = item.icon;
+          const on = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-2 transition-colors active:scale-95"
+              onClick={() => go(tab === item.id ? "" : item.id)}
+            >
+              <span
+                className={cn(
+                  "flex size-14 items-center justify-center rounded-2xl ring-1 shadow-sm transition-colors md:size-16",
+                  on ? item.active : item.tone,
+                )}
               >
-                <span
-                  className={cn(
-                    "flex size-14 items-center justify-center rounded-2xl ring-1 shadow-sm transition-colors md:size-16",
-                    on ? item.active : item.tone,
-                  )}
-                >
-                  <Icon className="size-7 md:size-8" strokeWidth={2.25} />
-                </span>
-                <span
-                  className={cn(
-                    "text-[11px] font-medium md:text-xs",
-                    on ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </WalletCard>
+                <Icon className="size-7 md:size-8" strokeWidth={2.25} />
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] font-medium md:text-xs",
+                  on ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <section className="flex flex-col">
         <div className="flex items-center justify-between gap-3">

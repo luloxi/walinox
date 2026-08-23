@@ -1,17 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { ArrowLeftRight, ChevronDown } from "lucide-react";
 import { useDisplay } from "@/components/display-provider";
 import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { UsdtLogo } from "@/components/usdt-logo";
-import { BalanceDelta, BalanceSpark } from "@/components/balance-spark";
+import { BalanceSpark } from "@/components/balance-spark";
 import { useFx } from "@/components/use-fx";
 import { FIATS, fiatMeta, isFiatId, type FiatId } from "@/lib/display";
 import { formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 
-export function WalletCard({ children }: { children?: ReactNode }) {
+export function WalletCard() {
   const { wallet } = useWallet();
   const { prefs, setPrefs } = useDisplay();
   const { usdt } = useUsdtBalance(wallet?.address);
@@ -36,11 +35,11 @@ export function WalletCard({ children }: { children?: ReactNode }) {
 
   return (
     <div className="flex flex-col rounded-2xl bg-gradient-to-br from-primary/15 to-card p-4 ring-1 ring-border md:p-5">
-      <div className="flex items-start gap-3 md:items-center md:gap-6">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+      <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-8">
+        <div className="flex min-w-0 shrink-0 items-center gap-2.5 md:max-w-[52%]">
           <button
-          type="button"
-          className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+            type="button"
+            className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
           onClick={() =>
             setPrefs({ ...prefs, primary: prefs.primary === "fiat" ? "usdt" : "fiat" })
           }
@@ -89,12 +88,10 @@ export function WalletCard({ children }: { children?: ReactNode }) {
               </div>
             </>
           )}
-          {n != null ? <BalanceDelta address={address} nowUsdt={n} /> : null}
         </div>
       </div>
-      {n != null ? <BalanceSpark address={address} nowUsdt={n} /> : null}
+        {n != null ? <BalanceSpark address={address} nowUsdt={n} /> : null}
       </div>
-      {children}
     </div>
   );
 }
