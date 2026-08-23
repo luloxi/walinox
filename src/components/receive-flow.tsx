@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PermitCard } from "@/components/permit-card";
 import { OfflineSend } from "@/components/offline-send";
 import { Price } from "@/components/price";
+import { UnitToggle } from "@/components/unit-toggle";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { useDisplay } from "@/components/display-provider";
 import { useFx } from "@/components/use-fx";
@@ -329,15 +330,7 @@ export function ReceiveFlow({ focus = "me" }: { focus?: Focus }) {
                         askUnit === "usdt" ? "Monto en USDT" : `Monto en ${fiatMeta(prefs.fiat).name}`
                       }
                     />
-                    <select
-                      className="h-11 w-[5.4rem] shrink-0 cursor-pointer border-0 bg-transparent pr-2 text-sm text-muted-foreground"
-                      value={askUnit}
-                      aria-label="Moneda del pedido"
-                      onChange={(event) => switchAskUnit(event.target.value === "usdt" ? "usdt" : "fiat")}
-                    >
-                      <option value="fiat">{prefs.fiat}</option>
-                      <option value="usdt">USDT</option>
-                    </select>
+                    <UnitToggle value={askUnit} fiatLabel={prefs.fiat} onChange={switchAskUnit} className="mr-1" />
                   </div>
                   {askAmount && Number(askAmount) > 0 ? (
                     <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
