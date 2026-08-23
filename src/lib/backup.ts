@@ -14,6 +14,8 @@ import { isTheme, loadTheme, saveTheme, type Theme } from "@/lib/theme";
 import type { Product } from "@/lib/vale";
 
 export const CLOUD_BACKUP_AT_KEY = "walinox.cloudBackup.at";
+export const CLOUD_BACKUP_EVENT = "walinox.cloud.backup";
+export const CLOUD_DIRTY_EVENT = "walinox.cloud.dirty";
 
 export type CloudPayload = {
   v: 1;
@@ -105,9 +107,79 @@ export function applyCloudPayload(address: string, payload: CloudPayload): void 
 export function rememberCloudBackupAt(at: string): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(CLOUD_BACKUP_AT_KEY, at);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(CLOUD_BACKUP_EVENT));
+  }
 }
 
 export function lastCloudBackupAt(): string | null {
   if (typeof localStorage === "undefined") return null;
   return localStorage.getItem(CLOUD_BACKUP_AT_KEY);
+}
+
+export function markCloudDirty(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CLOUD_DIRTY_EVENT));
+}
+
+export function formatBackupAge(iso: string | null, now = Date.now()): string {
+  if (!iso) return "Sin copia en la nube";
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "Sin copia en la nube";
+  const sec = Math.max(0, Math.floor((now - t) / 1000));
+  if (sec < 45) return "Copia hace un momento";
+  if (sec < 3600) return `Copia hace ${Math.max(1, Math.floor(sec / 60))} min`;
+  if (sec < 86400) return `Copia hace ${Math.floor(sec / 3600)} h`;
+  const days = Math.floor(sec / 86400);
+  return days === 1 ? "Copia hace 1 día" : `Copia hace ${days} días`;
+}
+
+export async function pushCloudBackup(address: string): Promise<{ ok: true; updatedAt: string } | { ok: false; error: string }> {
+  if (!isAddress(address)) return { ok: false, error: "address inválida" };
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return { ok: false, error: "sin internet" };
+  }
+  const payload = parsePayload(collectCloudPayload(address));
+  if (!payload) return { ok: false, error: "copia inválida" };
+  try {
+    const res = await fetch("/api/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, action: "backup", payload }),
+    });
+    const data = (await res.json()) as { error?: string; updatedAt?: string };
+    if (res.status === 503) return { ok: false, error: "sin base" };
+    if (!res.ok || !data.updatedAt) return { ok: false, error: data.error || "no se pudo guardar" };
+    rememberCloudBackupAt(data.updatedAt);
+    return { ok: true, updatedAt: data.updatedAt };
+  } catch {
+    return { ok: false, error: "red" };
+  }
+}
+
+export async function pullCloudBackup(
+  address: string,
+): Promise<{ ok: true; payload: CloudPayload; updatedAt: string } | { ok: false; error: string; empty?: boolean }> {
+  if (!isAddress(address)) return { ok: false, error: "address inválida" };
+  try {
+    const res = await fetch("/api/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, action: "restore" }),
+    });
+    const data = (await res.json()) as {
+      error?: string;
+      empty?: boolean;
+      payload?: unknown;
+      updatedAt?: string;
+    };
+    if (res.status === 503) return { ok: false, error: "sin base" };
+    if (!res.ok) return { ok: false, error: data.error || "no se pudo leer" };
+    if (data.empty) return { ok: false, error: "vacío", empty: true };
+    const payload = parsePayload(data.payload);
+    if (!payload || !data.updatedAt) return { ok: false, error: "copia inválida" };
+    return { ok: true, payload, updatedAt: data.updatedAt };
+  } catch {
+    return { ok: false, error: "red" };
+  }
 }
