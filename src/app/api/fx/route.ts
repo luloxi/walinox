@@ -6,19 +6,6 @@ import { clientKey, rateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const revalidate = 300;
 
-type Row = {
-  moneda?: string;
-  moeda?: string;
-  casa?: string;
-  fuente?: string;
-  venta?: number;
-  venda?: number;
-  promedio?: number;
-  compra?: number;
-  fechaActualizacion?: string;
-  dataAtualizacao?: string;
-};
-
 function num(...values: unknown[]): number {
   for (const value of values) {
     const n = Number(value);
@@ -33,70 +20,53 @@ function asQuote(fiat: FiatId, perUsdt: number, source: string, at?: string): Fx
 }
 
 async function fromJson(url: string): Promise<unknown> {
-  const res = await fetch(url, { next: { revalidate: 300 } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    next: { revalidate: 300 },
+  });
   if (!res.ok) throw new Error(String(res.status));
   return res.json();
 }
 
-function usdRow(rows: Row[]): Row | undefined {
-  return rows.find((row) => (row.moneda ?? row.moeda) === "USD");
+/** CoinGecko simple price: local units per 1 USDT (tether). */
+async function fromCoinGecko(fiat: FiatId): Promise<FxQuote | null> {
+  const code = fiat.toLowerCase();
+  const data = (await fromJson(
+    `https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=${encodeURIComponent(code)}`,
+  )) as { tether?: Record<string, number> };
+  const rate = data.tether?.[code];
+  return asQuote(fiat, num(rate), "coingecko");
 }
 
-async function fromDolarApi(fiat: FiatId): Promise<FxQuote | null> {
-  if (fiat === "ARS") {
-    const data = (await fromJson("https://dolarapi.com/v1/dolares/blue")) as Row;
-    return asQuote(fiat, num(data.venta), "blue", data.fechaActualizacion);
-  }
-  if (fiat === "VES") {
-    const rows = (await fromJson("https://ve.dolarapi.com/v1/dolares")) as Row[];
-    const row = rows.find((item) => item.fuente === "paralelo") ?? rows[0];
-    if (!row) return null;
-    return asQuote(fiat, num(row.promedio, row.venta), "paralelo", row.fechaActualizacion);
-  }
-  if (fiat === "BRL") {
-    const rows = (await fromJson("https://br.dolarapi.com/v1/cotacoes")) as Row[];
-    const row = usdRow(rows);
-    if (!row) return null;
-    return asQuote(fiat, num(row.venda, row.venta), "USD", row.dataAtualizacao ?? row.fechaActualizacion);
-  }
-  const host: Partial<Record<FiatId, string>> = {
-    CLP: "https://cl.dolarapi.com/v1/cotizaciones",
-    UYU: "https://uy.dolarapi.com/v1/cotizaciones",
-    MXN: "https://mx.dolarapi.com/v1/cotizaciones",
-    COP: "https://co.dolarapi.com/v1/cotizaciones",
-  };
-  const url = host[fiat];
-  if (!url) return null;
-  const rows = (await fromJson(url)) as Row[];
-  const row = usdRow(rows);
-  if (!row) return null;
-  return asQuote(fiat, num(row.venta, row.venda, row.promedio), "USD", row.fechaActualizacion);
+/** CryptoCompare: USDT → fiat (public, no key for light use). */
+async function fromCryptoCompare(fiat: FiatId): Promise<FxQuote | null> {
+  const data = (await fromJson(
+    `https://min-api.cryptocompare.com/data/price?fsym=USDT&tsyms=${encodeURIComponent(fiat)}`,
+  )) as Record<string, number>;
+  return asQuote(fiat, num(data[fiat]), "cryptocompare");
 }
 
+/** USD book as last resort (1 USDT ≈ 1 USD). */
 async function fromOpenEr(fiat: FiatId): Promise<FxQuote | null> {
   const data = (await fromJson("https://open.er-api.com/v6/latest/USD")) as {
     rates?: Record<string, number>;
     time_last_update_utc?: string;
   };
   const rate = data.rates?.[fiat];
-  return asQuote(fiat, num(rate), "tipo de cambio", data.time_last_update_utc);
+  return asQuote(fiat, num(rate), "usd-book", data.time_last_update_utc);
 }
 
 async function quoteFiat(fiat: FiatId): Promise<FxQuote> {
   if (fiat === "USD") {
     return { fiat, perUsdt: 1, source: "paridad", at: new Date().toISOString() };
   }
-  try {
-    const regional = await fromDolarApi(fiat);
-    if (regional) return regional;
-  } catch {
-    /* try a general USD book */
-  }
-  try {
-    const global = await fromOpenEr(fiat);
-    if (global) return global;
-  } catch {
-    /* fallback */
+  for (const fn of [fromCoinGecko, fromCryptoCompare, fromOpenEr]) {
+    try {
+      const quote = await fn(fiat);
+      if (quote) return quote;
+    } catch {
+      /* next source */
+    }
   }
   return {
     fiat,
