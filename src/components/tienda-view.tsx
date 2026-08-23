@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Package, PackageSearch } from "lucide-react";
+import { ActivityList } from "@/components/activity-list";
 import { Button } from "@/components/ui/button";
 import { EmptyState, SectionLabel } from "@/components/empty-state";
 import { PosView } from "@/components/pos-view";
@@ -12,6 +13,7 @@ import { useWallet } from "@/components/wallet-provider";
 import { Price } from "@/components/price";
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { productsByIssuer, removeProduct } from "@/lib/catalog";
+import { listReceipts, type Receipt } from "@/lib/receipts";
 import { seedLivedIn } from "@/lib/seed";
 import type { Product } from "@/lib/vale";
 
@@ -19,6 +21,7 @@ import type { Product } from "@/lib/vale";
 export function TiendaView() {
   const { wallet } = useWallet();
   const [mine, setMine] = useState<Product[]>([]);
+  const [recent, setRecent] = useState<Receipt[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -27,6 +30,7 @@ export function TiendaView() {
   function refresh() {
     seedLivedIn(wallet?.address);
     setMine(wallet ? productsByIssuer(wallet.address) : []);
+    setRecent(listReceipts().slice(0, 5));
   }
 
   useEffect(() => {
@@ -66,6 +70,16 @@ export function TiendaView() {
               Armá el menú del local. Al cobrar, el comprador firma sin internet (QR, NFC, sonido, etc.).
             </p>
           )}
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <SectionLabel>Recientes</SectionLabel>
+            <Link href="/summary" className="cursor-pointer text-xs text-primary">
+              Ver todos
+            </Link>
+          </div>
+          <ActivityList receipts={recent} empty="Todavía no hay movimientos" />
         </section>
       </div>
 
