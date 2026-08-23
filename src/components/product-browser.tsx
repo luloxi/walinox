@@ -21,31 +21,30 @@ export function ProductBrowser({
   products,
   stores,
   empty,
+  showStores = true,
 }: {
   products: Product[];
   stores?: Store[];
   empty: string;
+  showStores?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
-  const [store, setStore] = useState("all");
   const [sort, setSort] = useState<ProductSort>("categoria");
   const { items, groups } = useMemo(
-    () => browseProducts(products, { query, category, store, sort }),
-    [products, query, category, store, sort],
+    () => browseProducts(products, { query, category, sort }),
+    [products, query, category, sort],
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="sticky top-0 z-10 bg-background py-1">
         <ProductFilters
           query={query}
           onQuery={setQuery}
           category={category}
           onCategory={setCategory}
-          store={store}
-          onStore={setStore}
-          stores={stores}
+          stores={showStores ? stores : undefined}
           sort={sort}
           onSort={setSort}
         />
