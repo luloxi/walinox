@@ -8,6 +8,7 @@ import { Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CONTACT_UNDO_KEY,
   contactLabel,
   namedContacts,
   rememberContact,
@@ -36,6 +37,7 @@ export function ContactsView() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [undo, setUndo] = useState<Contact | null>(null);
   const titleId = useId();
   const visible = useMemo(() => searchContacts(contacts, query), [contacts, query]);
 
@@ -50,6 +52,21 @@ export function ContactsView() {
     const timer = window.setTimeout(refresh, 0);
     return () => window.clearTimeout(timer);
   }, [wallet?.address]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CONTACT_UNDO_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(CONTACT_UNDO_KEY);
+      const contact = JSON.parse(raw) as Contact;
+      if (!contact?.address) return;
+      setUndo(contact);
+      const timer = window.setTimeout(() => setUndo(null), 5000);
+      return () => window.clearTimeout(timer);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +103,18 @@ export function ContactsView() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function restore() {
+    if (!undo) return;
+    rememberContact(undo.address, {
+      name: undo.name,
+      note: undo.note,
+      createdAt: undo.createdAt,
+      lastSeenAt: undo.lastSeenAt,
+    });
+    setUndo(null);
+    refresh();
   }
 
   return (
@@ -161,13 +190,24 @@ export function ContactsView() {
           }
         />
       ) : query.trim() ? (
-        <EmptyState
-          className="mt-6"
-          icon={Search}
-          title="Sin resultados"
-          body="Probá otro nombre, ENS o address."
-        />
+        <EmptyState className="mt-6" icon={Search} title="Sin resultados" body="Probá otro nombre, ENS o address." />
       ) : null}
+
+      {undo
+        ? createPortal(
+            <div className="fixed inset-x-0 bottom-24 z-[70] flex justify-center px-4 md:bottom-8">
+              <div className="flex w-full max-w-md items-center justify-between gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg">
+                <p className="min-w-0 truncate text-sm">
+                  Se olvidó <span className="font-medium">{contactLabel(undo)}</span>
+                </p>
+                <Button type="button" variant="secondary" className="h-9 shrink-0" onClick={restore}>
+                  Deshacer
+                </Button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {open
         ? createPortal(
