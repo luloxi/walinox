@@ -19,6 +19,16 @@ PWA de USDT auto-custodia. UI en español. Settlement siempre USDT.
 - No “optimices” achicando el producto: no saques scripts, dependencias, APIs, rutas ni config de `package.json` / `next.config.ts` / `tsconfig.json` / `components.json` / tools clave, salvo que el pedido lo pida.
 - No rewrites ni refactors cosméticos. Andá rápido, puntual, con buenas prácticas.
 
+## Marie Kondo
+
+Cada cambio busca **alegría, orden y nada de más**.
+
+- Si algo no aporta (texto de relleno, acciones duplicadas, código muerto, pies de manual, badges “n/a”), **sacalo o plegalo**.
+- La UI tiene que sentirse **liviana, intuitiva, simple y poderosa**. Priorizá el camino principal; lo avanzado va detrás de “Más…” o en Ajustes.
+- **Coherencia visual**: mismas alturas de controles (tabs/botones `h-11`), tabs full-width en mobile, labels en español, un solo patrón por tipo de acción.
+- No agregues secciones, tooltips ni explicaciones “por si acaso”. Si la pantalla se explica sola, el copy sobra.
+- Al revisar una pantalla: ¿esto da alegría al usuario del día a día? Si no, cambiá o quitá.
+
 ## Tether
 
 Siempre las prácticas **actuales** de Tether, no las de entrenamiento.
