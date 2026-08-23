@@ -170,7 +170,7 @@ export function ProductDetail() {
         href="/tienda"
         className={`mb-3 -ml-1 ${ready ? "hidden md:inline-flex" : ""}`}
       >
-        Local
+        Tienda
       </BackLink>
       <p className="mt-3 text-lg font-semibold leading-tight">{product.title}</p>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -198,24 +198,24 @@ export function ProductDetail() {
             </div>
           ) : null}
           <Button type="button" className="h-12 w-full" onClick={() => router.push("/tienda")}>
-            Volver al local
+            Volver a tienda
           </Button>
         </div>
       ) : isSeller ? (
         <div className="mt-6 space-y-3">
           <p className="text-sm">Darle el vale a</p>
-          <ContactPicker selected={holder} onPick={(contact) => setHolder(contact.address)} />
-          <AddressInput value={holder} onChange={setHolder} placeholder="Address del cliente" />
           {wallet ? (
             <QvacHint
               task="contact"
               owner={wallet.address}
-              placeholder="el vale es para 0x…"
+              placeholder="el vale es para 0x… o lulox.eth"
               onFill={(intent) => {
                 if (intent.to) setHolder(intent.to);
               }}
             />
           ) : null}
+          <ContactPicker selected={holder} onPick={(contact) => setHolder(contact.address)} />
+          <AddressInput value={holder} onChange={setHolder} placeholder="Address del cliente" />
           <Button
             type="button"
             className="h-12 w-full"
