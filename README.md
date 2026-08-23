@@ -5,7 +5,7 @@ PWA de **USDT en Ethereum** auto-custodia. **MVP:** pagos **sin internet del lad
 - **P2P / B2B:** enviar, recibir, pedir, escanear.
 - **B2C / Local:** el vendedor lista productos, arma la caja y cobra; el comprador firma offline por QR, NFC, Bluetooth, sonido, luz, archivo o copiar. El asiento on-chain puede esperar red de quien cobra.
 
-Saldo en pesos (dólar blue). Las claves las tiene el usuario. Firmar no mueve tokens: el USDT se asienta cuando alguien ejecuta la firma (Permit2). USDT mainnet **no tiene** `permit()`.
+Saldo en USDT, con referencia en moneda local (cotización de mercado USDT). Las claves las tiene el usuario. Firmar no mueve tokens: el USDT se asienta cuando alguien ejecuta la firma (Permit2). USDT mainnet **no tiene** `permit()`.
 
 Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app) · repo `luloxi/walinox`.
 
@@ -22,7 +22,7 @@ Millones de personas y comercios chicos operan fuera del sistema bancario tradic
 - Permite **firmar pagos en USDT offline** (sin señal ni datos en el momento del pago)
 - Comercios y personas pueden cobrar en la tienda, kiosco, feria o calle y asentar on-chain después, cuando hay red
 - Auto-custodia total: las claves las tiene el usuario
-- Pensado para comercio real: modo tienda/POS, contactos, QR y canales offline, referencia en pesos (dólar blue)
+- Pensado para comercio real: modo tienda/POS, contactos, QR y canales offline, referencia en moneda local vía cotización USDT de mercado
 
 **Por qué importa**  
 Al sacar la necesidad de internet permanente y simplificar el uso de stablecoins para usuarios no técnicos, Walinox acerca dólares digitales utilizables a personas y negocios que la finanza tradicional y las wallets crypto actuales dejan afuera. Es infraestructura de inclusión, no de especulación.
