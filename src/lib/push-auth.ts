@@ -1,10 +1,40 @@
-import { getAddress, isAddress, verifyMessage } from "ethers";
+import { getAddress, isAddress, verifyTypedData } from "ethers";
+import type { Signable } from "@/lib/wallet";
 
 const MAX_SKEW_MS = 5 * 60 * 1000;
 
-export function pushAuthMessage(address: string, action: string, ts: number, extra = ""): string {
-  const base = `walinox-push:${action}:${getAddress(address).toLowerCase()}:${ts}`;
-  return extra ? `${base}:${extra}` : base;
+const DOMAIN = {
+  name: "Walinox",
+  version: "1",
+  chainId: 1,
+  verifyingContract: "0x0000000000000000000000000000000000000001",
+} as const;
+
+const TYPES = {
+  PushAuth: [
+    { name: "action", type: "string" },
+    { name: "account", type: "address" },
+    { name: "ts", type: "uint256" },
+    { name: "extra", type: "string" },
+  ],
+};
+
+export function pushAuthTypedData(
+  address: string,
+  action: string,
+  ts: number,
+  extra = "",
+): Signable {
+  return {
+    domain: { ...DOMAIN },
+    types: TYPES,
+    message: {
+      action,
+      account: getAddress(address),
+      ts: String(ts),
+      extra,
+    },
+  };
 }
 
 export function verifyPushAuth(input: {
@@ -17,11 +47,12 @@ export function verifyPushAuth(input: {
   if (!isAddress(input.address)) return { ok: false, reason: "address inválida" };
   if (!input.signature?.startsWith("0x")) return { ok: false, reason: "firma requerida" };
   if (!Number.isFinite(input.ts)) return { ok: false, reason: "timestamp inválido" };
-  const age = Math.abs(Date.now() - input.ts);
-  if (age > MAX_SKEW_MS) return { ok: false, reason: "firma vencida" };
+  if (Math.abs(Date.now() - input.ts) > MAX_SKEW_MS) return { ok: false, reason: "firma vencida" };
   try {
-    const message = pushAuthMessage(input.address, input.action, input.ts, input.extra);
-    const recovered = getAddress(verifyMessage(message, input.signature));
+    const typed = pushAuthTypedData(input.address, input.action, input.ts, input.extra ?? "");
+    const recovered = getAddress(
+      verifyTypedData(typed.domain, typed.types, typed.message, input.signature),
+    );
     if (recovered !== getAddress(input.address)) {
       return { ok: false, reason: "firma no coincide" };
     }
