@@ -1,42 +1,40 @@
 # Walinox
 
-PWA de **USDT en Ethereum** auto-custodia. **MVP:** pagos **sin internet del lado del comprador** (B2B y B2C).
+**Pagás en USDT aunque no haya señal.**
 
-- **P2P / B2B:** enviar, recibir, pedir, escanear.
-- **B2C / Local:** el vendedor lista productos, arma la caja y cobra; el comprador firma offline por QR, NFC, Bluetooth, sonido, luz, archivo o copiar. El asiento on-chain puede esperar red de quien cobra.
+El comprador firma en el celular sin internet. El que cobra asienta on-chain cuando vuelve la red. Plata en dólares digitales, claves en tu dispositivo, pensado para kioscos, ferias y el día a día en LATAM.
 
-Saldo en USDT, con referencia en moneda local (cotización de mercado USDT). Las claves las tiene el usuario. Firmar no mueve tokens: el USDT se asienta cuando alguien ejecuta la firma (Permit2). USDT mainnet **no tiene** `permit()`.
+Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app)
 
-Demo: [walinox-nu.vercel.app](https://walinox-nu.vercel.app) · repo `luloxi/walinox`.
+---
+
+### En un ascensor
+
+Walinox es una PWA de **USDT auto-custodia** donde el pago no depende de que el comprador tenga datos. Firmás offline (QR, NFC, Bluetooth, sonido…); el settlement es Permit2 en Ethereum. Sirve para mandar entre personas y para que un local arme la caja, liste productos y cobre sin que la red del cliente sea un requisito.
+
+### MVP
+
+- **P2P / B2B** — enviar, recibir, pedir, pagar.
+- **B2C / Tienda** — catálogo del vendedor, caja (POS) y cobro por todos los canales offline.
+
+Saldo en USDT con referencia en moneda local (cotización de mercado). Firmar no mueve tokens: el USDT se mueve cuando alguien ejecuta la firma. USDT mainnet no tiene `permit()`; usamos Uniswap Permit2.
 
 Diferido (vitrina pública, vales, reporte mensual): [`docs/roadmap.md`](docs/roadmap.md).
 
-## Impacto social / Financial Inclusion
+## Por qué existe
 
-Walinox está pensado para inclusión financiera real en contextos de alta inflación y conectividad irregular (Argentina / LATAM).
+En Argentina y buena parte de LATAM la señal es irregular y el efectivo duele. Las stablecoins ayudan, pero casi todas las wallets asumen internet permanente y una curva técnica alta.
 
-**El problema**  
-Millones de personas y comercios chicos operan fuera del sistema bancario tradicional o con señal inestable. El efectivo es riesgoso e ineficiente. Las transferencias bancarias son lentas, caras o inaccesibles. Las stablecoins existen, pero la mayoría de las billeteras exigen internet permanente y fricción técnica que deja afuera al usuario de todos los días.
+Walinox apuesta a lo contrario: **firmar ahora, asentar después**, auto-custodia real, UI en español y una tienda usable en el mostrador. Inclusión financiera práctica, no otra app de trading.
 
-**Qué hace Walinox**  
-- Permite **firmar pagos en USDT offline** (sin señal ni datos en el momento del pago)
-- Comercios y personas pueden cobrar en la tienda, kiosco, feria o calle y asentar on-chain después, cuando hay red
-- Auto-custodia total: las claves las tiene el usuario
-- Pensado para comercio real: modo tienda/POS, contactos, QR y canales offline, referencia en moneda local vía cotización USDT de mercado
-
-**Por qué importa**  
-Al sacar la necesidad de internet permanente y simplificar el uso de stablecoins para usuarios no técnicos, Walinox acerca dólares digitales utilizables a personas y negocios que la finanza tradicional y las wallets crypto actuales dejan afuera. Es infraestructura de inclusión, no de especulación.
-
-Alineado con Blockchain for Good: acceso a herramientas financieras digitales, reducción de desigualdad y soluciones blockchain prácticas para actividad económica real en mercados emergentes.
-
-## Qué hay hoy (MVP)
+## Qué hay hoy
 
 - **Login** — RainbowKit o billetera local WDK + términos EIP-712.
 - **Billetera** — saldo, Ingresar / Recibir / Enviar / Pagar.
-- **Tienda** — productos del vendedor, caja (POS), cobro con todos los canales offline.
+- **Tienda** — productos, caja, canales offline.
 - **Contactos** — agenda mínima.
-- **Actividad** — historial local (sin reportes automáticos).
-- **Ajustes** — moneda, wallet, seguridad (PIN/biometría), avisos push, tema.
+- **Actividad** — historial local.
+- **Ajustes** — moneda, seguridad (PIN/biometría), push, tema.
 
 ## USDT y Permit2
 
@@ -48,23 +46,23 @@ USDT (`0xdAC17F958D2ee523a2206206994597C13D831ec7`) no implementa ERC-2612 `perm
 
 ## Sin internet
 
-El objeto que viaja es un JSON firmado (`SignedEnvelope`) o un pedido (`ChargeRequest`).
+Viaja un JSON firmado (`SignedEnvelope`) o un pedido (`ChargeRequest`).
 
 | Canal | Uso |
 | --- | --- |
-| QR | Camino principal. |
-| Copiar / archivo | Funciona. |
-| NFC / sonido / luz / BLE | En `OfflineSend` / `ChannelRow`. |
+| QR | Camino principal |
+| Copiar / archivo | Listo |
+| NFC / sonido / luz / BLE | En `OfflineSend` / `ChannelRow` |
 
-Después del primer load (PWA) el QR puede usarse en modo avión del comprador.
+Después del primer load (PWA) el comprador puede pagar en modo avión.
 
 ## WDK, QVAC y Pears
 
-**WDK** — billetera local no-custodial (`@tetherto/wdk` + `wdk-wallet-evm`). La seed queda en el dispositivo. Envíos online: `@tetherto/wdk-wallet-evm-7702-gasless` paga el bundler en **USDT**; si falla, EOA (esa pide ETH). En el browser, `sodium-native` se aliasa a `sodium-javascript`.
+**WDK** — billetera local no-custodial (`@tetherto/wdk` + `wdk-wallet-evm`). Seed en el dispositivo. Online: gasless 7702 en USDT; si falla, EOA con ETH.
 
-**QVAC** — atajo “¿en una frase?” (enviar, contactos, publicar). No es chat ni la billetera. Modelo: **Qwen3 0.6B Instruct Q4** (`QWEN3_600M_INST_Q4` en `qvac.config.json`). Cabe en celular, habla español y el job es JSON corto. El default del SDK (Llama 3.2 1B) parsea peor “mandale / guardá”. Corre en `qvac serve` → `/api/agent`. Si no hay QVAC, heurística (monto + `0x` / ENS / Basename).
+**QVAC** — atajo “En una frase” para completar formularios. Modelo Qwen3 0.6B Instruct Q4 (`qvac.config.json` → `/api/agent`). Sin QVAC, heurística local.
 
-**Pears** — no hay runtime Pear/Hyperswarm en la PWA. Los envelopes offline se envuelven con un invite + topic de 32 bytes (el tamaño de `Hyperswarm.join`) para QR/aire y, más adelante, una sala P2P. Al recibir, si no es wrap, se trata como envelope plano.
+**Pears** — envelopes offline con invite + topic (preparado para sala P2P). Sin runtime Pear en la PWA todavía.
 
 ## Install
 
@@ -83,8 +81,8 @@ Ver [`docs/env.md`](docs/env.md). VAPID privada solo en el server.
 
 ## Límites
 
-- Seed local cifrada con PIN en el dispositivo (sin recovery de cloud).
+- Seed local cifrada con PIN (sin recovery de cloud de la frase).
 - Push durable en Vercel necesita store durable en producción.
 - Candide público está rate-limited.
 
-Más: [`docs/mentores.md`](docs/mentores.md), [`docs/roadmap.md`](docs/roadmap.md).
+Más: [`docs/mentores.md`](docs/mentores.md), [`docs/roadmap.md`](docs/roadmap.md), [`database.md`](database.md).
