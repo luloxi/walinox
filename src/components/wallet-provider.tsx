@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -25,6 +26,7 @@ import { seedLivedIn } from "@/lib/seed";
 import { unlockOrCreateSeed } from "@/lib/seed-crypto";
 
 const SESSION_SEED_KEY = "walinox.session.seed";
+const IDLE_MS = 5 * 60 * 1000;
 
 function readSessionSeed(): string | null {
   if (typeof sessionStorage === "undefined") return null;
@@ -80,6 +82,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [localChecked, setLocalChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setTosTick] = useState(0);
+  const lastActive = useRef(Date.now());
+  const lockRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     setReceiptStore(localStorageStore());
@@ -96,6 +100,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setLocal(next);
           setWantLocal(true);
           setLocalUnlocked(true);
+          lastActive.current = Date.now();
         } catch {
           writeSessionSeed(null);
           setLocalUnlocked(false);
@@ -144,6 +149,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     });
     setLocalUnlocked(true);
     setWantLocal(true);
+    lastActive.current = Date.now();
   }, []);
 
   const lockLocal = useCallback(() => {
@@ -155,6 +161,44 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       return null;
     });
   }, []);
+
+  lockRef.current = lockLocal;
+
+  useEffect(() => {
+    if (!hasLocalSession) return;
+
+    const bump = () => {
+      lastActive.current = Date.now();
+    };
+
+    const events: Array<keyof WindowEventMap> = [
+      "pointerdown",
+      "keydown",
+      "touchstart",
+      "mousemove",
+      "scroll",
+      "focus",
+    ];
+    for (const name of events) window.addEventListener(name, bump, { passive: true });
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (Date.now() - lastActive.current >= IDLE_MS) lockRef.current();
+        else bump();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const tick = window.setInterval(() => {
+      if (Date.now() - lastActive.current >= IDLE_MS) lockRef.current();
+    }, 15_000);
+
+    return () => {
+      for (const name of events) window.removeEventListener(name, bump);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(tick);
+    };
+  }, [hasLocalSession]);
 
   const signTos = useCallback(async () => {
     if (!wallet) throw new Error("Conectá una wallet");
