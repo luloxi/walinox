@@ -1,5 +1,7 @@
 import { getAddress, isAddress } from "ethers";
 import { shortAddress } from "@/lib/format";
+import { pushAuthTypedData } from "@/lib/push-auth";
+import type { Signable } from "@/lib/wallet";
 
 export type NotifyKind = "usdt" | "vale" | "redeemed" | "ping" | "permit" | "incoming" | "report";
 
@@ -31,6 +33,8 @@ export type InboxStore = {
   load: () => InboxItem[];
   save: (items: InboxItem[]) => void;
 };
+
+export type SignFn = (typed: Signable) => Promise<string>;
 
 export const INBOX_EVENT = "walinox-inbox";
 export const INBOX_STORAGE_KEY = "walinox.inbox";
@@ -274,7 +278,7 @@ export async function requestNotifyPermission(): Promise<NotificationPermission 
   return Notification.requestPermission();
 }
 
-export async function subscribePush(address: string): Promise<boolean> {
+export async function subscribePush(address: string, sign: SignFn): Promise<boolean> {
   if (typeof window === "undefined") return false;
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
   if (!isAddress(address)) return false;
@@ -293,11 +297,16 @@ export async function subscribePush(address: string): Promise<boolean> {
         applicationServerKey: urlBase64ToUint8Array(vapid.publicKey) as BufferSource,
       });
     }
+    const endpoint = subscription.endpoint;
+    const ts = Date.now();
+    const signature = await sign(pushAuthTypedData(address, "subscribe", ts, endpoint));
     const res = await fetch("/api/push/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         address: getAddress(address),
+        ts,
+        signature,
         subscription: subscription.toJSON(),
       }),
     });
@@ -319,10 +328,16 @@ export async function unsubscribePush(): Promise<void> {
   }
 }
 
-export async function pullRemoteInbox(address: string): Promise<number> {
+export async function pullRemoteInbox(address: string, sign: SignFn): Promise<number> {
   if (!isAddress(address)) return 0;
   try {
-    const res = await fetch(`/api/push/inbox?address=${encodeURIComponent(address)}`);
+    const ts = Date.now();
+    const signature = await sign(pushAuthTypedData(address, "inbox", ts));
+    const res = await fetch("/api/push/inbox", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address: getAddress(address), ts, signature }),
+    });
     if (!res.ok) return 0;
     const data = (await res.json()) as { items?: InboxItem[] };
     const items = Array.isArray(data.items) ? data.items : [];
@@ -337,7 +352,7 @@ export async function pullRemoteInbox(address: string): Promise<number> {
   }
 }
 
-export async function notifyPeer(input: NotifyInput): Promise<{ ok: boolean }> {
+export async function notifyPeer(input: NotifyInput, sign?: SignFn): Promise<{ ok: boolean }> {
   if (!isAddress(input.to) || !isAddress(input.from)) return { ok: false };
   if (sameAddress(input.from, input.to)) return { ok: false };
 
@@ -356,13 +371,19 @@ export async function notifyPeer(input: NotifyInput): Promise<{ ok: boolean }> {
     });
   }
 
+  if (!sign) return { ok: false };
+
   try {
+    const ts = Date.now();
+    const signature = await sign(pushAuthTypedData(input.from, "notify", ts, input.to.toLowerCase()));
     const res = await fetch("/api/push/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...payload,
         message: input.message?.trim().slice(0, 200),
+        ts,
+        signature,
       }),
     });
     return { ok: res.ok };
