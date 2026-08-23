@@ -1,31 +1,21 @@
 import { getAddress, isAddress } from "ethers";
 import type { Signable } from "@/lib/wallet";
 
-export const TERMS_VERSION = "1";
+export const TERMS_VERSION = "2";
 export const LOCAL_UNLOCK_KEY = "walinox.useLocal";
 export const TOS_STORAGE_KEY = "walinox.tos";
-export const SIGN_MODE_KEY = "walinox.signMode";
-export const GRANT_STORAGE_KEY = "walinox.sessionGrant";
 
 export const TERMS_LINES = [
-  "Walinox es auto-custodia: las claves quedan en tu wallet. Nadie mueve USDT por vos salvo que actives el modo rápido de esta sesión.",
+  "Walinox es auto-custodia: las claves quedan en tu wallet o en este dispositivo. Cada envío y permiso se firma; nadie mueve USDT por vos.",
   "USDT en Ethereum. Los vales NFT son tickets de un bien físico, no un instrumento financiero ni una inversión.",
-  "Podés firmar cada envío, o autorizar esta sesión si tu wallet lo permite.",
+  "Podés usar la billetera local de Walinox o conectar Rainbow/MetaMask u otra wallet. En ambos casos firmás vos.",
 ] as const;
-
-export type SignMode = "every" | "session";
 
 export type TosRecord = {
   address: string;
   version: string;
   signature: string;
   at: string;
-};
-
-export type SessionGrant = {
-  address: string;
-  expiry: number;
-  permissionsContext: string;
 };
 
 export function termsText(): string {
@@ -102,50 +92,6 @@ export function saveTos(record: TosRecord): void {
   writeJson(TOS_STORAGE_KEY, map);
 }
 
-export function loadSignModeChoice(address: string): SignMode | null {
-  const map = readJson<Record<string, SignMode>>(SIGN_MODE_KEY) ?? {};
-  const value = map[address.toLowerCase()];
-  return value === "session" || value === "every" ? value : null;
-}
-
-export function hasChosenSignMode(address: string): boolean {
-  return loadSignModeChoice(address) !== null;
-}
-
-export function loadSignMode(address: string): SignMode {
-  return loadSignModeChoice(address) ?? "every";
-}
-
-export function saveSignMode(address: string, mode: SignMode): void {
-  const map = readJson<Record<string, SignMode>>(SIGN_MODE_KEY) ?? {};
-  map[address.toLowerCase()] = mode;
-  writeJson(SIGN_MODE_KEY, map);
-}
-
-export function loadGrant(address: string): SessionGrant | null {
-  const map = readJson<Record<string, SessionGrant>>(GRANT_STORAGE_KEY) ?? {};
-  const row = map[address.toLowerCase()];
-  if (!row) return null;
-  return isGrantActive(row) ? row : null;
-}
-
-export function saveGrant(grant: SessionGrant): void {
-  const map = readJson<Record<string, SessionGrant>>(GRANT_STORAGE_KEY) ?? {};
-  map[grant.address.toLowerCase()] = grant;
-  writeJson(GRANT_STORAGE_KEY, map);
-}
-
-export function clearGrant(address: string): void {
-  const map = readJson<Record<string, SessionGrant>>(GRANT_STORAGE_KEY) ?? {};
-  delete map[address.toLowerCase()];
-  writeJson(GRANT_STORAGE_KEY, map);
-}
-
-export function isGrantActive(grant: SessionGrant | null, now = Date.now()): boolean {
-  if (!grant?.permissionsContext) return false;
-  return grant.expiry * 1000 > now;
-}
-
 export function isLocalUnlocked(): boolean {
   return readRaw(LOCAL_UNLOCK_KEY) === "1";
 }
@@ -154,9 +100,4 @@ export function setLocalUnlocked(on: boolean): void {
   if (on) writeRaw(LOCAL_UNLOCK_KEY, "1");
   else if (typeof localStorage !== "undefined") localStorage.removeItem(LOCAL_UNLOCK_KEY);
   else memory.delete(LOCAL_UNLOCK_KEY);
-}
-
-export function sessionHoursLeft(grant: SessionGrant | null, now = Date.now()): number {
-  if (!isGrantActive(grant, now) || !grant) return 0;
-  return Math.max(0, (grant.expiry * 1000 - now) / 3_600_000);
 }
