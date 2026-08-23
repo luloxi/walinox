@@ -216,7 +216,8 @@ export function ConnectCta({
                   />
                   {mode === "create" ? (
                     <Input
-                      type="password"léchi  inputMode="numeric"
+                      type="password"
+                      inputMode="numeric"
                       autoComplete="new-password"
                       enterKeyHint="done"
                       value={confirm}
