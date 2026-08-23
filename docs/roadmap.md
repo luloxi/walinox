@@ -1,42 +1,39 @@
 # Roadmap — fuera del MVP actual
 
-**MVP (agosto 2026):** una sola cosa bien hecha — **pagos sin internet del lado del comprador** para B2B y B2C (firmar offline → pasar la firma por QR u otro canal → asentar on-chain cuando hay red).
+**MVP (agosto 2026):** pagos sin internet del lado del **comprador**, para **B2B y B2C**.
 
-Todo lo listado acá **se sacó de la experiencia principal** (nav, ajustes, copy). El código puede seguir en el repo para reactivar después; no es producto del MVP.
-
----
-
-## Quitado del MVP (2026-08-23)
-
-### Tienda online / local propio por wallet
-
-- **Qué era:** catálogo por address, POS vendedor, productos con foto, vales de bienes físicos, link público `/tienda/[id]`, comprador/vendedor, canje de vales.
-- **Por qué fuera del MVP:** no es el núcleo “firmar sin internet y cobrar cuando hay red”. Diluye el foco.
-- **Dónde vivía:** nav “Tienda”, link en billetera, rutas `/tienda`, `/products`, `/vales`, componentes `tienda-view`, `pos-view`, `product-*`, `vales-*`, `store-*`, `catalog`, etc.
-- **Estado:** oculto de la UI principal. Reactivar = volver a enganchar nav + entry points (ver historial git / este doc).
-- **Nota previa (AGENTS):** el tab comprador ya estaba apagado con `SHOW_STORE_BUYER = false`; ahora **toda** la tienda online queda fuera del MVP, no solo el tab comprador.
-
-### Resumen / reporte automatizado
-
-- **Qué era:** resumen mensual por push/inbox, prompt en Actividad, toggle en Ajustes (“Resumen mensual”).
-- **Por qué fuera del MVP:** automatización de reporting no ayuda al pago offline del comprador.
-- **Dónde vivía:** `src/lib/monthly-report.ts`, sección Reporte en `settings-view`, prompt en `summary-view`.
-- **Estado:** quitado de Ajustes y del prompt de Actividad. La pantalla **Actividad** (historial manual de movimientos) **sí sigue** — no es el reporte automático.
+Flujo núcleo: armar cobro (monto o productos) → el comprador firma **sin red** → se pasa la firma por **QR / NFC / Bluetooth / sonido / luz / archivo / copiar** → el vendedor (o quien cobra) asienta on-chain cuando hay internet.
 
 ---
 
 ## MVP in scope
 
 - Wallet local o externa (intermediario).
-- Enviar online / offline (Permit2 + canales).
-- Recibir: address, pedir monto, escanear/validar firma y confirmar cobro.
-- Contactos mínimos para repetir destinos.
-- Actividad local de firmas/movimientos (sin automatización de reportes).
-- Ajustes: moneda, wallet, avisos push opcionales, tema.
+- **Billetera:** enviar online/offline, recibir, pedir, pagar (escanear pedido/firma).
+- **Local (vendedor B2C):** listar productos, caja (POS), cobrar con **todos los canales offline** (`OfflineSend` / `ChannelRow`).
+- Contactos mínimos.
+- Actividad local de movimientos (sin reportes automáticos).
+- Ajustes: moneda, wallet, avisos push, tema.
 
-## Más adelante (ideas, no compromiso)
+## Quitado del MVP (sigue en roadmap)
 
-- Reactivar tienda / vales / POS catalog.
+### Tienda online / vitrina pública por wallet
+
+- **Qué era:** marketplace comprador, link público `/tienda/[id]`, compartir vitrina, browse de tiendas ajenas, vales como producto aparte y canje de vales.
+- **Por qué fuera:** no es el cobro offline en el mostrador. Es vitrina web, no el núcleo B2C de “cobrar sin red del comprador”.
+- **Qué SÍ quedó en MVP:** **Local** — catálogo propio del vendedor + POS + canales offline.
+- **Dónde vivía lo online:** `StoreShare`, tab comprador (`SHOW_STORE_BUYER`), `ProductBrowser` público, `/vales`, `RedeemView` en chrome de vendedor.
+- **Estado:** fuera de la UI principal. Código puede quedar en el repo.
+
+### Resumen / reporte automatizado
+
+- **Qué era:** resumen mensual por push/inbox, prompt en Actividad, toggle en Ajustes.
+- **Por qué fuera:** no ayuda al pago offline.
+- **Estado:** fuera de Ajustes y sin prompt. **Actividad** manual sigue.
+
+## Más adelante (ideas)
+
+- Reactivar vitrina pública / vales / canje.
 - Reportes mensuales y analytics.
-- Mejoras de canales offline (P2P real vía Pears/Hyperswarm).
-- Seed con recovery más allá del PIN local.
+- P2P más fuerte vía Pears/Hyperswarm.
+- Recovery de seed más allá del PIN local.
