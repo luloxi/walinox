@@ -32,18 +32,18 @@ const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) =
 
 const ACTIONS = [
   {
+    id: "ingresar",
+    label: "Ingresar",
+    icon: Plus,
+    tone: "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-400",
+    active: "bg-amber-500 text-white shadow-amber-500/30 ring-amber-500/40",
+  },
+  {
     id: "recibir",
     label: "Recibir",
     icon: ArrowDownLeft,
     tone: "bg-sky-500/15 text-sky-600 ring-sky-500/25 dark:text-sky-400",
     active: "bg-sky-500 text-white shadow-sky-500/30 ring-sky-500/40",
-  },
-  {
-    id: "pagar",
-    label: "Pagar",
-    icon: ScanLine,
-    tone: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
-    active: "bg-emerald-500 text-white shadow-emerald-500/30 ring-emerald-500/40",
   },
   {
     id: "enviar",
@@ -53,11 +53,11 @@ const ACTIONS = [
     active: "bg-violet-500 text-white shadow-violet-500/30 ring-violet-500/40",
   },
   {
-    id: "ingresar",
-    label: "Ingresar",
-    icon: Plus,
-    tone: "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-400",
-    active: "bg-amber-500 text-white shadow-amber-500/30 ring-amber-500/40",
+    id: "pagar",
+    label: "Pagar",
+    icon: ScanLine,
+    tone: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+    active: "bg-emerald-500 text-white shadow-emerald-500/30 ring-emerald-500/40",
   },
 ] as const;
 
