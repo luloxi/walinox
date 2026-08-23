@@ -46,7 +46,7 @@ export function Landing() {
           />
           <h1 className="mt-6 text-3xl font-semibold tracking-tight md:text-4xl">Walinox</h1>
           <p className="mt-3 max-w-sm text-base leading-snug text-muted-foreground">
-            USDT que se firma sin internet y se cobra en el local cuando hay red.
+            USDT que se firma sin internet y se cobra en la tienda cuando hay red.
           </p>
           <ConnectCta stacked label="Empezar" className="mt-8 max-w-xs" />
           <p className="mt-4 text-[11px] text-muted-foreground">Auto-custodia · Ethereum · pesos al blue</p>
@@ -83,7 +83,7 @@ export function Landing() {
               <Store className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-medium">El local cobra más fácil</p>
+              <p className="text-sm font-medium">La tienda cobra más fácil</p>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                 Armás el pedido, mostrás un QR y el cliente firma. Cuando hay red, publicás el cobro. Más gente puede
                 pagar en USDT sin fricción de wallet clásica.
@@ -124,7 +124,7 @@ export function Landing() {
         </div>
         <div className="mx-auto mt-3 flex w-full max-w-xs justify-between text-[11px] text-muted-foreground">
           <span>Cliente</span>
-          <span>Local</span>
+          <span>Tienda</span>
         </div>
 
         <p className="mt-10 text-sm font-medium tracking-[0.14em] text-muted-foreground uppercase">Cómo funciona</p>
