@@ -69,8 +69,8 @@ export function RegisterServiceWorker() {
   if (!waiting) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[90] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="flex w-full max-w-lg items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg ring-1 ring-black/5">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex justify-center p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="pointer-events-auto flex w-full max-w-lg items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg ring-1 ring-black/5">
         <p className="min-w-0 flex-1 text-sm">Hay una versión nueva de Walinox.</p>
         <Button type="button" className="h-10 shrink-0" onClick={applyUpdate}>
           Actualizar
