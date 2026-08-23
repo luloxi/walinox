@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { AppShell } from "@/components/app-shell";
+import { AutoCloudBackup } from "@/components/auto-cloud-backup";
 import { NotifyProvider } from "@/components/notify-provider";
 import { RegisterServiceWorker } from "@/components/register-sw";
 import { DisplayProvider } from "@/components/display-provider";
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Web3Provider>
               <WalletProvider>
                 <NotifyProvider>
+                  <AutoCloudBackup />
                   <AppShell>{children}</AppShell>
                 </NotifyProvider>
               </WalletProvider>
