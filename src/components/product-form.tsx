@@ -90,7 +90,7 @@ export function ProductForm({
     setImage(undefined);
     setError(null);
     onPublished?.();
-    if (!onPublished) router.push(`/tienda/${wallet.address.toLowerCase()}`);
+    if (!onPublished) router.push("/tienda");
   }
 
   return (
