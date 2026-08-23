@@ -7,7 +7,7 @@ import { useWallet } from "@/components/wallet-provider";
 import { useUsdtBalance } from "@/components/use-usdt-balance";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { useFx } from "@/components/use-fx";
-import { FIATS, fiatMeta, isFiatId } from "@/lib/display";
+import { FIATS, fiatMeta, isFiatId, type FiatId } from "@/lib/display";
 import { formatFiat, formatUsdt, usdtToFiat } from "@/lib/fx";
 
 export function WalletCard({ children }: { children?: ReactNode }) {
@@ -104,7 +104,7 @@ function FlagPicker({
   flag: string;
   name: string;
   value: string;
-  onChange: (fiat: ReturnType<typeof fiatMeta>["id"] extends infer T ? T : never) => void;
+  onChange: (fiat: FiatId) => void;
   compact?: boolean;
 }) {
   return (
