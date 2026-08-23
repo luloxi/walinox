@@ -348,7 +348,7 @@ export function PayFlow() {
                 value={pasted}
                 onChange={(event) => setPasted(event.target.value)}
                 rows={2}
-                placeholder="Pegá el JSON del cobro"
+                placeholder="Pegá el cobro, la firma o el SMS"
                 className="font-mono text-xs"
               />
               <Button

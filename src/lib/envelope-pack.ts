@@ -51,8 +51,10 @@ function bytesToB64(data: Uint8Array): string {
 }
 
 function b64ToBytes(b64: string): Uint8Array {
-  if (typeof Buffer !== "undefined") return new Uint8Array(Buffer.from(b64, "base64"));
-  const bin = atob(b64);
+  const normalized = b64.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.length % 4 === 0 ? normalized : normalized + "=".repeat(4 - (normalized.length % 4));
+  if (typeof Buffer !== "undefined") return new Uint8Array(Buffer.from(padded, "base64"));
+  const bin = atob(padded);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
@@ -75,7 +77,9 @@ export function packEnvelope(envelope: SignedEnvelope): Uint8Array {
   out[134] = (chainId >>> 16) & 0xff;
   out[135] = (chainId >>> 8) & 0xff;
   out[136] = chainId & 0xff;
-  out.set(hexToBytes(envelope.signature, 65), 137);
+  const sig = hexToBytes(envelope.signature, 65);
+  if (sig[64] < 27) sig[64] += 27;
+  out.set(sig, 137);
   return out;
 }
 
@@ -92,7 +96,9 @@ export function unpackEnvelope(data: Uint8Array): SignedEnvelope {
   const deadline = deadlineN.toString();
   const chainId =
     ((data[133] << 24) | (data[134] << 16) | (data[135] << 8) | data[136]) >>> 0;
-  const signature = bytesToHex(data.slice(137, 202));
+  const sigBytes = data.slice(137, 202);
+  if (sigBytes[64] < 27) sigBytes[64] += 27;
+  const signature = bytesToHex(sigBytes);
   if (kind === "permit2") {
     const typed = buildPermit2({ token, spender, amount: value, nonce, deadline, chainId });
     return {
@@ -141,7 +147,15 @@ export function encodeEnvelopeQr(envelope: SignedEnvelope): string {
 }
 
 export function tryDecodeCompactQr(raw: string): SignedEnvelope | null {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith(COMPACT_QR_PREFIX)) return null;
-  return unpackEnvelope(b64ToBytes(trimmed.slice(COMPACT_QR_PREFIX.length)));
+  const idx = raw.indexOf(COMPACT_QR_PREFIX);
+  if (idx < 0) return null;
+  const rest = raw
+    .slice(idx + COMPACT_QR_PREFIX.length)
+    .replace(/[\n\r\t]/g, "")
+    .replace(/ /g, "+");
+  try {
+    return unpackEnvelope(b64ToBytes(rest));
+  } catch {
+    return null;
+  }
 }

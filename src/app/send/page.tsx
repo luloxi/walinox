@@ -7,6 +7,7 @@ export default async function SendRedirect({
 }) {
   const { to } = await searchParams;
   const qs = new URLSearchParams();
+  qs.set("tab", "enviar");
   if (to) qs.set("to", to);
-  redirect(qs.size ? `/?${qs.toString()}` : "/");
+  redirect(`/?${qs.toString()}`);
 }

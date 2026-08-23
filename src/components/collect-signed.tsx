@@ -101,13 +101,15 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
 
   function take(raw: string, channel: Channel) {
     try {
-      const next = ingest(raw, channel);
+      if (decodeCharge(raw)) throw new Error("Eso es el pedido. Esperá la firma del otro.");
+      const envelope = decodeEnvelope(raw);
       if (
         expectedSpender &&
-        next.envelope.spender.toLowerCase() !== expectedSpender.toLowerCase()
+        envelope.spender.toLowerCase() !== expectedSpender.toLowerCase()
       ) {
         throw new Error("Esa firma no es para esta address");
       }
+      const next = ingest(raw, channel);
       setResult(next);
       setError(null);
       setScanning(false);
@@ -324,7 +326,7 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
             value={pasted}
             onChange={(event) => setPasted(event.target.value)}
             rows={2}
-            placeholder="Pegá la firma JSON"
+            placeholder="Pegá la firma o el SMS"
             className="font-mono text-xs"
           />
           <Button type="button" variant="outline" className="h-11 w-full" onClick={() => take(pasted, "copy")}>
@@ -332,7 +334,7 @@ export function CollectSigned({ expectedSpender }: { expectedSpender?: string })
           </Button>
           <Input
             type="file"
-            accept="application/json,.json"
+            accept="application/json,.json,.txt,text/plain"
             className="cursor-pointer text-xs"
             onChange={(event) => {
               const file = event.target.files?.[0];

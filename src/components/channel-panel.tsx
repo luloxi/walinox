@@ -7,7 +7,7 @@ import { playSound, shareViaSms, transmitChannel } from "@/lib/air-io";
 import { encodeEnvelopeQr } from "@/lib/envelope-pack";
 import { type Channel } from "@/lib/channels";
 import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
-import { inviteFromSeed, wrapForPears } from "@/lib/pears";
+import { inviteFromSeed } from "@/lib/pears";
 import { fromBaseUnits } from "@/lib/format";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -28,8 +28,8 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
   const [soundOpen, setSoundOpen] = useState(false);
   const autoStarted = useRef(false);
 
-  async function offlinePayload() {
-    return wrapForPears(encodeEnvelope(envelope), envelope.signature);
+  function compactPayload() {
+    return encodeEnvelopeQr(envelope);
   }
 
   async function markSent(channel: Channel, detail: string) {
@@ -87,16 +87,16 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
         return;
       }
       if (channel === "copy") {
-        await navigator.clipboard.writeText(await offlinePayload());
+        await navigator.clipboard.writeText(compactPayload());
         await markSent("copy", "Permiso copiado. Si te queda más fácil, mandalo por SMS.");
         return;
       }
       if (channel === "sms") {
-        await markSent("sms", shareViaSms(encodeEnvelopeQr(envelope)));
+        await markSent("sms", shareViaSms(compactPayload()));
         return;
       }
       if (channel === "file") {
-        const blob = new Blob([await offlinePayload()], { type: "application/json" });
+        const blob = new Blob([compactPayload()], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -109,7 +109,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
       if (channel === "nfc") {
         const NDEF = (window as Window & { NDEFReader?: new () => { write: (data: unknown) => Promise<void> } }).NDEFReader;
         if (!NDEF) throw new Error("Web NFC no está en este navegador");
-        await new NDEF().write({ records: [{ recordType: "text", data: await offlinePayload() }] });
+        await new NDEF().write({ records: [{ recordType: "text", data: compactPayload() }] });
         await markSent("nfc", "Escrito en el tag NFC.");
         return;
       }
