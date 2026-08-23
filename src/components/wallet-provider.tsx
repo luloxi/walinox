@@ -92,7 +92,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const seed = readSessionSeed();
       if (seed) {
         try {
-          const next = await openWallet(seed);
+          const next = await Promise.race([
+            openWallet(seed),
+            new Promise<never>((_, reject) => {
+              window.setTimeout(() => reject(new Error("wallet unlock timeout")), 8_000);
+            }),
+          ]);
           if (cancelled) {
             next.dispose();
             return;
@@ -102,8 +107,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setLocalUnlocked(true);
           lastActive.current = Date.now();
         } catch {
-          writeSessionSeed(null);
+          // Keep seed for retry when online; still leave the shell.
           setLocalUnlocked(false);
+          setWantLocal(false);
         }
       }
       if (!cancelled) setLocalChecked(true);
@@ -127,9 +133,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     wantLocal && local ? "local" : injected ? "injected" : wallet ? "local" : null;
   const tosOk = Boolean(wallet && hasSignedTos(wallet.address));
   const hasLocalSession = Boolean(wantLocal && local);
+  const browserOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+  // Offline: never block the shell on Wagmi reconnect. Local session unlock has a timeout above.
   const hydrating =
     !localChecked ||
-    (!hasLocalSession && (status === "connecting" || status === "reconnecting"));
+    (!hasLocalSession &&
+      !browserOffline &&
+      (status === "connecting" || status === "reconnecting"));
   const ready = Boolean(wallet && tosOk);
 
   useEffect(() => {
