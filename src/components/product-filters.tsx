@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import {
-  CATEGORY_LABEL,
-  PRODUCT_CATEGORIES,
+  PRODUCT_GROUPS,
   PRODUCT_SORTS,
+  groupOfCategory,
   type ProductSort,
 } from "@/lib/categories";
 import type { Store } from "@/lib/stores";
@@ -54,6 +54,8 @@ export function ProductFilters({
   onSort: (value: ProductSort) => void;
   showSort?: boolean;
 }) {
+  const selectedGroup = PRODUCT_GROUPS.find((group) => group.id === groupOfCategory(category));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 md:flex-row">
@@ -106,12 +108,27 @@ export function ProductFilters({
           <Chip active={category === "all"} onClick={() => onCategory("all")}>
             Todas
           </Chip>
-          {PRODUCT_CATEGORIES.map((id) => (
-            <Chip key={id} active={category === id} onClick={() => onCategory(id)}>
-              {CATEGORY_LABEL[id]}
-            </Chip>
-          ))}
+          {PRODUCT_GROUPS.map((group) => {
+            const on = category === group.id || groupOfCategory(category) === group.id;
+            return (
+              <Chip key={group.id} active={on} onClick={() => onCategory(group.id)}>
+                {group.label}
+              </Chip>
+            );
+          })}
         </div>
+        {selectedGroup ? (
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            <Chip active={category === selectedGroup.id} onClick={() => onCategory(selectedGroup.id)}>
+              Todas
+            </Chip>
+            {selectedGroup.items.map((item) => (
+              <Chip key={item.id} active={category === item.id} onClick={() => onCategory(item.id)}>
+                {item.label}
+              </Chip>
+            ))}
+          </div>
+        ) : null}
       </section>
     </div>
   );

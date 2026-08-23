@@ -14,12 +14,16 @@ describe("product browse", () => {
     const cheapFirst = sortProducts(MOCK_PRODUCTS, "precio-asc");
     expect(Number(cheapFirst[0].price)).toBeLessThanOrEqual(Number(cheapFirst[1].price));
     const groups = groupProducts(MOCK_PRODUCTS);
-    expect(groups.map((group) => group.id)).toEqual(expect.arrayContaining(["cafe", "panaderia", "almacen", "huerta"]));
+    expect(groups.map((group) => group.id)).toEqual(expect.arrayContaining(["comida"]));
+    expect(browseProducts(MOCK_PRODUCTS, { category: "comida" }).items.length).toBe(MOCK_PRODUCTS.length);
     const lulox = MOCK_PRODUCTS.filter((item) => item.storeId === "local-lulox");
     expect(lulox).toHaveLength(4);
     const browsed = browseProducts(MOCK_PRODUCTS, { category: "cafe", sort: "precio-desc" });
     expect(browsed.groups).toBeNull();
     expect(browsed.items.every((item) => item.category === "cafe")).toBe(true);
+    const food = browseProducts(MOCK_PRODUCTS, { category: "comida", sort: "categoria" });
+    expect(food.groups?.some((group) => group.id === "cafe")).toBe(true);
+    expect(browseProducts(MOCK_PRODUCTS, { category: "ropa" }).items).toHaveLength(0);
     const local = browseProducts(MOCK_PRODUCTS, { store: "local-lulox" });
     expect(local.items).toHaveLength(4);
     expect(local.items.every((item) => item.storeId === "local-lulox")).toBe(true);

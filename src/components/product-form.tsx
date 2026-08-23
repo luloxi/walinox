@@ -11,7 +11,7 @@ import { useFx } from "@/components/use-fx";
 import { fiatMeta } from "@/lib/display";
 import { formatFiat, formatUsdt, parsePriceField, usdtToFiat } from "@/lib/fx";
 import { UsdtLogo } from "@/components/usdt-logo";
-import { CATEGORY_LABEL, PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/categories";
+import { PRODUCT_GROUPS, type ProductCategory } from "@/lib/categories";
 import { saveProduct } from "@/lib/catalog";
 import { DEFAULT_TERMS, productIdFor, type Product } from "@/lib/vale";
 
@@ -113,10 +113,14 @@ export function ProductForm({
         className="h-11 w-full cursor-pointer rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
         aria-label="Categoría"
       >
-        {PRODUCT_CATEGORIES.map((id) => (
-          <option key={id} value={id}>
-            {CATEGORY_LABEL[id]}
-          </option>
+        {PRODUCT_GROUPS.map((group) => (
+          <optgroup key={group.id} label={group.label}>
+            {group.items.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       <Input
