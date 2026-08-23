@@ -14,11 +14,11 @@ Diferido (vitrina pública, vales, reporte mensual): [`docs/roadmap.md`](docs/ro
 ## Qué hay hoy (MVP)
 
 - **Login** — RainbowKit o billetera local WDK + términos EIP-712.
-- **Billetera** — saldo, Recibir / Pagar / Enviar.
+- **Billetera** — saldo, Ingresar / Recibir / Enviar / Pagar.
 - **Local** — productos del vendedor, caja (POS), cobro con todos los canales offline.
 - **Contactos** — agenda mínima.
 - **Actividad** — historial local (sin reportes automáticos).
-- **Ajustes** — moneda, wallet, avisos push, tema.
+- **Ajustes** — moneda, wallet, seguridad (PIN/biometría), avisos push, tema.
 
 ## USDT y Permit2
 
