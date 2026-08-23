@@ -39,6 +39,18 @@ export function permit2Domain(chainId = 1): Eip712Domain {
   };
 }
 
+function randomNonce(): string {
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  let hex = "0x";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return BigInt(hex).toString();
+}
+
 export function buildPermit2(input: {
   token?: string;
   spender: string;
@@ -60,7 +72,7 @@ export function buildPermit2(input: {
         amount: assertUintString(input.amount, "amount"),
       },
       spender: assertAddress(input.spender, "spender"),
-      nonce: assertUintString(input.nonce ?? String(Date.now()), "nonce"),
+      nonce: assertUintString(input.nonce ?? randomNonce(), "nonce"),
       deadline: assertUintString(deadline, "deadline"),
     },
   };
@@ -83,8 +95,16 @@ export function validatePermit2Signature(
   typed: Permit2TypedData,
   signature: string,
   owner: string,
+  nowSec = Math.floor(Date.now() / 1000),
 ): { ok: true; recovered: string; digest: string } | { ok: false; reason: string; recovered?: string; digest?: string } {
   try {
+    const deadline = Number(typed.message.deadline);
+    if (!Number.isFinite(deadline) || deadline < nowSec) {
+      return { ok: false, reason: "Permiso vencido" };
+    }
+    if (BigInt(typed.message.permitted.amount) <= BigInt(0)) {
+      return { ok: false, reason: "Monto inválido" };
+    }
     const digest = hashPermit2(typed);
     const recovered = recoverPermit2Signer(typed, signature);
     if (recovered !== getAddress(owner)) {
