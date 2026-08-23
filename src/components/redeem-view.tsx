@@ -23,7 +23,7 @@ export function RedeemView({ embedded = false }: { embedded?: boolean }) {
   const isSeller =
     wallet && envelope ? wallet.address.toLowerCase() === envelope.issuer.toLowerCase() : false;
   const already = envelope ? isRedeemed(envelope.tokenId, envelope.issuer) : false;
-  const canRedeem = Boolean(envelope && check?.ok && !already && !done && (isSeller || envelope.demo));
+  const canRedeem = Boolean(envelope && check?.ok && !already && !done && isSeller);
 
   function ingest(text: string) {
     try {

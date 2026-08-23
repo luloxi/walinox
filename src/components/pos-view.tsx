@@ -10,7 +10,6 @@ import { QrScanner } from "@/components/qr-scanner";
 import { usePaymentChain } from "@/components/use-payment-chain";
 import { useWallet } from "@/components/wallet-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { isLocalHost } from "@/lib/dev";
 import {
   buildCharge,
   decodeCharge,
@@ -114,23 +113,20 @@ export function PosView({ products }: { products: Product[] }) {
     setBusy(true);
     setError(null);
     try {
-      let tx = "demo";
-      if (!isLocalHost()) {
-        await ensure();
-        const { to, data } = encodePermit2TransferFrom(
-          buildPermit2({
-            token: envelope.token,
-            spender: envelope.spender,
-            amount: envelope.value,
-            nonce: String(envelope.typedData.message.nonce ?? ""),
-            deadline: String(envelope.typedData.message.deadline ?? ""),
-            chainId: envelope.typedData.domain.chainId,
-          }),
-          envelope.signature,
-          envelope.owner,
-        );
-        tx = await wallet.sendCalldata(to, data);
-      }
+      await ensure();
+      const { to, data } = encodePermit2TransferFrom(
+        buildPermit2({
+          token: envelope.token,
+          spender: envelope.spender,
+          amount: envelope.value,
+          nonce: String(envelope.typedData.message.nonce ?? ""),
+          deadline: String(envelope.typedData.message.deadline ?? ""),
+          chainId: envelope.typedData.domain.chainId,
+        }),
+        envelope.signature,
+        envelope.owner,
+      );
+      const tx = await wallet.sendCalldata(to, data);
       setHash(tx);
       receiptFromPermit(
         {
@@ -207,8 +203,8 @@ export function PosView({ products }: { products: Product[] }) {
         </Button>
         {hash ? (
           <div className="space-y-1">
-            <p className="text-sm text-primary">{isLocalHost() ? "Cobro de demo registrado." : "Pago publicado."}</p>
-            {hash !== "demo" ? <EtherscanTxLink hash={hash} className="text-xs" /> : null}
+            <p className="text-sm text-primary">Pago publicado.</p>
+            <EtherscanTxLink hash={hash} className="text-xs" />
           </div>
         ) : null}
         {error ? (

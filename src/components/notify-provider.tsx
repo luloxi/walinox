@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useWallet } from "@/components/wallet-provider";
 import { Button } from "@/components/ui/button";
-import { isLocalHost } from "@/lib/dev";
 import {
   BANNER_KEY,
   INBOX_EVENT,
@@ -75,7 +74,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   }, [address, source]);
 
   useEffect(() => {
-    if (!address || isLocalHost()) return;
+    if (!address) return;
     const walletAddress = address;
     let live = true;
     const key = LAST_USDT_KEY + walletAddress.toLowerCase();

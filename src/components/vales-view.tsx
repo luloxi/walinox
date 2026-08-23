@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { QrScanner } from "@/components/qr-scanner";
 import { Price } from "@/components/price";
 import { useWallet } from "@/components/wallet-provider";
-import { holdVale, isRedeemed, listHeld, redeemVale } from "@/lib/catalog";
-import { seedLivedIn } from "@/lib/seed";
+import { holdVale, isRedeemed, listHeld } from "@/lib/catalog";
 import { payloadToDataUrl } from "@/lib/qr";
 import { decodeVale, validateVale, type ValeEnvelope } from "@/lib/vale";
 import { fromBaseUnits } from "@/lib/format";
@@ -22,7 +21,6 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      seedLivedIn(wallet?.address);
       setHeld(listHeld(wallet?.address));
     }, 0);
     return () => window.clearTimeout(timer);
@@ -31,16 +29,6 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
   async function show(envelope: ValeEnvelope) {
     setOpen(envelope.tokenId);
     setQr(await payloadToDataUrl(JSON.stringify(envelope)));
-  }
-
-  function used(envelope: ValeEnvelope) {
-    try {
-      redeemVale(envelope, "Retirado");
-      setHeld(listHeld(wallet?.address));
-      setOpen(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo marcar");
-    }
   }
 
   return (
@@ -106,16 +94,6 @@ export function ValesView({ embedded = false }: { embedded?: boolean }) {
                     >
                       Mostrar en el local
                     </Button>
-                    {vale.demo ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="mt-1 h-9 w-full"
-                        onClick={() => used(vale)}
-                      >
-                        Ya lo retiré
-                      </Button>
-                    ) : null}
                   </>
                 )}
                 {open === vale.tokenId && qr ? (

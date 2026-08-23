@@ -184,10 +184,6 @@ export function validateVale(
   }
 }
 
-export function isDemoProduct(product: { id: string }): boolean {
-  return product.id.startsWith("mock:");
-}
-
 export async function createSignedVale(input: {
   sign: (typed: {
     domain: Eip712Domain;
@@ -198,7 +194,6 @@ export async function createSignedVale(input: {
   issuer: string;
   holder: string;
   paymentTx?: string;
-  demo?: boolean;
 }): Promise<ValeEnvelope> {
   const typed = buildVale({
     tokenId: String(Date.now()),
@@ -233,7 +228,6 @@ export async function createSignedVale(input: {
     paymentTx: input.paymentTx,
     typedData: typed,
     signature,
-    demo: input.demo,
   };
 }
 

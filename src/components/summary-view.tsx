@@ -16,7 +16,7 @@ import {
 import { etherscanAddressActivityUrl } from "@/lib/etherscan";
 import { listStores } from "@/lib/catalog";
 import { listReceiptsFor } from "@/lib/receipts";
-import { seedLivedIn } from "@/lib/seed";
+
 import { Price } from "@/components/price";
 import { useFx } from "@/components/use-fx";
 
@@ -35,7 +35,6 @@ export function SummaryView() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      seedLivedIn(wallet?.address);
       setReceipts(listReceiptsFor(wallet?.address));
     }, 0);
     return () => window.clearTimeout(timer);

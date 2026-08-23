@@ -18,18 +18,12 @@ import { useWallet } from "@/components/wallet-provider";
 import { toBaseUnits } from "@/lib/agent";
 import { bumpSold, getProduct, holdVale, issueVale, listProducts } from "@/lib/catalog";
 import { rememberContact } from "@/lib/contacts";
-import { isLocalHost } from "@/lib/dev";
 import { parsePaymentAddress } from "@/lib/payment-address";
 import { payloadToDataUrl } from "@/lib/qr";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
 import { USDT } from "@/lib/tokens";
-import {
-  createSignedVale,
-  isDemoProduct,
-  type Product,
-  type ValeEnvelope,
-} from "@/lib/vale";
+import { createSignedVale, type Product } from "@/lib/vale";
 
 export function ProductDetail() {
   const params = useParams<{ id: string }>();
@@ -73,17 +67,15 @@ export function ProductDetail() {
   const listing = product;
   const isSeller = wallet?.address.toLowerCase() === listing.issuer.toLowerCase();
   const remaining = listing.supply - listing.sold;
-  const demo = isDemoProduct(listing) || isLocalHost();
 
-  async function mint(holderAddress: string, paymentTx?: string, asDemo = false) {
+  async function mint(holderAddress: string, paymentTx?: string) {
     if (!wallet) throw new Error("Conectá una wallet");
     const envelope = await createSignedVale({
       sign: (typed) => wallet.signTypedData(typed),
       product: listing,
-      issuer: asDemo ? wallet.address : listing.issuer,
+      issuer: listing.issuer,
       holder: holderAddress,
       paymentTx,
-      demo: asDemo,
     });
     bumpSold(listing.id);
     issueVale(envelope);
@@ -99,31 +91,23 @@ export function ProductDetail() {
     setBusy(true);
     setError(null);
     try {
-      let tx: string | undefined;
-      if (!demo) {
-        await ensure();
-        const value = toBaseUnits(listing.price, USDT.decimals);
-        tx = await wallet.transfer(USDT.address, listing.issuer, value);
-        setHash(tx);
-        receiptFromPermit(
-          { owner: wallet.address, spender: listing.issuer, value, token: USDT.symbol },
-          { action: "sent", channel: "online", signature: tx, valid: true },
-        );
-        void notifyPeer({
-          kind: "usdt",
-          from: wallet.address,
-          to: listing.issuer,
-          amount: listing.price,
-          token: "USDT",
-        });
-      }
+      await ensure();
+      const value = toBaseUnits(listing.price, USDT.decimals);
+      const tx = await wallet.transfer(USDT.address, listing.issuer, value);
+      setHash(tx);
+      receiptFromPermit(
+        { owner: wallet.address, spender: listing.issuer, value, token: USDT.symbol },
+        { action: "sent", channel: "online", signature: tx, valid: true },
+      );
+      void notifyPeer({
+        kind: "usdt",
+        from: wallet.address,
+        to: listing.issuer,
+        amount: listing.price,
+        token: "USDT",
+      });
       rememberContact(listing.issuer, { name: listing.issuerName });
-      if (demo) {
-        await mint(wallet.address, tx, true);
-        setBought(true);
-      } else {
-        setPaid(true);
-      }
+      setPaid(true);
       setProduct(getProduct(listing.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo comprar");
@@ -142,7 +126,7 @@ export function ProductDetail() {
     setBusy(true);
     setError(null);
     try {
-      const envelope = await mint(to, hash ?? undefined, false);
+      const envelope = await mint(to, hash ?? undefined);
       rememberContact(to);
       receiptFromPermit(
         { owner: wallet.address, spender: to, value: envelope.price, token: "VALE" },

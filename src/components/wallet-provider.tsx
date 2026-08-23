@@ -21,8 +21,7 @@ import {
   setLocalUnlocked,
   termsTypedData,
 } from "@/lib/session";
-import { isLocalHost } from "@/lib/dev";
-import { seedLivedIn } from "@/lib/seed";
+
 import { unlockOrCreateSeed } from "@/lib/seed-crypto";
 
 const SESSION_SEED_KEY = "walinox.session.seed";
@@ -122,12 +121,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     return null;
   }, [injected, address, walletClient, wantLocal, local]);
-
-  useEffect(() => {
-    if (!wallet?.address || !isLocalHost()) return;
-    const timer = window.setTimeout(() => seedLivedIn(wallet.address), 0);
-    return () => window.clearTimeout(timer);
-  }, [wallet?.address]);
 
   const source: "injected" | "local" | null =
     wantLocal && local ? "local" : injected ? "injected" : wallet ? "local" : null;

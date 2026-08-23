@@ -21,7 +21,7 @@ import {
 import { browseProducts, categoryLabel, type ProductSort } from "@/lib/categories";
 import { productsByIssuer, removeProduct } from "@/lib/catalog";
 import { listReceiptsFor, type Receipt } from "@/lib/receipts";
-import { seedLivedIn } from "@/lib/seed";
+
 import type { Product } from "@/lib/vale";
 
 export function TiendaView() {
@@ -36,7 +36,6 @@ export function TiendaView() {
   const [backupBusy, setBackupBusy] = useState(false);
 
   function refresh() {
-    seedLivedIn(wallet?.address);
     setMine(wallet ? productsByIssuer(wallet.address) : []);
     setRecent(listReceiptsFor(wallet?.address).slice(0, 5));
   }

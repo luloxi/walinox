@@ -22,7 +22,7 @@ import { EmptyState, SectionLabel } from "@/components/empty-state";
 import { SaveContact } from "@/components/save-contact";
 import { useWallet } from "@/components/wallet-provider";
 import { parsePaymentAddress } from "@/lib/payment-address";
-import { seedLivedIn } from "@/lib/seed";
+
 import { isEnsName, resolveEns } from "@/lib/ens";
 import { shortAddress } from "@/lib/format";
 import { QvacHint } from "@/components/qvac-hint";
@@ -42,7 +42,6 @@ export function ContactsView() {
   const visible = useMemo(() => searchContacts(contacts, query), [contacts, query]);
 
   function refresh() {
-    seedLivedIn(wallet?.address);
     seedDefaultContacts();
     setContacts(namedContacts());
     setSuggestions(suggestedContacts(wallet?.address));

@@ -1,5 +1,5 @@
 import { getAddress, isAddress } from "ethers";
-import { MOCK_PRODUCTS, MOCK_STORES, type Store } from "@/lib/stores";
+import { CATALOG_PRODUCTS, CATALOG_STORES, type Store } from "@/lib/stores";
 import { matchesStore } from "@/lib/store-link";
 import { markCloudDirty } from "@/lib/backup";
 import type { Product, RedeemRecord, ValeEnvelope } from "@/lib/vale";
@@ -15,7 +15,18 @@ const STORAGE_KEY = "walinox.catalog";
 
 const EMPTY: CatalogStore = { products: [], held: [], issued: [], redeemed: [] };
 
-const MOCK_FLAG = "walinox.mock.v2";
+const DROP_STORE_IDS = new Set(["tostaduria-sur", "panaderia-luna", "feria-oeste"]);
+const DROP_ISSUERS = new Set([
+  "0x1111111111111111111111111111111111111111",
+  "0x2222222222222222222222222222222222222222",
+  "0x3333333333333333333333333333333333333333",
+]);
+
+function isPlaceholderListing(item: { storeId?: string; issuer: string; id: string }): boolean {
+  if (item.id.startsWith("mock:")) return true;
+  if (item.storeId && DROP_STORE_IDS.has(item.storeId)) return true;
+  return DROP_ISSUERS.has(item.issuer.toLowerCase());
+}
 
 function load(): CatalogStore {
   if (typeof localStorage === "undefined") return { products: [], held: [], issued: [], redeemed: [] };
@@ -35,26 +46,39 @@ function load(): CatalogStore {
     }
   }
   let patched = false;
+  const kept = store.products.filter((item) => !isPlaceholderListing(item));
+  if (kept.length !== store.products.length) {
+    store.products = kept;
+    patched = true;
+  }
+  const dropVale = (item: { tokenId: string; issuer: string }) =>
+    item.tokenId.startsWith("seed:") || DROP_ISSUERS.has(item.issuer.toLowerCase());
+  const held = store.held.filter((item) => !dropVale(item) && !item.demo);
+  const issued = store.issued.filter((item) => !dropVale(item) && !item.demo);
+  if (held.length !== store.held.length || issued.length !== store.issued.length) {
+    store.held = held;
+    store.issued = issued;
+    patched = true;
+  }
   const known = new Set(store.products.map((item) => item.id));
-  const missing = MOCK_PRODUCTS.filter((item) => !known.has(item.id));
+  const missing = CATALOG_PRODUCTS.filter((item) => !known.has(item.id));
   if (missing.length > 0) {
     store.products = [...missing, ...store.products];
     patched = true;
   }
-  if (typeof localStorage !== "undefined") localStorage.setItem(MOCK_FLAG, "1");
-  for (const mock of MOCK_PRODUCTS) {
-    const found = store.products.find((item) => item.id === mock.id);
+  for (const listing of CATALOG_PRODUCTS) {
+    const found = store.products.find((item) => item.id === listing.id);
     if (!found) continue;
-    if (!found.image && mock.image) {
-      found.image = mock.image;
+    if (!found.image && listing.image) {
+      found.image = listing.image;
       patched = true;
     }
-    if (mock.price && found.price !== mock.price) {
-      found.price = mock.price;
+    if (listing.price && found.price !== listing.price) {
+      found.price = listing.price;
       patched = true;
     }
-    if (mock.category && found.category !== mock.category) {
-      found.category = mock.category;
+    if (listing.category && found.category !== listing.category) {
+      found.category = listing.category;
       patched = true;
     }
   }
@@ -94,7 +118,7 @@ export function listStores(): Store[] {
   const extra: Store[] = [];
   for (const product of products) {
     const id = product.storeId ?? product.issuer.toLowerCase();
-    if (MOCK_STORES.some((store) => store.id === id) || extra.some((store) => store.id === id)) {
+    if (CATALOG_STORES.some((store) => store.id === id) || extra.some((store) => store.id === id)) {
       continue;
     }
     extra.push({
@@ -104,7 +128,7 @@ export function listStores(): Store[] {
       issuer: product.issuer,
     });
   }
-  return [...MOCK_STORES, ...extra];
+  return [...CATALOG_STORES, ...extra];
 }
 
 export function productsByStore(storeId: string): Product[] {
