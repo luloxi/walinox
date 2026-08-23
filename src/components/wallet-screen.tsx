@@ -31,10 +31,34 @@ const ReceiveFlow = dynamic(() => import("@/components/receive-flow").then((m) =
 });
 
 const ACTIONS = [
-  { id: "recibir", label: "Recibir", icon: ArrowDownLeft },
-  { id: "pagar", label: "Pagar", icon: ScanLine },
-  { id: "enviar", label: "Enviar", icon: ArrowUpRight },
-  { id: "ingresar", label: "Ingresar", icon: Plus },
+  {
+    id: "recibir",
+    label: "Recibir",
+    icon: ArrowDownLeft,
+    tone: "bg-sky-500/15 text-sky-600 ring-sky-500/25 dark:text-sky-400",
+    active: "bg-sky-500 text-white shadow-sky-500/30 ring-sky-500/40",
+  },
+  {
+    id: "pagar",
+    label: "Pagar",
+    icon: ScanLine,
+    tone: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+    active: "bg-emerald-500 text-white shadow-emerald-500/30 ring-emerald-500/40",
+  },
+  {
+    id: "enviar",
+    label: "Enviar",
+    icon: ArrowUpRight,
+    tone: "bg-violet-500/15 text-violet-600 ring-violet-500/25 dark:text-violet-400",
+    active: "bg-violet-500 text-white shadow-violet-500/30 ring-violet-500/40",
+  },
+  {
+    id: "ingresar",
+    label: "Ingresar",
+    icon: Plus,
+    tone: "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-400",
+    active: "bg-amber-500 text-white shadow-amber-500/30 ring-amber-500/40",
+  },
 ] as const;
 
 export function WalletScreen() {
@@ -88,7 +112,7 @@ export function WalletScreen() {
   return (
     <div className="flex min-h-full flex-col gap-6">
       <WalletCard>
-        <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:gap-4">
+        <div className="mt-5 flex w-full items-start justify-between gap-2 md:mt-6">
           {ACTIONS.map((item) => {
             const Icon = item.icon;
             const on = tab === item.id;
@@ -96,23 +120,25 @@ export function WalletScreen() {
               <button
                 key={item.id}
                 type="button"
-                className={cn(
-                  "flex w-[4.25rem] cursor-pointer flex-col items-center gap-1.5 transition-colors active:scale-95",
-                  on ? "text-primary" : "text-muted-foreground hover:text-foreground",
-                )}
+                className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-2 transition-colors active:scale-95"
                 onClick={() => go(tab === item.id ? "" : item.id)}
               >
                 <span
                   className={cn(
-                    "flex size-12 items-center justify-center rounded-2xl transition-colors",
-                    on
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted ring-1 ring-border",
+                    "flex size-14 items-center justify-center rounded-2xl ring-1 shadow-sm transition-colors md:size-16",
+                    on ? item.active : item.tone,
                   )}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-7 md:size-8" strokeWidth={2.25} />
                 </span>
-                <span className="text-[11px] font-medium">{item.label}</span>
+                <span
+                  className={cn(
+                    "text-[11px] font-medium md:text-xs",
+                    on ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {item.label}
+                </span>
               </button>
             );
           })}
