@@ -29,23 +29,22 @@ export function PermitCard({
   complianceNote?: string;
 }) {
   const rows = [
-    ["Owner", shortAddress(owner)],
-    ["Spender", shortAddress(spender)],
-    ["Nonce", nonce],
-    ["Deadline", formatDeadline(deadline)],
+    ["De", shortAddress(owner)],
+    ["Para", shortAddress(spender)],
+    ["Vence", formatDeadline(deadline)],
     ["Token", tokenLabel],
-    ["Chain", String(chainId)],
+    ["Red", String(chainId)],
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{kind === "permit2" ? "Permit2 transfer" : "ERC-2612 Permit"}</CardTitle>
+        <CardTitle>{kind === "permit2" ? "Permiso firmado" : "Permit ERC-2612"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 font-mono text-xs">
           <div className="contents">
-            <dt className="text-muted-foreground">Value</dt>
+            <dt className="text-muted-foreground">Monto</dt>
             <dd className="flex justify-end font-sans">
               <Price usdt={fromBaseUnits(value)} size="sm" className="items-end" />
             </dd>
@@ -61,9 +60,7 @@ export function PermitCard({
           <p className="text-sm leading-relaxed text-muted-foreground">{explanation}</p>
         ) : null}
         {complianceNote ? (
-          <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs leading-relaxed text-primary">
-            {complianceNote}
-          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{complianceNote}</p>
         ) : null}
       </CardContent>
     </Card>
