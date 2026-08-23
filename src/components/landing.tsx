@@ -49,7 +49,6 @@ export function Landing() {
             USDT que se firma sin internet y se cobra en la tienda cuando hay red.
           </p>
           <ConnectCta stacked className="mt-8 max-w-xs" />
-          <p className="mt-4 text-[11px] text-muted-foreground">Auto-custodia · Ethereum · USDT</p>
         </div>
         <button
           type="button"
