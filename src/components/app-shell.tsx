@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Bell, History, ScanLine, Settings, Store, Users, Wallet } from "lucide-react";
@@ -140,7 +140,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <MobileNav unread={unread} />
+      <Suspense fallback={null}>
+        <MobileNav unread={unread} />
+      </Suspense>
     </div>
   );
 }
