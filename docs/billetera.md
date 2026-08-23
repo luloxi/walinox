@@ -57,7 +57,7 @@ Hoy la UI **no muestra ni exporta** la seed. Para un producto real habría que: 
 ## Qué se puede hacer sin billetera
 
 - Abrir un link de tienda (`/tienda/tostaduria-sur` o `/tienda/0x…`).
-- Ver productos y precios en pesos.
+- Ver productos y precios en moneda local.
 - Iniciar sesión desde esa misma pantalla si querés comprar.
 
 Sin billetera **no** hay saldo, envíos, caja, actividad ni ajustes.
@@ -90,7 +90,7 @@ Firmar **no** mueve USDT. El token se mueve cuando esa firma se publica on-chain
 
 - **WDK** (`@tetherto/wdk` + `@tetherto/wdk-wallet-evm`) — crear cuenta, firmar EIP-712, transfer.
 - **WDK 7702 gasless** (`@tetherto/wdk-wallet-evm-7702-gasless`) — pagar el bundler en USDT. No es “Tether te regala el gas”.
-- **USDT** — lo que se cobra y se muestra (la UI lo traduce a pesos al blue).
+- **USDT** — lo que se cobra y se muestra (la UI lo traduce a moneda local con cotización USDT de mercado).
 - **QVAC** — otra pieza de Tether; entiende una frase (“mandale 10 a Nacho”) y rellena campos. No es la billetera.
 
 Walinox no emite USDT ni reemplaza Tether. Usa su token y su kit de wallets para que un kiosco o una persona pueda **tener dólares digitales sin ser un exchange**.
