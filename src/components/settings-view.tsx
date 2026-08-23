@@ -33,13 +33,11 @@ export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { prefs, setPrefs } = useDisplay();
   const fx = useFx();
-  const { wallet, source, signMode, grantActive, chooseSignMode, lockLocal } = useWallet();
+  const { wallet, source, lockLocal } = useWallet();
   const { disconnect } = useDisconnect();
-  const [modeBusy, setModeBusy] = useState(false);
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [alerts, setAlerts] = useState<"on" | "off" | "denied" | "unsupported">("off");
   const [monthly, setMonthly] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -49,23 +47,9 @@ export function SettingsView() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  async function toggleSign(session: boolean) {
-    setModeBusy(true);
-    setNote(null);
-    try {
-      const ok = await chooseSignMode(session ? "session" : "every");
-      if (session && !ok) setNote("Tu wallet no permite enviar sin firmar.");
-    } catch (err) {
-      setNote(err instanceof Error ? err.message : "No se pudo cambiar el modo");
-    } finally {
-      setModeBusy(false);
-    }
-  }
-
   async function enableAlerts() {
     if (!wallet?.address) return;
     setNotifyBusy(true);
-    setNote(null);
     try {
       const permission = await requestNotifyPermission();
       if (permission === "denied") {
@@ -78,7 +62,11 @@ export function SettingsView() {
       }
       localStorage.removeItem(NOTIFY_OFF_KEY);
       localStorage.setItem(BANNER_KEY, "1");
-      await subscribePush(wallet.address);
+      await subscribePush(wallet.address, (message) => wallet.signTypedData({
+        domain: { name: "Walinox", version: "1", chainId: 1, verifyingContract: "0x0000000000000000000000000000000000000001" },
+        types: { Auth: [{ name: "message", type: "string" }] },
+        message: { message },
+      }));
       setAlerts("on");
     } finally {
       setNotifyBusy(false);
@@ -104,7 +92,6 @@ export function SettingsView() {
     }
   }
 
-  const fast = signMode === "session" && (grantActive || source === "local");
   const local = fiatMeta(prefs.fiat);
 
   return (
@@ -153,7 +140,9 @@ export function SettingsView() {
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Wallet</p>
         <p className="font-mono text-sm">{wallet ? shortAddress(wallet.address) : "—"}</p>
         <p className="text-xs text-muted-foreground">
-          {source === "local" ? "Local en este dispositivo" : "Conectada"}
+          {source === "local"
+            ? "Billetera local · firmás cada operación"
+            : "Wallet conectada · Walinox es intermediario, firmás en tu app"}
         </p>
         <div className="[&_button]:cursor-pointer">
           <ConnectButton chainStatus="none" showBalance={false} accountStatus="full" label="Conectar billetera" />
@@ -214,28 +203,6 @@ export function SettingsView() {
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Firma</p>
-        <Button
-          type="button"
-          variant={!fast ? "default" : "outline"}
-          className="h-11 w-full"
-          disabled={modeBusy}
-          onClick={() => void toggleSign(false)}
-        >
-          Firmar cada envío
-        </Button>
-        <Button
-          type="button"
-          variant={fast ? "default" : "outline"}
-          className="h-11 w-full"
-          disabled={modeBusy}
-          onClick={() => void toggleSign(true)}
-        >
-          {modeBusy ? "Pidiendo permiso…" : "Modo rápido · 24 h"}
-        </Button>
-      </section>
-
-      <section className="mt-6 space-y-2">
         <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">Apariencia</p>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -256,8 +223,6 @@ export function SettingsView() {
           </Button>
         </div>
       </section>
-
-      {note ? <p className="mt-4 text-xs text-primary">{note}</p> : null}
     </div>
   );
 }
