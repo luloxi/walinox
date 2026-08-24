@@ -95,7 +95,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
       }
       if (channel === "file") {
         const blob = new Blob([compactPayload()], { type: "text/plain" });
-        const url = URL.createObjectURL(url);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = envelopeFilename(envelope);
