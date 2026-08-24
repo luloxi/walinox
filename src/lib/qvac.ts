@@ -1,4 +1,5 @@
 import { AGENT_SYSTEM, type ChatMessage } from "@/lib/agent";
+import { historyFrom } from "@/lib/qvac-history";
 
 export type QvacResult = {
   text: string;
@@ -7,35 +8,6 @@ export type QvacResult = {
 
 let modelId: string | null = null;
 let loadError: string | null = null;
-
-function historyFrom(messages: ChatMessage[]): { role: "user" | "assistant"; content: string }[] {
-  const system = messages
-    .filter((message) => message.role === "system")
-    .map((message) => message.content)
-    .join("\n");
-  const rest = messages.filter((message) => message.role !== "system");
-  const history: { role: "user" | "assistant"; content: string }[] = [];
-  if (system) {
-    const first = rest[0];
-    if (first?.role === "user") {
-      history.push({ role: "user", content: `${system}\n\n${first.content}` });
-      for (const message of rest.slice(1)) {
-        if (message.role === "user" || message.role === "assistant") {
-          history.push({ role: message.role, content: message.content });
-        }
-      }
-    } else {
-      history.push({ role: "user", content: system });
-    }
-  } else {
-    for (const message of rest) {
-      if (message.role === "user" || message.role === "assistant") {
-        history.push({ role: message.role, content: message.content });
-      }
-    }
-  }
-  return history;
-}
 
 async function completeViaHttp(messages: ChatMessage[]): Promise<QvacResult> {
   const base = process.env.QVAC_BASE_URL ?? "http://127.0.0.1:11434/v1";

@@ -13,6 +13,19 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@rainbow-me/rainbowkit"],
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      const prev = config.externals;
+      config.externals = [
+        ...(Array.isArray(prev) ? prev : prev ? [prev] : []),
+        ({ request }: { request?: string }, cb: (err?: Error | null, result?: string) => void) => {
+          if (request === "@qvac/sdk") return cb(undefined, "module @qvac/sdk");
+          cb();
+        },
+      ];
+    }
+    return config;
+  },
   async redirects() {
     return [{ source: "/tienda/:id", destination: "/tienda", permanent: false }];
   },

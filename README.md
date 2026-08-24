@@ -22,7 +22,7 @@ The [lulox.eth](https://app.ens.domains/lulox.eth) shop is the live demo catalog
 Buyer (maybe airplane mode)          Merchant (needs the network)
 ─────────────────────────────        ────────────────────────────
 1. Sign Permit2 EIP-712
-2. Hand over the envelope  ────────► 3. permitTransferFrom()
+2. Hand over the envelope  ─────────► 3. permitTransferFrom()
                                         USDT moves on-chain
 ```
 
@@ -51,7 +51,7 @@ Walinox is built on Tether’s current client-side kits — not a custodial Teth
 | **USDT** | Ethereum mainnet ERC-20 settlement | [tether.io](https://tether.io) · [token](https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7) |
 | **[WDK](https://docs.wdk.tether.io)** | Local non-custodial wallet (`@tetherto/wdk`, `@tetherto/wdk-wallet-evm`) | [About WDK](https://docs.wdk.tether.io/overview/about/) · [Get started](https://docs.wdk.tether.io/sdk/get-started/) |
 | **EIP-7702 gasless** | Pay gas in USDT via `@tetherto/wdk-wallet-evm-7702-gasless` (Candide bundler). If that fails, the EOA needs ETH. | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) · [WDK module](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-evm-7702-gasless/) · [package](https://github.com/tetherto/wdk-wallet-evm-7702-gasless) |
-| **[QVAC](https://docs.qvac.tether.io)** | “In one sentence” form fill (send, contacts, products). Qwen3 0.6B Instruct Q4 via `/api/agent`. Heuristic fallback if QVAC is down. | [qvac.tether.io](https://qvac.tether.io) |
+| **[QVAC](https://docs.qvac.tether.io)** | “En una frase” form fill. Tries on-device Qwen3 0.6B Instruct Q4 (Ajustes download) when `@qvac/sdk` can load, else `/api/agent`, else heuristic. Official SDK runtimes are Node / Bare / Expo — not a Chrome PWA. | [qvac.tether.io](https://qvac.tether.io) |
 | **MoonPay** | Fiat → USDT on-ramp (Tether WDK’s documented fiat rail) | [MoonPay](https://www.moonpay.com) |
 
 The seed stays on the device (PIN-encrypted). Tether does not custody keys. Walinox never stores the seed on the server.
