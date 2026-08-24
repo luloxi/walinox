@@ -39,9 +39,9 @@ const LABELS: Record<Channel, { label: string; description: string }> = {
   nfc: { label: "NFC", description: "Web NFC. Android Chrome." },
   ultrasonic: { label: "Sonido", description: "El permiso viaja en audio. El otro celular escucha." },
   optical: { label: "Luz", description: "La pantalla transmite; la cámara del otro lee." },
-  copy: { label: "Copiar", description: "Copiá el JSON al portapapeles." },
-  sms: { label: "SMS", description: "Abrí Mensajes con el JSON listo para mandar." },
-  file: { label: "Archivo", description: "Descargá o importá un .json." },
+  copy: { label: "Copiar", description: "Copiá el permiso compacto al portapapeles." },
+  sms: { label: "SMS", description: "Abrí Mensajes con el permiso listo para mandar." },
+  file: { label: "Archivo", description: "Descargá o importá el permiso." },
 };
 
 export function channelStatus(id: Channel): ChannelStatus {
