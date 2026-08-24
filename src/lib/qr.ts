@@ -1,20 +1,25 @@
 import QRCode from "qrcode";
 import jsQR from "jsqr";
 
-const SCALE = 8;
+const SCALE = 10;
 const QUIET = 4;
 
+/** Webcam-friendly: ECC L, large modules, high contrast, quiet zone. */
+export function qrRenderOptions(payload: string) {
+  return {
+    errorCorrectionLevel: "L" as const,
+    margin: QUIET,
+    width: payload.startsWith("W1:") ? 720 : 640,
+    color: { dark: "#000000", light: "#ffffff" },
+  };
+}
+
 export async function payloadToDataUrl(payload: string): Promise<string> {
-  return QRCode.toDataURL(payload, {
-    errorCorrectionLevel: payload.length > 800 ? "L" : "M",
-    margin: 4,
-    width: 560,
-    color: { dark: "#111111", light: "#ffffff" },
-  });
+  return QRCode.toDataURL(payload, qrRenderOptions(payload));
 }
 
 export function payloadToMatrix(payload: string): boolean[][] {
-  const qr = QRCode.create(payload, { errorCorrectionLevel: "M" });
+  const qr = QRCode.create(payload, { errorCorrectionLevel: "L" });
   const size = qr.modules.size;
   const matrix: boolean[][] = [];
   for (let y = 0; y < size; y += 1) {

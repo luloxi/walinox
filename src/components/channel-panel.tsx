@@ -6,8 +6,7 @@ import { useWallet } from "@/components/wallet-provider";
 import { playSound, shareViaSms, transmitChannel } from "@/lib/air-io";
 import { encodeEnvelopeQr } from "@/lib/envelope-pack";
 import { type Channel } from "@/lib/channels";
-import { encodeEnvelope, envelopeFilename, type SignedEnvelope } from "@/lib/payload";
-import { inviteFromSeed } from "@/lib/pears";
+import { envelopeFilename, type SignedEnvelope } from "@/lib/payload";
 import { fromBaseUnits } from "@/lib/format";
 import { notifyPeer } from "@/lib/notify";
 import { receiptFromPermit } from "@/lib/receipts";
@@ -68,7 +67,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
     setPlaying(true);
     setNote(null);
     try {
-      await playSound(encodeEnvelope(envelope));
+      await playSound(compactPayload());
     } catch (error) {
       setNote(error instanceof Error ? error.message : "El canal falló");
     } finally {
@@ -82,8 +81,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
     if (channel !== "ultrasonic") setSoundOpen(false);
     try {
       if (channel === "qr") {
-        const invite = await inviteFromSeed(envelope.signature);
-        await markSent("qr", `Mostrale este QR. Sala ${invite}`);
+        await markSent("qr", "Mostrale este QR al que cobra.");
         return;
       }
       if (channel === "copy") {
@@ -117,13 +115,13 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
         setBusy(true);
         setSoundOpen(true);
         setPlaying(true);
-        await playSound(encodeEnvelope(envelope));
+        await playSound(compactPayload());
         await markSent("ultrasonic", "Sonido enviado. El permiso está en todo el tono.");
         return;
       }
       if (channel === "ble" || channel === "optical") {
         setBusy(true);
-        const detail = await transmitChannel(channel, encodeEnvelope(envelope));
+        const detail = await transmitChannel(channel, compactPayload());
         await markSent(channel, detail);
         return;
       }
@@ -146,7 +144,7 @@ export function ChannelPanel({ envelope, qrUrl, onSent, autoStart }: Props) {
       {qrUrl ? (
         <div className="overflow-hidden rounded-2xl bg-white p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="Permiso firmado" className="mx-auto w-full max-w-[22rem] aspect-square" />
+          <img src={qrUrl} alt="Permiso firmado" className="mx-auto w-full max-w-[28rem] aspect-square bg-white p-1" />
         </div>
       ) : (
         <div className="flex h-64 items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">
