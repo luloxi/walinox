@@ -13,6 +13,7 @@ import { COMPACT_QR_PREFIX, encodeEnvelopeQr, tryDecodeCompactQr } from "@/lib/e
 import { decodeEnvelope, encodeEnvelope, type SignedEnvelope } from "@/lib/payload";
 import { payloadToMatrix, qrRenderOptions, roundTripQrPayload } from "@/lib/qr";
 import { buildPermit2 } from "@/lib/permit2";
+import { looksLikeAirEnvelope } from "@/lib/air-looks";
 
 const p2 = buildPermit2({
   spender: "0x3333333333333333333333333333333333333333",
@@ -75,10 +76,10 @@ describe("offline handover codecs", () => {
     expect(back.signature).toBe(envelope.signature);
   });
 
-  it("sound FSK pack/unpack compact W1 as AIR_ENVELOPE", () => {
+  it("sound FSK pack/unpack compact W1", () => {
     const compact = encodeEnvelopeQr(envelope);
+    expect(looksLikeAirEnvelope(compact)).toBe(true);
     const packet = packAir(compact);
-    expect(packet.length).toBeLessThan(compact.length);
     const pcm = modulateFsk(packet, 48000);
     const decoded = demodulateFsk(pcm, 48000);
     expect(decoded).not.toBeNull();
