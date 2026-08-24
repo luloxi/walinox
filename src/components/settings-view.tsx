@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CloudBackup } from "@/components/cloud-backup";
+import { QvacSettings } from "@/components/qvac-settings";
 import { SeedBackupSettings } from "@/components/seed-backup-settings";
 import { UsdtLogo } from "@/components/usdt-logo";
 import { useDisplay } from "@/components/display-provider";
@@ -441,6 +442,8 @@ export function SettingsView() {
           </Button>
         )}
       </section>
+
+      <QvacSettings />
 
       <section className="mt-6 space-y-2">
         <SectionTitle icon={theme === "dark" ? Moon : Sun}>Apariencia</SectionTitle>
