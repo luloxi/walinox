@@ -50,6 +50,10 @@ function bytesToB64(data: Uint8Array): string {
   return btoa(s);
 }
 
+function bytesToB64Url(data: Uint8Array): string {
+  return bytesToB64(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 function b64ToBytes(b64: string): Uint8Array {
   const normalized = b64.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.length % 4 === 0 ? normalized : normalized + "=".repeat(4 - (normalized.length % 4));
@@ -143,7 +147,7 @@ export function unpackEnvelope(data: Uint8Array): SignedEnvelope {
 }
 
 export function encodeEnvelopeQr(envelope: SignedEnvelope): string {
-  return `${COMPACT_QR_PREFIX}${bytesToB64(packEnvelope(envelope))}`;
+  return `${COMPACT_QR_PREFIX}${bytesToB64Url(packEnvelope(envelope))}`;
 }
 
 export function tryDecodeCompactQr(raw: string): SignedEnvelope | null {
