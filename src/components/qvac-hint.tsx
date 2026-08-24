@@ -4,7 +4,9 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { heuristicIntent, type AgentIntent, type AgentTask } from "@/lib/agent";
+import { type AgentIntent, type AgentTask } from "@/lib/agent";
+import { getDeviceQvac } from "@/lib/qvac-device";
+import { fetchAgentIntent, resolveFormIntent } from "@/lib/qvac-intent";
 import { speechSupported, startSpeech, type SpeechHandle } from "@/lib/speech";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,7 @@ export function QvacHint({
   const canSpeak = speechSupported();
 
   useEffect(() => {
+    void getDeviceQvac().probe();
     return () => speech.current?.stop();
   }, []);
 
@@ -91,20 +94,15 @@ export function QvacHint({
     setBusy(true);
     setError(null);
     try {
-      let intent: AgentIntent | null = null;
-      try {
-        const res = await fetch("/api/agent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, owner, task }),
-          signal: AbortSignal.timeout(5000),
-        });
-        const data = (await res.json()) as AgentIntent & { error?: string };
-        if (res.ok && !data.error) intent = data;
-      } catch {
-        /* offline / no QVAC */
-      }
-      if (!intent) intent = heuristicIntent(prompt, task);
+      const device = getDeviceQvac();
+      const intent = await resolveFormIntent({
+        prompt,
+        task,
+        owner,
+        deviceReady: device.isReady(),
+        completeOnDevice: device.completeOnDevice,
+        fetchApi: fetchAgentIntent,
+      });
       onFill(intent);
       setText("");
       setOpen(false);
